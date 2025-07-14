@@ -1,0 +1,5 @@
+{
+  "name": "Conqueror's Blade Unit Manager",
+  "description": "A tool for warpath leaders to manage players, their units, and create groups for the game Conqueror's Blade.",
+  "requestFramePermissions": []
+}
