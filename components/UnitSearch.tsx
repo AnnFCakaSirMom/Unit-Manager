@@ -1,6 +1,6 @@
 // components/UnitSearch.tsx
 
-import React, { useState, useMemo, forwardRef, useImperativeHandle } from 'react'; // --- ÄNDRING 1: Importerat 'forwardRef' och 'useImperativeHandle'
+import React, { useMemo } from 'react'; // Notera: useState, forwardRef, etc. är borttagna
 import type { Player, UnitConfig } from '../types';
 import { Search } from './icons';
 
@@ -8,31 +8,19 @@ interface UnitSearchProps {
     players: Player[];
     unitConfig: UnitConfig;
     onSelectPlayer: (id: string | null) => void;
+    // --- NYA PROPS ---
+    searchTerm: string;
+    setSearchTerm: (term: string) => void;
 }
 
-// --- ÄNDRING 2: Skapat en typ för de funktioner vi vill kunna anropa utifrån ---
-export interface UnitSearchHandle {
-    clearSearch: () => void;
-}
+// Ingen forwardRef eller useImperativeHandle behövs längre
+export const UnitSearch: React.FC<UnitSearchProps> = ({ players, unitConfig, onSelectPlayer, searchTerm, setSearchTerm }) => {
 
-// --- ÄNDRING 3: Använder 'forwardRef' för att komponenten ska kunna ta emot en ref ---
-export const UnitSearch = forwardRef<UnitSearchHandle, UnitSearchProps>(({ players, unitConfig, onSelectPlayer }, ref) => {
-    const [searchTerm, setSearchTerm] = useState('');
-
-    // --- ÄNDRING 4: Definierat vilken funktion som ska kunna anropas via ref:en ---
-    useImperativeHandle(ref, () => ({
-        // När föräldern anropar 'clearSearch', körs denna kod
-        clearSearch() {
-            setSearchTerm('');
-        }
-    }));
-
-    // Din befintliga söklogik - inga ändringar här!
+    // Söklogiken använder nu 'searchTerm' från props
     const foundPlayers = useMemo(() => {
         if (!searchTerm.trim()) return [];
         const lowerCaseTerm = searchTerm.toLowerCase();
         const allUnits = Object.values(unitConfig.tiers).flat();
-
         const playerUnitMap = new Map<string, string[]>();
 
         for (const player of players) {
@@ -56,18 +44,17 @@ export const UnitSearch = forwardRef<UnitSearchHandle, UnitSearchProps>(({ playe
 
     const handlePlayerSelect = (playerId: string) => {
         onSelectPlayer(playerId);
-        setSearchTerm('');
+        setSearchTerm(''); // Anropar nu funktionen från props
     };
 
-    // Din befintliga JSX - inga ändringar här!
     return (
         <div className="border-t border-gray-700 mt-4 pt-4">
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                     type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={searchTerm} // Värdet kommer från props
+                    onChange={(e) => setSearchTerm(e.target.value)} // Anropar funktionen från props
                     placeholder="Search by unit name..."
                     className="w-full bg-gray-700 border border-gray-600 rounded-md pl-10 pr-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -97,4 +84,4 @@ export const UnitSearch = forwardRef<UnitSearchHandle, UnitSearchProps>(({ playe
             )}
         </div>
     );
-});
+};
