@@ -38,13 +38,16 @@ const App: React.FC = () => {
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const [isPlayerListOpen, setPlayerListOpen] = useState(true);
 
-    const handleSelectPlayer = useCallback((playerId: string | null) => {
-        setSelectedPlayerId(playerId);
-        if (playerId) {
-            setSelectedGroupId(null);
-            if (!isPlayerListOpen) setPlayerListOpen(true);
-        }
-    }, [isPlayerListOpen]);
+   const handleSelectPlayer = useCallback((playerId: string | null) => {
+    setSelectedPlayerId(playerId);
+    if (playerId) {
+        setSelectedGroupId(null);
+        if (!isPlayerListOpen) setPlayerListOpen(true);
+    } else {
+        // Nollställ selectedPlayerId när listan stängs
+        setSelectedPlayerId(null);
+    }
+}, [isPlayerListOpen, setSelectedPlayerId, setSelectedGroupId]);
 
     const handleSelectGroup = useCallback((groupId: string | null) => {
         setSelectedGroupId(groupId);
