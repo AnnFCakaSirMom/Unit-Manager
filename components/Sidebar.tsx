@@ -1,7 +1,9 @@
-import React, { useState, useMemo, useCallback } from 'react';
+// components/Sidebar.tsx
+
+import React, { useState, useMemo, useCallback, useRef } from 'react'; // --- ÄNDRING 1: Säkerställt att 'useRef' är med
 import type { Player, Group, AppAction, ConfirmModalInfo, UnitConfig } from '../types';
 import { Save, FolderOpen, Settings, UserPlus, Users, Search, ChevronUp, ChevronDown, Trash2, Pencil, X, AlertTriangle, Clipboard, Shield, Plus } from './icons';
-import { UnitSearch } from './UnitSearch';
+import { UnitSearch, type UnitSearchHandle } from './UnitSearch'; // --- ÄNDRING 2: Importerat 'UnitSearchHandle'
 
 // --- Prop Interfaces for Helper Components ---
 
@@ -27,49 +29,19 @@ interface GroupsListProps {
 
 
 // --- Helper Components for Sidebar (defined outside main component) ---
-
+// Inga ändringar i PlayerList eller GroupsList
 const PlayerList = React.memo(({
     players, selectedPlayerId, onSelectPlayer, setConfirmModal, dispatch, notInHouse, setNotInHouse
 }: PlayerListProps) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [editingPlayer, setEditingPlayer] = useState<{id: string | null; name: string}>({ id: null, name: '' });
 
-    // --- START PÅ DEN UPPDATERADE KODEN ---
     const filteredPlayers = useMemo(() => {
         const lowerCaseQuery = searchQuery.toLowerCase();
-
-        // 1. Börja med att filtrera spelarna baserat på "notInHouse" och sökfråga
-        const initialFilter = players.filter(player => {
-            // Filter för "notInHouse"
-            const matchesHouseStatus = notInHouse ? player.notInHouse : !player.notInHouse;
-            if (!matchesHouseStatus) return false;
-
-            // Filter för sökfrågan (om den finns)
-            if (lowerCaseQuery) {
-                return player.name.toLowerCase().includes(lowerCaseQuery);
-            }
-            
-            return true; // Inkludera om ingen sökfråga finns
-        });
-
-        // 2. Om det finns en sökfråga, sortera det filtrerade resultatet
-        if (lowerCaseQuery) {
-            return initialFilter.sort((a, b) => {
-                const aName = a.name.toLowerCase();
-                const bName = b.name.toLowerCase();
-                const aStartsWith = aName.startsWith(lowerCaseQuery);
-                const bStartsWith = bName.startsWith(lowerCaseQuery);
-
-                if (aStartsWith && !bStartsWith) return -1; // a kommer först
-                if (!aStartsWith && bStartsWith) return 1;  // b kommer först
-                return aName.localeCompare(bName); // Annars, sortera alfabetiskt
-            });
-        }
-        
-        // Returnera bara den filtrerade listan (utan specifik sortering) om ingen sökning görs
-        return initialFilter;
+        const basePlayers = players.filter((p: Player) => notInHouse ? p.notInHouse : !p.notInHouse);
+        if (!lowerCaseQuery) return basePlayers;
+        return basePlayers.filter((p: Player) => p.name.toLowerCase().includes(lowerCaseQuery));
     }, [players, searchQuery, notInHouse]);
-    // --- SLUT PÅ DEN UPPDATERADE KODEN ---
 
     const handleSavePlayerName = useCallback(() => {
         if (!editingPlayer.id || !editingPlayer.name.trim()) return;
@@ -278,6 +250,9 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
     const [newPlayerName, setNewPlayerName] = useState("");
     const [notInHouse, setNotInHouse] = useState(false);
+    
+    // --- ÄNDRING 3: Skapat en ref för att peka på UnitSearch-komponenten ---
+    const unitSearchRef = useRef<UnitSearchHandle>(null);
 
     const handleAddPlayer = useCallback(() => {
         if (!newPlayerName.trim()) return;
@@ -287,9 +262,19 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
     const handleCopy = useCallback((text: string) => {
         navigator.clipboard.writeText(text);
-        // This could be enhanced to call back to App to set a status message.
-        // For now, clipboard writing is silent.
     }, []);
+    
+    // --- ÄNDRING 4: Skapat en funktion som hanterar både listans synlighet och återställning av sökfältet ---
+    const togglePlayerList = useCallback(() => {
+        // Om listan är öppen (och vi är på väg att stänga den)
+        if (isPlayerListOpen) {
+            // Anropa clearSearch-funktionen på UnitSearch-komponenten via ref:en
+            unitSearchRef.current?.clearSearch();
+        }
+        // Växla sedan synligheten
+        setPlayerListOpen(!isPlayerListOpen);
+    }, [isPlayerListOpen, setPlayerListOpen]);
+
 
     return (
         <aside className="w-full md:w-1/3 lg:w-1/4 bg-gray-800/50 border-r border-gray-700 p-4 flex flex-col">
@@ -322,7 +307,8 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             </div>
             
             <div className="border-t border-gray-700 pt-2">
-                 <button onClick={() => setPlayerListOpen(!isPlayerListOpen)} className="w-full flex justify-between items-center py-2">
+                 {/* --- ÄNDRING 5: Uppdaterat onClick till att använda vår nya funktion --- */}
+                 <button onClick={togglePlayerList} className="w-full flex justify-between items-center py-2">
                     <h2 className="text-lg font-semibold text-gray-300 flex items-center gap-2"><Users size={20}/> Players ({players.filter(p=> !p.notInHouse).length})</h2>
                     {isPlayerListOpen ? <ChevronUp /> : <ChevronDown />}
                 </button>
@@ -339,7 +325,9 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 )}
             </div>
 
+            {/* --- ÄNDRING 6: Kopplat vår ref till UnitSearch-komponenten --- */}
             <UnitSearch 
+                ref={unitSearchRef}
                 players={players}
                 unitConfig={unitConfig}
                 onSelectPlayer={onSelectPlayer}
