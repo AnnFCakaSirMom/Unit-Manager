@@ -118,6 +118,13 @@ interface PlayerUnitViewProps {
 }
 
 export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConfig, allUnits, dispatch, setStatusMessage }) => {
+    if (!player) {
+        return (
+            <div className="flex items-center justify-center h-full text-center text-gray-500">
+                <h2 className="text-xl">Select a player to view their units.</h2>
+            </div>
+        );
+    }
     const [unitViewMode, setUnitViewMode] = useState<'all' | 'owned'>('all');
     const [mainUnitSearchQuery, setMainUnitSearchQuery] = useState("");
     const [isParseModalOpen, setIsParseModalOpen] = useState(false);
@@ -134,7 +141,6 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
         let formText = `Hello ${player.name}!\n\nPlease fill out which units you have and their status.\n\n`;
         formText += `Instructions:\nPut an 'x' in the brackets [] for each status that applies.\n\n`;
         formText += `Example:\n✅ Owned: [x]  🌟 Maxed: [x]  👑 Mastery: [ ] - Silahdars\n\n`;
-        formText += `------------------------------------\n\n`;
 
         Object.entries(unitConfig.tiers).forEach(([tier, units]) => {
             formText += `--- ${tier} ---\n`;
@@ -158,7 +164,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
             <div className="h-full flex flex-col">
                 <div className="flex justify-between items-start">
                     <div>
-                        <h2 className="text-2xl font-bold text-white mb-1">Units for <span className="text-blue-400">{player.name}</span></h2>
+                        <h2 className="text-2xl font-bold text-white mb-1">Units for <span className="text-blue-400">{player?.name}</span></h2>
                         <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected.</p>
                     </div>
                     <div className="flex items-center gap-2">
