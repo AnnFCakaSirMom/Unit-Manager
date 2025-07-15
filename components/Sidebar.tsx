@@ -40,7 +40,7 @@ const PlayerList = React.memo(({
         const lowerCaseQuery = searchQuery.toLowerCase();
         const basePlayers = players.filter((p: Player) => notInHouse ? p.notInHouse : !p.notInHouse);
         if (!lowerCaseQuery) return basePlayers;
-        return basePlayers.filter((p: Player) => p.name.toLowerCase().includes(lowerCaseQuery));
+        return basePlayers.filter((p: Player) => p.name.toLowerCase().startsWith(lowerCaseQuery));
     }, [players, searchQuery, notInHouse]);
 
     const handleSavePlayerName = useCallback(() => {
