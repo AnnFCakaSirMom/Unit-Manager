@@ -1,6 +1,6 @@
 // components/UnitSearch.tsx
 
-import React, { useMemo } from 'react'; // Notera: useState, forwardRef, etc. är borttagna
+import React, { useMemo } from 'react';
 import type { Player, UnitConfig } from '../types';
 import { Search } from './icons';
 
@@ -8,15 +8,12 @@ interface UnitSearchProps {
     players: Player[];
     unitConfig: UnitConfig;
     onSelectPlayer: (id: string | null) => void;
-    // --- NYA PROPS ---
     searchTerm: string;
     setSearchTerm: (term: string) => void;
 }
 
-// Ingen forwardRef eller useImperativeHandle behövs längre
 export const UnitSearch: React.FC<UnitSearchProps> = ({ players, unitConfig, onSelectPlayer, searchTerm, setSearchTerm }) => {
 
-    // Söklogiken använder nu 'searchTerm' från props
     const foundPlayers = useMemo(() => {
         if (!searchTerm.trim()) return [];
         const lowerCaseTerm = searchTerm.toLowerCase();
@@ -44,7 +41,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, unitConfig, onS
 
     const handlePlayerSelect = (playerId: string) => {
         onSelectPlayer(playerId);
-        setSearchTerm(''); // Anropar nu funktionen från props
+        setSearchTerm('');
     };
 
     return (
@@ -53,8 +50,8 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, unitConfig, onS
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                     type="text"
-                    value={searchTerm} // Värdet kommer från props
-                    onChange={(e) => setSearchTerm(e.target.value)} // Anropar funktionen från props
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search by unit name..."
                     className="w-full bg-gray-700 border border-gray-600 rounded-md pl-10 pr-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
