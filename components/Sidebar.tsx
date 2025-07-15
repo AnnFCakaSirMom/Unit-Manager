@@ -34,12 +34,42 @@ const PlayerList = React.memo(({
     const [searchQuery, setSearchQuery] = useState("");
     const [editingPlayer, setEditingPlayer] = useState<{id: string | null; name: string}>({ id: null, name: '' });
 
+    // --- START PÅ DEN UPPDATERADE KODEN ---
     const filteredPlayers = useMemo(() => {
         const lowerCaseQuery = searchQuery.toLowerCase();
-        const basePlayers = players.filter((p: Player) => notInHouse ? p.notInHouse : !p.notInHouse);
-        if (!lowerCaseQuery) return basePlayers;
-        return basePlayers.filter((p: Player) => p.name.toLowerCase().includes(lowerCaseQuery));
+
+        // 1. Börja med att filtrera spelarna baserat på "notInHouse" och sökfråga
+        const initialFilter = players.filter(player => {
+            // Filter för "notInHouse"
+            const matchesHouseStatus = notInHouse ? player.notInHouse : !player.notInHouse;
+            if (!matchesHouseStatus) return false;
+
+            // Filter för sökfrågan (om den finns)
+            if (lowerCaseQuery) {
+                return player.name.toLowerCase().includes(lowerCaseQuery);
+            }
+            
+            return true; // Inkludera om ingen sökfråga finns
+        });
+
+        // 2. Om det finns en sökfråga, sortera det filtrerade resultatet
+        if (lowerCaseQuery) {
+            return initialFilter.sort((a, b) => {
+                const aName = a.name.toLowerCase();
+                const bName = b.name.toLowerCase();
+                const aStartsWith = aName.startsWith(lowerCaseQuery);
+                const bStartsWith = bName.startsWith(lowerCaseQuery);
+
+                if (aStartsWith && !bStartsWith) return -1; // a kommer först
+                if (!aStartsWith && bStartsWith) return 1;  // b kommer först
+                return aName.localeCompare(bName); // Annars, sortera alfabetiskt
+            });
+        }
+        
+        // Returnera bara den filtrerade listan (utan specifik sortering) om ingen sökning görs
+        return initialFilter;
     }, [players, searchQuery, notInHouse]);
+    // --- SLUT PÅ DEN UPPDATERADE KODEN ---
 
     const handleSavePlayerName = useCallback(() => {
         if (!editingPlayer.id || !editingPlayer.name.trim()) return;
