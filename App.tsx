@@ -239,7 +239,7 @@ const App: React.FC = () => {
                     onSelectPlayer={handleSelectPlayer}
                     onSelectGroup={handleSelectGroup}
                     onSave={handleSaveData}
-                    onLoad={handleLModernOpenFile}
+                    onLoad={handleModernOpenFile}
                     onOpenUnitManager={() => setIsMgmtModalOpen(true)}
                     hasUnsavedChanges={hasUnsavedChanges}
                     statusMessage={statusMessage}
