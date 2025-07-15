@@ -9,20 +9,23 @@ import { GroupView } from './components/GroupView';
 import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
+
 declare global {
   interface Window {
     showOpenFilePicker(options?: any): Promise<FileSystemFileHandle[]>;
     showSaveFilePicker(options?: any): Promise<FileSystemFileHandle>;
   }
 }
+
 const App: React.FC = () => {
     const initialState: AppState = {
         players: [],
         unitConfig: { tiers: DEFAULT_UNIT_TIERS },
         groups: [],
         hasUnsavedChanges: false,
-    };const [aktivFilHandle, setAktivFilHandle] = useState<FileSystemFileHandle | null>(null);
+    };
 
+    const [aktivFilHandle, setAktivFilHandle] = useState<FileSystemFileHandle | null>(null);
     const [state, dispatch] = useReducer(withUnsavedChanges(appReducer), initialState);
     const { players, unitConfig, groups, hasUnsavedChanges } = state;
 
@@ -110,87 +113,42 @@ const App: React.FC = () => {
         };
         reader.readAsText(file);
     }, [handleSelectPlayer]);
+    
+    const handleSaveData = useCallback(async () => {
+        const dataToSave = JSON.stringify({ players, unitConfig, groups }, null, 2);
 
-    // ----> BÖRJAN PÅ NYA, SMARTA SPARA-FUNKTIONEN <----
+        if (aktivFilHandle) {
+            try {
+                const writable = await aktivFilHandle.createWritable();
+                await writable.write(dataToSave);
+                await writable.close();
+                dispatch({ type: 'SAVE_SUCCESS' });
+                setStatusMessage('File saved successfully!');
+            } catch (err) {
+                console.error('Kunde inte spara till befintlig fil:', err);
+                setStatusMessage('Error: Could not save the file.');
+            }
+        } else {
+            try {
+                const blob = new Blob([dataToSave], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'conquerors-blade-data.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                dispatch({ type: 'SAVE_SUCCESS' });
+                setStatusMessage('File saved successfully!');
+            } catch (err) {
+                console.error('Save failed:', err);
+                setStatusMessage('Error: Could not save the file.');
+            }
+        }
+    }, [players, unitConfig, groups, aktivFilHandle, dispatch]);
 
-  const handleSaveData = useCallback(async () => {
-    // VIKTIGT: Byt ut "players, unitConfig, groups" nedan mot det din app faktiskt behöver spara.
-    const dataToSave = JSON.stringify({ players, unitConfig, groups }, null, 2);
-
-    // Kolla om vi har en "nyckel" i minnet från en tidigare öppnad fil
-    if (aktivFilHandle) {
-      // JA, VI HAR EN NYCKEL! Spara direkt tillbaka till den filen.
-      try {
-        const writable = await aktivFilHandle.createWritable();
-        await writable.write(dataToSave);
-        await writable.close();
-        dispatch({ type: 'SAVE_SUCCESS' });
-        setStatusMessage('File saved successfully!');
-      } catch (err) {
-        console.error('Kunde inte spara till befintlig fil:', err);
-        setStatusMessage('Error: Could not save the file.');
-      }
-    } else {
-      // NEJ, VI HAR INGEN NYCKEL. Kör den gamla "Spara som"-logiken.
-      // Denna kod är samma som din gamla funktion hade.
-      try {
-        const blob = new Blob([dataToSave], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'conquerors-blade-data.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        dispatch({ type: 'SAVE_SUCCESS' });
-        setStatusMessage('File saved successfully!');
-      } catch (err) {
-        console.error('Save failed:', err);
-        setStatusMessage('Error: Could not save the file.');
-      }
-    }
-  }, [players, unitConfig, groups, aktivFilHandle, dispatch]);
-
-// ----> SLUT PÅ NYA, SMARTA SPARA-FUNKTIONEN <----
-// ----> BÖRJAN PÅ NY FUNKTION ATT KLISTRA IN <----
-
-  // Detta är vår NYA, MODERNA funktion för att öppna filer
-  const handleModernOpenFile = useCallback(async () => {
-    // Först kollar vi om webbläsaren stöder den moderna tekniken
-    if (!('showOpenFilePicker' in window)) {
-      alert('Din webbläsare stöder inte denna funktion. Använder klassisk import istället.');
-      // Om inte, anropar vi din gamla funktion som en reservlösning
-      handleLoadData();
-      return;
-    }
-
-    // Om tekniken stöds, kör vi den nya koden
-    try {
-      const [fileHandle] = await window.showOpenFilePicker({
-        types: [
-          {
-            description: 'JSON Files',
-            accept: { 'application/json': ['.json'] },
-          },
-        ],
-      });
-
-      // Här gör vi det vi försökte göra i Steg 3 förut:
-      // Vi sparar nyckeln till filen i vårt state!
-      setAktivFilHandle(fileHandle);
-
-      // Sedan anropar vi din befintliga processFile-funktion
-      // (Vi måste hämta fil-objektet från vårt handle först)
-      const file = await fileHandle.getFile();
-      await processFile(file, fileHandle);
-
-    } catch (err) {
-      console.error('Kunde inte öppna fil med modern metod:', err);
-    }
-  }, [processFile, handleLoadData]); // Vi inkluderar de andra funktionerna här
-
-// ----> SLUT PÅ NY FUNKTION ATT KLISTRA IN <----
+    // **KORRIGERING**: Denna funktion är nu flyttad före `handleModernOpenFile`
     const handleLoadData = useCallback(() => {
         // Classic method: Use a hidden file input
         const input = document.createElement('input');
@@ -205,7 +163,33 @@ const App: React.FC = () => {
         };
         input.click();
     }, [processFile]);
-    
+
+    const handleModernOpenFile = useCallback(async () => {
+        if (!('showOpenFilePicker' in window)) {
+            alert('Din webbläsare stöder inte denna funktion. Använder klassisk import istället.');
+            handleLoadData(); // Anropar nu en funktion som är definierad ovanför
+            return;
+        }
+
+        try {
+            const [fileHandle] = await window.showOpenFilePicker({
+                types: [
+                    {
+                        description: 'JSON Files',
+                        accept: { 'application/json': ['.json'] },
+                    },
+                ],
+            });
+
+            setAktivFilHandle(fileHandle);
+            const file = await fileHandle.getFile();
+            await processFile(file, fileHandle);
+
+        } catch (err) {
+            console.error('Kunde inte öppna fil med modern metod:', err);
+        }
+    }, [processFile, handleLoadData]);
+
     // Drag and Drop handlers
     const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); }, []);
     const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); }, []);
@@ -214,7 +198,7 @@ const App: React.FC = () => {
         setIsDragging(false);
         const file = e.dataTransfer.files[0];
         if (file) {
-            processFile(file, null); // Drag-drop doesn't provide a persistent handle
+            processFile(file, null);
         }
     }, [processFile]);
 
