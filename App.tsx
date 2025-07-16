@@ -38,16 +38,13 @@ const App: React.FC = () => {
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const [isPlayerListOpen, setPlayerListOpen] = useState(true);
 
-   const handleSelectPlayer = useCallback((playerId: string | null) => {
-    setSelectedPlayerId(playerId);
-    if (playerId) {
-        setSelectedGroupId(null);
-        if (!isPlayerListOpen) setPlayerListOpen(true);
-    } else {
-        // Nollställ selectedPlayerId när listan stängs
-        setSelectedPlayerId(null);
-    }
-}, [isPlayerListOpen, setSelectedPlayerId, setSelectedGroupId]);
+    const handleSelectPlayer = useCallback((playerId: string | null) => {
+        setSelectedPlayerId(playerId);
+        if (playerId) {
+            setSelectedGroupId(null);
+            if (!isPlayerListOpen) setPlayerListOpen(true);
+        }
+    }, [isPlayerListOpen]);
 
     const handleSelectGroup = useCallback((groupId: string | null) => {
         setSelectedGroupId(groupId);
@@ -55,6 +52,19 @@ const App: React.FC = () => {
             setSelectedPlayerId(null);
         }
     }, []);
+
+    // ÄNDRING 1: Ny funktion för att hantera växling av spelarlistan.
+    // Denna funktion stänger inte bara listan, utan avmarkerar också den valda spelaren.
+    const handleTogglePlayerList = useCallback(() => {
+        if (isPlayerListOpen) {
+            // Om listan är öppen (och vi håller på att stänga den),
+            // nollställ den valda spelaren.
+            setSelectedPlayerId(null);
+        }
+        // Växla sedan synligheten för listan.
+        setPlayerListOpen(prev => !prev);
+    }, [isPlayerListOpen]);
+
 
     // Effect for status message timeout
     useEffect(() => {
@@ -151,9 +161,7 @@ const App: React.FC = () => {
         }
     }, [players, unitConfig, groups, aktivFilHandle, dispatch]);
 
-    // **KORRIGERING**: Denna funktion är nu flyttad före `handleModernOpenFile`
     const handleLoadData = useCallback(() => {
-        // Classic method: Use a hidden file input
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json,application/json';
@@ -170,7 +178,7 @@ const App: React.FC = () => {
     const handleModernOpenFile = useCallback(async () => {
         if (!('showOpenFilePicker' in window)) {
             alert('Din webbläsare stöder inte denna funktion. Använder klassisk import istället.');
-            handleLoadData(); // Anropar nu en funktion som är definierad ovanför
+            handleLoadData();
             return;
         }
 
@@ -193,7 +201,6 @@ const App: React.FC = () => {
         }
     }, [processFile, handleLoadData]);
 
-    // Drag and Drop handlers
     const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); }, []);
     const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); }, []);
     const handleDrop = useCallback((e: React.DragEvent) => {
@@ -232,13 +239,14 @@ const App: React.FC = () => {
                     statusMessage={statusMessage}
                     setConfirmModal={setConfirmModal}
                     isPlayerListOpen={isPlayerListOpen}
-                    setPlayerListOpen={setPlayerListOpen}
+                    // ÄNDRING 2: Skicka ner den nya funktionen istället för den gamla.
+                    onTogglePlayerList={handleTogglePlayerList}
                 />
 
                 <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
                     {selectedGroup ? (
                         <GroupView 
-                            key={selectedGroupId} // Re-mount component on group change
+                            key={selectedGroupId}
                             group={selectedGroup}
                             allGroups={groups}
                             players={players}
@@ -251,7 +259,7 @@ const App: React.FC = () => {
                         />
                     ) : selectedPlayer ? (
                         <PlayerUnitView
-                            key={selectedPlayerId} // Re-mount component on player change
+                            key={selectedPlayerId}
                             player={selectedPlayer}
                             unitConfig={unitConfig}
                             allUnits={ALL_UNITS}

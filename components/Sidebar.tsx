@@ -1,5 +1,3 @@
-// components/Sidebar.tsx
-
 import React, { useState, useMemo, useCallback } from 'react';
 import type { Player, Group, AppAction, ConfirmModalInfo, UnitConfig } from '../types';
 import { Save, FolderOpen, Settings, UserPlus, Users, Search, ChevronUp, ChevronDown, Trash2, Pencil, X, AlertTriangle, Clipboard, Shield, Plus } from './icons';
@@ -238,20 +236,21 @@ interface SidebarProps {
     statusMessage: string;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
     isPlayerListOpen: boolean;
-    setPlayerListOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    // ÄNDRING 3: Byt ut 'setPlayerListOpen' mot den nya, mer specifika funktionen.
+    onTogglePlayerList: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = (props) => {
     const {
         players, groups, unitConfig, dispatch, selectedPlayerId, selectedGroupId,
         onSelectPlayer, onSelectGroup, onSave, onLoad, onOpenUnitManager,
-        hasUnsavedChanges, statusMessage, setConfirmModal, isPlayerListOpen, setPlayerListOpen
+        hasUnsavedChanges, statusMessage, setConfirmModal, isPlayerListOpen, 
+        // ÄNDRING 4: Plocka ut den nya prop:en.
+        onTogglePlayerList
     } = props;
 
     const [newPlayerName, setNewPlayerName] = useState("");
     const [notInHouse, setNotInHouse] = useState(false);
-    
-    // ÄNDRING 1: State för söktermen i UnitSearch bor nu här
     const [unitSearchTerm, setUnitSearchTerm] = useState('');
 
     const handleAddPlayer = useCallback(() => {
@@ -296,13 +295,8 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             
             <div className="border-t border-gray-700 pt-2">
                 <button 
-                    // ÄNDRING 2: Logiken för att rensa sökfältet och växla listan finns nu här
-                    onClick={() => {
-                        if (isPlayerListOpen) {
-                            setUnitSearchTerm('');
-                        }
-                        setPlayerListOpen(!isPlayerListOpen);
-                    }}
+                    // ÄNDRING 5: Använd den nya funktionen som skickats ner som en prop.
+                    onClick={onTogglePlayerList}
                     className="w-full flex justify-between items-center py-2"
                 >
                     <h2 className="text-lg font-semibold text-gray-300 flex items-center gap-2"><Users size={20}/> Players ({players.filter(p=> !p.notInHouse).length})</h2>
@@ -323,9 +317,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
             <UnitSearch 
                 players={players}
-                unitConfig={unitConfig}
                 onSelectPlayer={onSelectPlayer}
-                // ÄNDRING 3: Skicka ner det nya statet och funktionen som props
                 searchTerm={unitSearchTerm}
                 setSearchTerm={setUnitSearchTerm}
             />
