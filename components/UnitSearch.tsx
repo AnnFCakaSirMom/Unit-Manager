@@ -1,45 +1,55 @@
 // components/UnitSearch.tsx
 
 import React, { useMemo } from 'react';
-import type { Player, UnitConfig } from '../types';
+import type { Player } from '../types'; // 'UnitConfig' är borttagen då den inte behövs
 import { Search } from './icons';
 
 interface UnitSearchProps {
     players: Player[];
-    unitConfig: UnitConfig;
     onSelectPlayer: (id: string | null) => void;
     searchTerm: string;
     setSearchTerm: (term: string) => void;
+    // 'unitConfig' är borttagen från props
 }
 
-export const UnitSearch: React.FC<UnitSearchProps> = ({ players, unitConfig, onSelectPlayer, searchTerm, setSearchTerm }) => {
+export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer, searchTerm, setSearchTerm }) => {
 
     const foundPlayers = useMemo(() => {
-        if (!searchTerm.trim()) return [];
+        if (!searchTerm.trim()) {
+            return [];
+        }
         const lowerCaseTerm = searchTerm.toLowerCase();
-        const allUnits = Object.values(unitConfig.tiers).flat();
         const playerUnitMap = new Map<string, string[]>();
 
+        if (!Array.isArray(players)) {
+            return [];
+        }
+
+        // Loopar igenom spelarna
         for (const player of players) {
-            if (player.units) {
-                for (const playerUnit of player.units) {
-                    // Korrigering: Jämför 'u.id' direkt med 'playerUnit' istället för 'playerUnit.id'
-                    const unitDetails = allUnits.find(u => u.id === playerUnit); 
-                    
-                    if (unitDetails?.name.toLowerCase().includes(lowerCaseTerm)) {
-                        if (!playerUnitMap.has(player.id)) {
-                            playerUnitMap.set(player.id, []);
-                        }
-                        playerUnitMap.get(player.id)?.push(unitDetails.name);
-                    }
+            // Kontrollerar att spelare och dess enhetslista finns
+            if (player && Array.isArray(player.units)) {
+                // Hittar de enheter (strängar) som matchar söktermen
+                const matchingUnits = player.units.filter(unitName =>
+                    typeof unitName === 'string' && unitName.toLowerCase().includes(lowerCaseTerm)
+                );
+
+                // Om matchande enheter hittades, lägg till dem i kartan
+                if (matchingUnits.length > 0) {
+                    playerUnitMap.set(player.id, matchingUnits);
                 }
             }
         }
-        return Array.from(playerUnitMap.entries()).map(([playerId, units]) => ({
-            player: players.find(p => p.id === playerId)!,
-            units
-        }));
-    }, [searchTerm, players, unitConfig]);
+
+        const mappedPlayers = Array.from(playerUnitMap.entries()).map(([playerId, units]) => {
+            const player = players.find(p => p.id === playerId);
+            return player ? { player, units } : null;
+        });
+
+        // Returnerar en ren lista utan null-värden
+        return mappedPlayers.filter(p => p !== null) as { player: Player; units: string[] }[];
+
+    }, [searchTerm, players]); // Beroendet av 'unitConfig' är borttaget
 
     const handlePlayerSelect = (playerId: string) => {
         onSelectPlayer(playerId);
