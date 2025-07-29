@@ -25,7 +25,10 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
             return [];
         }
         const lowerCaseTerm = searchTerm.toLowerCase();
-        const allUnits = players.flatMap(p => p.units || []);
+        
+        // Filtrerar bort "not in house"-spelare innan enhetslistan skapas
+        const activePlayers = players.filter(p => !p.notInHouse);
+        const allUnits = activePlayers.flatMap(p => p.units || []);
         const uniqueUnits = [...new Set(allUnits)];
 
         return uniqueUnits.filter(unitName =>
@@ -33,25 +36,25 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
         );
     }, [searchTerm, players, selectedUnit]);
 
-    // **NY LOGIK HÄR**
-    // Hittar spelare och kontrollerar status för den valda enheten
     const foundPlayers = useMemo(() => {
         if (!selectedUnit) {
             return [];
         }
         
-        // Hittar först alla spelare som har enheten
+        // **NY, KORRIGERAD LOGIK HÄR**
+        // 1. Filtrerar bort "not in house"-spelare
+        // 2. Hittar de som har den valda enheten
         const playersWithUnit = players.filter(player =>
-            player.units?.includes(selectedUnit)
+            !player.notInHouse && player.units?.includes(selectedUnit)
         );
 
-        // Mappar sedan dessa spelare till ett nytt objekt som inkluderar status
+        // Mappar sedan dessa spelare till ett nytt objekt som inkluderar korrekt status
         return playersWithUnit.map(player => ({
             player,
-            // Kontrollerar om enheten finns i 'maxedUnits'-listan
-            isMaxed: player.maxedUnits?.includes(selectedUnit) ?? false,
-            // Kontrollerar om enheten finns i 'fullMasteryUnits'-listan
-            isFullMastery: player.fullMasteryUnits?.includes(selectedUnit) ?? false,
+            // Använder korrekt egenskapsnamn: 'preparedUnits'
+            isMaxed: player.preparedUnits?.includes(selectedUnit) ?? false,
+            // Använder korrekt egenskapsnamn: 'masteryUnits'
+            isFullMastery: player.masteryUnits?.includes(selectedUnit) ?? false,
         }));
 
     }, [selectedUnit, players]);
@@ -115,20 +118,18 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                     foundPlayers.length > 0 ? (
                         <>
                             <p className="text-xs text-gray-400 mb-1 px-1">Players with {selectedUnit}:</p>
-                            {/* **UPPDATERAD JSX HÄR** */}
                             {foundPlayers.map(({ player, isMaxed, isFullMastery }) => (
                                 <div key={player.id} className="p-1 rounded hover:bg-blue-500/20">
                                     <button onClick={() => handlePlayerSelect(player.id)} className="w-full text-left font-medium flex items-center justify-between">
                                         <span>{player.name}</span>
-                                        {/* Behållare för indikatorer */}
                                         <div className="flex items-center space-x-2">
-                                            {/* Grön ring för Maxed Unit */}
+                                            {/* Grön ring för Maxed Unit (preparedUnits) */}
                                             {isMaxed && (
                                                 <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-green-300" title="Maxed Unit"></div>
                                             )}
-                                            {/* Gul fyrkant för Full Mastery */}
+                                            {/* Gul fyrkant för Full Mastery (masteryUnits) */}
                                             {isFullMastery && (
-                                                <div className="w-4 h-4 bg-yellow-500 border-2 border-yellow-300" title="Full Mastery"></div>
+                                                <div className="w-4 h-4 rounded-sm bg-yellow-500 border-2 border-yellow-300" title="Full Mastery"></div>
                                             )}
                                         </div>
                                     </button>
