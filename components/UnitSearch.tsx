@@ -23,7 +23,9 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, unitConfig, onS
         for (const player of players) {
             if (player.units) {
                 for (const playerUnit of player.units) {
-                    const unitDetails = allUnits.find(u => u.id === playerUnit.id);
+                    // Korrigering: Jämför 'u.id' direkt med 'playerUnit' istället för 'playerUnit.id'
+                    const unitDetails = allUnits.find(u => u.id === playerUnit); 
+                    
                     if (unitDetails?.name.toLowerCase().includes(lowerCaseTerm)) {
                         if (!playerUnitMap.has(player.id)) {
                             playerUnitMap.set(player.id, []);
