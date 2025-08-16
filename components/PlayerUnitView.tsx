@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react'; // useEffect är tillagd här
 import type { Player, UnitConfig, AppAction } from '../types';
 import { ChevronUp, ChevronDown, CheckSquare, List, Search, Clipboard as Copy, ImportIcon } from './icons';
 import { ParseFormModal } from './ParseFormModal';
@@ -128,9 +128,12 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
     const [unitViewMode, setUnitViewMode] = useState<'all' | 'owned'>('all');
     const [mainUnitSearchQuery, setMainUnitSearchQuery] = useState("");
     const [isParseModalOpen, setIsParseModalOpen] = useState(false);
-    
-    // NYTT STATE FÖR INFO-TEXTFÄLTET
     const [infoText, setInfoText] = useState(player?.info || "");
+
+    // KORRIGERING: Denna useEffect ser till att infoText uppdateras när en ny spelare väljs.
+    useEffect(() => {
+        setInfoText(player.info || "");
+    }, [player]);
 
     const selectedPlayerUnits = useMemo(() => new Set(player?.units || []), [player]);
     const selectedPlayerPreparedUnits = useMemo(() => new Set(player?.preparedUnits || []), [player]);
@@ -140,7 +143,6 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
         dispatch({ type: 'TOGGLE_PLAYER_UNIT', payload: { playerId, unitName, unitType } });
     }, [dispatch]);
 
-    // NY FUNKTION FÖR ATT SPARA INFO
     const handleInfoSave = useCallback(() => {
         if (player && infoText !== player.info) {
             dispatch({ type: 'UPDATE_PLAYER_INFO', payload: { playerId: player.id, info: infoText } });
@@ -190,7 +192,6 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
                     </div>
                 </div>
 
-                {/* NY INFORMATIONS-RUTA TILLAGD HÄR */}
                 <div className="my-4">
                     <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info</label>
                     <textarea
