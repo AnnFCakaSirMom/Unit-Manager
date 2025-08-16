@@ -25,6 +25,7 @@ export interface Player {
   preparedUnits: string[];
   masteryUnits: string[];
   notInHouse: boolean;
+  info?: string; // <-- DENNA RAD ÄR TILLAGD
 }
 
 export interface UnitTiers {
@@ -62,6 +63,7 @@ export type AppAction =
   | { type: 'SET_GROUP_MEMBER_UNIT_RANK'; payload: { groupId: string; playerId: string; unitName: string; rank: number } }
   | { type: 'TOGGLE_GROUP_MEMBER_LOCK'; payload: { groupId: string; playerId: string } }
   | { type: 'SET_GROUP_LEADER'; payload: { groupId: string; playerId: string } }
+  | { type: 'UPDATE_PLAYER_INFO'; payload: { playerId: string; info: string } } // <-- DENNA RAD ÄR TILLAGD
   | { type: 'LOAD_STATE'; payload: Omit<AppState, 'hasUnsavedChanges'> }
   | { type: 'SAVE_SUCCESS' };
 

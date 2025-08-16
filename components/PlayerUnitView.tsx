@@ -128,6 +128,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
     const [unitViewMode, setUnitViewMode] = useState<'all' | 'owned'>('all');
     const [mainUnitSearchQuery, setMainUnitSearchQuery] = useState("");
     const [isParseModalOpen, setIsParseModalOpen] = useState(false);
+    
+    // NYTT STATE FÖR INFO-TEXTFÄLTET
+    const [infoText, setInfoText] = useState(player?.info || "");
 
     const selectedPlayerUnits = useMemo(() => new Set(player?.units || []), [player]);
     const selectedPlayerPreparedUnits = useMemo(() => new Set(player?.preparedUnits || []), [player]);
@@ -136,6 +139,14 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
     const handleUnitToggle = useCallback((playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits') => {
         dispatch({ type: 'TOGGLE_PLAYER_UNIT', payload: { playerId, unitName, unitType } });
     }, [dispatch]);
+
+    // NY FUNKTION FÖR ATT SPARA INFO
+    const handleInfoSave = useCallback(() => {
+        if (player && infoText !== player.info) {
+            dispatch({ type: 'UPDATE_PLAYER_INFO', payload: { playerId: player.id, info: infoText } });
+            setStatusMessage("Player info saved.");
+        }
+    }, [infoText, player, dispatch, setStatusMessage]);
 
     const handleCopyForm = () => {
         let formText = `Hello ${player.name}!\n\nPlease fill out which units you have and their status.\n\n`;
@@ -178,6 +189,21 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
                         </button>
                     </div>
                 </div>
+
+                {/* NY INFORMATIONS-RUTA TILLAGD HÄR */}
+                <div className="my-4">
+                    <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info</label>
+                    <textarea
+                        id="playerInfo"
+                        value={infoText}
+                        onChange={(e) => setInfoText(e.target.value)}
+                        onBlur={handleInfoSave}
+                        placeholder={`Write information about ${player?.name}...`}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows={3}
+                    />
+                </div>
+
                 <div className="mb-4">
                     <div className="flex items-center gap-4">
                         <div className="bg-gray-800/60 rounded-md p-1 flex items-center gap-1 self-start">

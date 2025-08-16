@@ -9,6 +9,7 @@ const validatePlayer = (player: any): Player => ({
     preparedUnits: Array.isArray(player.preparedUnits) ? player.preparedUnits : [],
     masteryUnits: Array.isArray(player.masteryUnits) ? player.masteryUnits : [],
     notInHouse: typeof player.notInHouse === 'boolean' ? player.notInHouse : false,
+    info: player.info || "", // <-- DENNA RAD ÄR TILLAGD
 });
 
 const validateGroup = (group: any): Group => ({
@@ -38,6 +39,18 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         }
         case 'TOGGLE_NOT_IN_HOUSE': {
             return { ...state, players: state.players.map(p => p.id === action.payload.playerId ? { ...p, notInHouse: !p.notInHouse } : p) };
+        }
+
+        // NYTT CASE TILLAGT HÄR
+        case 'UPDATE_PLAYER_INFO': {
+            return { 
+                ...state, 
+                players: state.players.map(p => 
+                    p.id === action.payload.playerId 
+                    ? { ...p, info: action.payload.info } 
+                    : p
+                ) 
+            };
         }
         
         // Unit actions for a specific player
