@@ -76,7 +76,8 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
                     {player.info && (
                         <div className="relative group">
                             <AlertTriangle size={16} className="text-cyan-400 cursor-pointer" />
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                            {/* ÄNDRINGEN ÄR GJORD PÅ RADEN NEDAN */}
+                            <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 text-white text-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
                                 {player.info}
                             </div>
                         </div>
