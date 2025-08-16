@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import type { Group, Player, UnitConfig, AppAction, GroupMember } from '../types';
-// AlertTriangle är tillagd i import-satsen
 import { Search, Clipboard, UserPlus, Star, Trash2, ArrowRightLeft, Lock, Unlock, Plus, AlertTriangle } from './icons';
 
 const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-400 border-yellow-400/50', Epic: 'text-purple-400 border-purple-400/50', Rare: 'text-blue-400 border-blue-400/50', Uncommon: 'text-green-400 border-green-400/50', Common: 'text-gray-400 border-gray-400/50', "Manually Added": 'text-gray-400 border-gray-500/50' };
@@ -74,11 +73,10 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
                     {player.name}
                     {isLeader && <Star size={16} className="fill-current" />}
                     
-                    {/* NY INFO-IKON TILLAGD HÄR */}
                     {player.info && (
                         <div className="relative group">
                             <AlertTriangle size={16} className="text-cyan-400 cursor-pointer" />
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 bg-gray-900 text-white text-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
                                 {player.info}
                             </div>
                         </div>
