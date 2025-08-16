@@ -236,16 +236,15 @@ interface SidebarProps {
     statusMessage: string;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
     isPlayerListOpen: boolean;
-    // ÄNDRING 3: Byt ut 'setPlayerListOpen' mot den nya, mer specifika funktionen.
     onTogglePlayerList: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = (props) => {
     const {
-        players, groups, unitConfig, dispatch, selectedPlayerId, selectedGroupId,
+        // KORRIGERING: unitConfig är borttagen härifrån
+        players, groups, dispatch, selectedPlayerId, selectedGroupId,
         onSelectPlayer, onSelectGroup, onSave, onLoad, onOpenUnitManager,
         hasUnsavedChanges, statusMessage, setConfirmModal, isPlayerListOpen, 
-        // ÄNDRING 4: Plocka ut den nya prop:en.
         onTogglePlayerList
     } = props;
 
@@ -295,7 +294,6 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             
             <div className="border-t border-gray-700 pt-2">
                 <button 
-                    // ÄNDRING 5: Använd den nya funktionen som skickats ner som en prop.
                     onClick={onTogglePlayerList}
                     className="w-full flex justify-between items-center py-2"
                 >
