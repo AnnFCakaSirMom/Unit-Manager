@@ -1,5 +1,5 @@
-import React, { useState, useReducer, useEffect, useMemo, useCallback, useRef } from 'react';
-import type { AppState, AppAction, Player, Group, ConfirmModalInfo, UnitConfig } from './types';
+import React, { useState, useReducer, useEffect, useMemo, useCallback } from 'react';
+import type { AppState, ConfirmModalInfo } from './types';
 import { appReducer, withUnsavedChanges } from './reducer';
 import { DEFAULT_UNIT_TIERS } from './units';
 
@@ -34,7 +34,10 @@ const App: React.FC = () => {
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
     const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-    const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null);
+    
+    // KORRIGERING: "fileHandle" är ersatt för att ta bort varning.
+    const [, setFileHandle] = useState<FileSystemFileHandle | null>(null);
+
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const [isPlayerListOpen, setPlayerListOpen] = useState(true);
 
@@ -53,15 +56,10 @@ const App: React.FC = () => {
         }
     }, []);
 
-    // ÄNDRING 1: Ny funktion för att hantera växling av spelarlistan.
-    // Denna funktion stänger inte bara listan, utan avmarkerar också den valda spelaren.
     const handleTogglePlayerList = useCallback(() => {
         if (isPlayerListOpen) {
-            // Om listan är öppen (och vi håller på att stänga den),
-            // nollställ den valda spelaren.
             setSelectedPlayerId(null);
         }
-        // Växla sedan synligheten för listan.
         setPlayerListOpen(prev => !prev);
     }, [isPlayerListOpen]);
 
@@ -239,7 +237,6 @@ const App: React.FC = () => {
                     statusMessage={statusMessage}
                     setConfirmModal={setConfirmModal}
                     isPlayerListOpen={isPlayerListOpen}
-                    // ÄNDRING 2: Skicka ner den nya funktionen istället för den gamla.
                     onTogglePlayerList={handleTogglePlayerList}
                 />
 
