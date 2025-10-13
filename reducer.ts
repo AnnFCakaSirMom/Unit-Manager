@@ -1,5 +1,5 @@
 // reducer.ts
-import type { AppState, AppAction, Player, Group } from './types';
+import type { AppState, AppAction, Player, Group, UnitConfig, Unit } from './types';
 
 // --- Data Validation and Migration ---
 const validatePlayer = (player: any): Player => ({
@@ -9,7 +9,8 @@ const validatePlayer = (player: any): Player => ({
     preparedUnits: Array.isArray(player.preparedUnits) ? player.preparedUnits : [],
     masteryUnits: Array.isArray(player.masteryUnits) ? player.masteryUnits : [],
     notInHouse: typeof player.notInHouse === 'boolean' ? player.notInHouse : false,
-    info: player.info || "", // <-- DENNA RAD ÄR TILLAGD
+    info: player.info || "",
+    totalLeadership: typeof player.totalLeadership === 'number' ? player.totalLeadership : 0, // <-- TILLAGD
 });
 
 const validateGroup = (group: any): Group => ({
@@ -23,12 +24,30 @@ const validateGroup = (group: any): Group => ({
     })) : [],
 });
 
+const validateUnitConfig = (config: any): UnitConfig => {
+    if (!config || !config.tiers) {
+        return { tiers: {} };
+    }
+    const validatedTiers: { [tier: string]: Unit[] } = {};
+    for (const tier in config.tiers) {
+        const units = config.tiers[tier];
+        if (Array.isArray(units)) {
+            // Migrera från string[] till Unit[] om det behövs (för bakåtkompatibilitet)
+            validatedTiers[tier] = units.map(unit =>
+                typeof unit === 'string' ? { name: unit } : unit
+            );
+        }
+    }
+    return { tiers: validatedTiers };
+};
+
+
 // --- Main Reducer ---
 export const appReducer = (state: AppState, action: AppAction): AppState => {
     switch (action.type) {
         // Player actions
         case 'ADD_PLAYER': {
-            const newPlayer: Player = { id: crypto.randomUUID(), name: action.payload.name.trim(), units: [], preparedUnits: [], masteryUnits: [], notInHouse: false };
+            const newPlayer: Player = { id: crypto.randomUUID(), name: action.payload.name.trim(), units: [], preparedUnits: [], masteryUnits: [], notInHouse: false, totalLeadership: 0 };
             return { ...state, players: [...state.players, newPlayer].sort((a, b) => a.name.localeCompare(b.name)) };
         }
         case 'DELETE_PLAYER': {
@@ -40,19 +59,27 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         case 'TOGGLE_NOT_IN_HOUSE': {
             return { ...state, players: state.players.map(p => p.id === action.payload.playerId ? { ...p, notInHouse: !p.notInHouse } : p) };
         }
-
-        // NYTT CASE TILLAGT HÄR
         case 'UPDATE_PLAYER_INFO': {
-            return { 
-                ...state, 
-                players: state.players.map(p => 
-                    p.id === action.payload.playerId 
-                    ? { ...p, info: action.payload.info } 
+            return {
+                ...state,
+                players: state.players.map(p =>
+                    p.id === action.payload.playerId
+                    ? { ...p, info: action.payload.info }
                     : p
-                ) 
+                )
             };
         }
-        
+        case 'UPDATE_PLAYER_LEADERSHIP': { // <-- NYTT CASE
+            return {
+                ...state,
+                players: state.players.map(p =>
+                    p.id === action.payload.playerId
+                    ? { ...p, totalLeadership: action.payload.leadership }
+                    : p
+                )
+            };
+        }
+
         // Unit actions for a specific player
         case 'TOGGLE_PLAYER_UNIT': {
             const { playerId, unitName, unitType } = action.payload; // unitType: 'units', 'preparedUnits', 'masteryUnits'
@@ -71,43 +98,34 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
 
         case 'PARSE_PLAYER_UNITS_FORM': {
             const { playerId, formData, allUnitNames } = action.payload;
-            
+
             const allUnitNamesSet = new Set(allUnitNames);
             const newUnits: string[] = [];
             const newPreparedUnits: string[] = [];
             const newMasteryUnits: string[] = [];
 
             const lines = formData.split('\n');
-            // Regex is now more flexible, capturing all content within brackets
             const regex = /✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\].*- (.*)/;
 
             for (const line of lines) {
                 const match = line.match(regex);
                 if (match) {
-                    // Capture the full string inside the brackets
                     const [_, ownedStr, maxedStr, masteryStr, unitNameStr] = match;
                     const unitName = unitNameStr.trim();
-                    
+
                     if (allUnitNamesSet.has(unitName)) {
-                        // Trim the captured string before checking for 'x'
-                        if (ownedStr.trim().toLowerCase() === 'x') {
-                            newUnits.push(unitName);
-                        }
-                        if (maxedStr.trim().toLowerCase() === 'x') {
-                            newPreparedUnits.push(unitName);
-                        }
-                        if (masteryStr.trim().toLowerCase() === 'x') {
-                            newMasteryUnits.push(unitName);
-                        }
+                        if (ownedStr.trim().toLowerCase() === 'x') newUnits.push(unitName);
+                        if (maxedStr.trim().toLowerCase() === 'x') newPreparedUnits.push(unitName);
+                        if (masteryStr.trim().toLowerCase() === 'x') newMasteryUnits.push(unitName);
                     }
                 }
             }
 
             return {
                 ...state,
-                players: state.players.map(p => 
-                    p.id === playerId 
-                    ? { ...p, units: newUnits, preparedUnits: newPreparedUnits, masteryUnits: newMasteryUnits } 
+                players: state.players.map(p =>
+                    p.id === playerId
+                    ? { ...p, units: newUnits, preparedUnits: newPreparedUnits, masteryUnits: newMasteryUnits }
                     : p
                 )
             };
@@ -116,12 +134,12 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         // Global unit config actions
         case 'UPDATE_UNIT_CONFIG':
             return { ...state, unitConfig: action.payload.unitConfig };
-        
-        case 'RENAME_UNIT_GLOBALLY': {
+
+        case 'RENAME_UNIT_GLOBALLY': { // <-- UPPDATERAD LOGIK
             const { oldName, newName } = action.payload;
             const newTiers = { ...state.unitConfig.tiers };
             for (const tier in newTiers) {
-                newTiers[tier] = newTiers[tier].map(u => u === oldName ? newName : u);
+                newTiers[tier] = newTiers[tier].map(u => u.name === oldName ? { ...u, name: newName } : u);
             }
             return {
                 ...state,
@@ -134,11 +152,11 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 }))
             };
         }
-        case 'DELETE_UNIT_GLOBALLY': {
+        case 'DELETE_UNIT_GLOBALLY': { // <-- UPPDATERAD LOGIK
             const { unitNameToDelete } = action.payload;
             const newTiers = { ...state.unitConfig.tiers };
             for (const tier in newTiers) {
-                newTiers[tier] = newTiers[tier].filter(u => u !== unitNameToDelete);
+                newTiers[tier] = newTiers[tier].filter(u => u.name !== unitNameToDelete);
             }
             return {
                 ...state,
@@ -196,7 +214,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         case 'MOVE_PLAYER_BETWEEN_GROUPS': {
             const { playerId, sourceGroupId, targetGroupId } = action.payload;
             let memberToMove = null;
-            
+
             const groupsAfterRemoval = state.groups.map(group => {
                 if (group.id === sourceGroupId) {
                     memberToMove = group.members.find(m => m.playerId === playerId);
@@ -230,8 +248,8 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                        const newMembers = g.members.map(m => {
                            if (m.playerId === playerId) {
                                const isSelected = m.selectedUnits.some(u => u.unitName === unitName);
-                               const newSelectedUnits = isSelected 
-                                 ? m.selectedUnits.filter(u => u.unitName !== unitName) 
+                               const newSelectedUnits = isSelected
+                                 ? m.selectedUnits.filter(u => u.unitName !== unitName)
                                  : [...m.selectedUnits, { unitName, rank: 0 }];
                                return {...m, selectedUnits: newSelectedUnits};
                            }
@@ -274,15 +292,16 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return { ...state, groups: state.groups.map(g => g.id === groupId ? { ...g, leaderId: playerId } : g) };
         }
 
-        case 'LOAD_STATE':
+        case 'LOAD_STATE': { // <-- UPPDATERAD LOGIK FÖR GAMLA FILER
             const loadedData = action.payload;
             return {
                 ...state,
                 players: loadedData.players.map(validatePlayer),
-                unitConfig: loadedData.unitConfig || { tiers: {} },
+                unitConfig: validateUnitConfig(loadedData.unitConfig),
                 groups: (loadedData.groups || []).map(validateGroup)
             };
-            
+        }
+
         default:
             return state;
     }
@@ -297,8 +316,7 @@ export const withUnsavedChanges = (reducer: typeof appReducer) => {
         if (action.type === 'LOAD_STATE' || action.type === 'SAVE_SUCCESS') {
             return { ...newState, hasUnsavedChanges: false };
         }
-        
-        // A simple check; for complex states, deep comparison might be needed
+
         if (JSON.stringify(newState) !== JSON.stringify(state)) {
             return { ...newState, hasUnsavedChanges: true };
         }

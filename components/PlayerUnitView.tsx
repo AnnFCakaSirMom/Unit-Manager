@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react'; // useEffect är tillagd här
-import type { Player, UnitConfig, AppAction } from '../types';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import type { Player, Unit, UnitConfig, AppAction } from '../types';
 import { ChevronUp, ChevronDown, CheckSquare, List, Search, Clipboard as Copy, ImportIcon } from './icons';
 import { ParseFormModal } from './ParseFormModal';
 
@@ -7,7 +7,7 @@ const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-40
 
 interface UnitTierSectionProps {
     tier: string;
-    units: string[];
+    units: Unit[];
     selectedPlayerId: string;
     selectedUnits: Set<string>;
     preparedUnits: Set<string>;
@@ -27,20 +27,20 @@ const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, selectedUni
             </button>
             {isOpen && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-2 p-4 bg-gray-800/30 rounded-b-md">
-                    {units.sort().map(unit => (
-                        <label key={unit} className="flex items-center space-x-2 cursor-pointer p-1 rounded hover:bg-gray-700/50 transition-colors">
+                    {units.map(unit => (
+                        <label key={unit.name} className="flex items-center space-x-2 cursor-pointer p-1 rounded hover:bg-gray-700/50 transition-colors">
                             <div
-                                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit, 'masteryUnits'); }}
-                                className={`w-4 h-4 rounded-sm border-2 ${masteryUnits.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
+                                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'masteryUnits'); }}
+                                className={`w-4 h-4 rounded-sm border-2 ${masteryUnits.has(unit.name) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
                                 title="Toggle Mastery"
                             ></div>
                             <div
-                                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit, 'preparedUnits'); }}
-                                className={`w-4 h-4 rounded-full border-2 ${preparedUnits.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
+                                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'preparedUnits'); }}
+                                className={`w-4 h-4 rounded-full border-2 ${preparedUnits.has(unit.name) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
                                 title="Toggle Maxed"
                             ></div>
-                            <input type="checkbox" checked={selectedUnits.has(unit)} onChange={() => onUnitToggle(selectedPlayerId, unit, 'units')} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500/50" />
-                            <span className="text-gray-300">{unit}</span>
+                            <input type="checkbox" checked={selectedUnits.has(unit.name)} onChange={() => onUnitToggle(selectedPlayerId, unit.name, 'units')} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500/50" />
+                            <span className="text-gray-300">{unit.name}</span>
                         </label>
                     ))}
                 </div>
@@ -63,14 +63,17 @@ const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, preparedUn
     const ownedUnitsByTier = useMemo(() => {
         const result: { [key: string]: string[] } = {};
         const lowerCaseQuery = searchQuery.toLowerCase();
-        
-        const allCurrentUnits = new Set(Object.values(unitConfig.tiers).flat());
-        const existingOwnedUnits = [...selectedUnits].filter(unit => 
-            allCurrentUnits.has(unit) && unit.toLowerCase().includes(lowerCaseQuery)
+
+        const allCurrentUnitNames = new Set(Object.values(unitConfig.tiers).flat().map(u => u.name));
+        const existingOwnedUnits = [...selectedUnits].filter(unitName =>
+            allCurrentUnitNames.has(unitName) && unitName.toLowerCase().includes(lowerCaseQuery)
         );
 
         Object.entries(unitConfig.tiers).forEach(([tier, unitsInTier]) => {
-            const ownedInTier = unitsInTier.filter(unit => existingOwnedUnits.includes(unit)).sort();
+            const ownedInTier = unitsInTier
+                .map(u => u.name)
+                .filter(unitName => existingOwnedUnits.includes(unitName))
+                .sort();
             if (ownedInTier.length > 0) result[tier] = ownedInTier;
         });
         return result;
@@ -80,25 +83,25 @@ const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, preparedUn
 
     return (
         <div className="space-y-6">
-            {Object.entries(ownedUnitsByTier).map(([tier, units]) => (
+            {Object.entries(ownedUnitsByTier).map(([tier, unitNames]) => (
                 <section key={tier}>
                     <div className={`w-full flex justify-between items-center p-2 rounded-t-md border-b-2 ${tierColorClasses[tier]}`}>
                         <h3 className="text-xl font-semibold">{tier}</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-3 p-4 bg-gray-800/30 rounded-b-md">
-                        {units.map(unit => (
-                            <div key={unit} className="flex items-center space-x-3">
+                        {unitNames.map(unitName => (
+                            <div key={unitName} className="flex items-center space-x-3">
                                 <div
-                                    onClick={() => onUnitToggle(selectedPlayerId, unit, 'masteryUnits')}
-                                    className={`w-4 h-4 rounded-sm border-2 cursor-pointer ${masteryUnits.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
+                                    onClick={() => onUnitToggle(selectedPlayerId, unitName, 'masteryUnits')}
+                                    className={`w-4 h-4 rounded-sm border-2 cursor-pointer ${masteryUnits.has(unitName) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
                                     title="Toggle Mastery"
                                 ></div>
                                 <div
-                                    onClick={() => onUnitToggle(selectedPlayerId, unit, 'preparedUnits')}
-                                    className={`w-4 h-4 rounded-full border-2 cursor-pointer ${preparedUnits.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
+                                    onClick={() => onUnitToggle(selectedPlayerId, unitName, 'preparedUnits')}
+                                    className={`w-4 h-4 rounded-full border-2 cursor-pointer ${preparedUnits.has(unitName) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
                                     title="Toggle Maxed"
                                 ></div>
-                                <span className="text-gray-300">{unit}</span>
+                                <span className="text-gray-300">{unitName}</span>
                             </div>
                         ))}
                     </div>
@@ -112,7 +115,7 @@ const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, preparedUn
 interface PlayerUnitViewProps {
     player: Player;
     unitConfig: UnitConfig;
-    allUnits: string[];
+    allUnits: string[]; // This remains string[] for names
     dispatch: React.Dispatch<AppAction>;
     setStatusMessage: (message: string) => void;
 }
@@ -129,26 +132,37 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
     const [mainUnitSearchQuery, setMainUnitSearchQuery] = useState("");
     const [isParseModalOpen, setIsParseModalOpen] = useState(false);
     const [infoText, setInfoText] = useState(player?.info || "");
+    const [leadership, setLeadership] = useState(String(player?.totalLeadership || ''));
 
-    // KORRIGERING: Denna useEffect ser till att infoText uppdateras när en ny spelare väljs.
     useEffect(() => {
         setInfoText(player.info || "");
+        setLeadership(String(player.totalLeadership || ''));
     }, [player]);
 
     const selectedPlayerUnits = useMemo(() => new Set(player?.units || []), [player]);
     const selectedPlayerPreparedUnits = useMemo(() => new Set(player?.preparedUnits || []), [player]);
     const selectedPlayerMasteryUnits = useMemo(() => new Set(player?.masteryUnits || []), [player]);
-    
+
     const handleUnitToggle = useCallback((playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits') => {
         dispatch({ type: 'TOGGLE_PLAYER_UNIT', payload: { playerId, unitName, unitType } });
     }, [dispatch]);
 
     const handleInfoSave = useCallback(() => {
-        if (player && infoText !== player.info) {
+        if (player && infoText !== (player.info || "")) {
             dispatch({ type: 'UPDATE_PLAYER_INFO', payload: { playerId: player.id, info: infoText } });
             setStatusMessage("Player info saved.");
         }
     }, [infoText, player, dispatch, setStatusMessage]);
+
+    const handleLeadershipSave = useCallback(() => {
+        const leadershipValue = parseInt(leadership, 10);
+        const newLeadership = isNaN(leadershipValue) ? 0 : leadershipValue;
+
+        if (player && newLeadership !== (player.totalLeadership || 0)) {
+            dispatch({ type: 'UPDATE_PLAYER_LEADERSHIP', payload: { playerId: player.id, leadership: newLeadership } });
+            setStatusMessage("Player leadership saved.");
+        }
+    }, [leadership, player, dispatch, setStatusMessage]);
 
     const handleCopyForm = () => {
         let formText = `Hello ${player.name}!\n\nPlease fill out which units you have and their status.\n\n`;
@@ -157,8 +171,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
 
         Object.entries(unitConfig.tiers).forEach(([tier, units]) => {
             formText += `--- ${tier} ---\n`;
-            units.sort().forEach(unit => {
-                formText += `✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ] - ${unit}\n`;
+            units.forEach(unit => {
+                formText += `✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ] - ${unit.name}\n`;
             });
             formText += `\n`;
         });
@@ -171,6 +185,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
         setIsParseModalOpen(false);
         setStatusMessage(`Parsed unit data for ${player.name}.`);
     };
+
+    const allUnitsByTier = useMemo(() => unitConfig.tiers, [unitConfig]);
 
     return (
         <>
@@ -192,18 +208,33 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
                     </div>
                 </div>
 
-                <div className="my-4">
-                    <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info</label>
-                    <textarea
-                        id="playerInfo"
-                        value={infoText}
-                        onChange={(e) => setInfoText(e.target.value)}
-                        onBlur={handleInfoSave}
-                        placeholder={`Write information about ${player?.name}...`}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows={3}
-                    />
+                <div className="my-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                        <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info</label>
+                        <textarea
+                            id="playerInfo"
+                            value={infoText}
+                            onChange={(e) => setInfoText(e.target.value)}
+                            onBlur={handleInfoSave}
+                            placeholder={`Write information about ${player?.name}...`}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            rows={3}
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-1">Total Leadership</label>
+                        <input
+                             id="playerLeadership"
+                             type="number"
+                             value={leadership}
+                             onChange={(e) => setLeadership(e.target.value)}
+                             onBlur={handleLeadershipSave}
+                             placeholder="e.g. 700"
+                             className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
                 </div>
+
 
                 <div className="mb-4">
                     <div className="flex items-center gap-4">
@@ -230,8 +261,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
                 <div className="flex-grow overflow-y-auto">
                     {unitViewMode === 'all' ? (
                         <div className="space-y-6">
-                            {Object.entries(unitConfig.tiers).map(([tier, units]) => {
-                                const filteredUnits = mainUnitSearchQuery ? units.filter(u => u.toLowerCase().includes(mainUnitSearchQuery.toLowerCase())) : units;
+                            {Object.entries(allUnitsByTier).map(([tier, units]) => {
+                                const filteredUnits = mainUnitSearchQuery ? units.filter(u => u.name.toLowerCase().includes(mainUnitSearchQuery.toLowerCase())) : units;
                                 if (filteredUnits.length === 0) return null;
                                 return <UnitTierSection key={tier} tier={tier} units={filteredUnits} selectedPlayerId={player.id} selectedUnits={selectedPlayerUnits} preparedUnits={selectedPlayerPreparedUnits} masteryUnits={selectedPlayerMasteryUnits} onUnitToggle={handleUnitToggle} />
                             })}
@@ -241,7 +272,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
                     )}
                 </div>
             </div>
-            <ParseFormModal 
+            <ParseFormModal
                 isOpen={isParseModalOpen}
                 onClose={() => setIsParseModalOpen(false)}
                 onParse={handleParseForm}

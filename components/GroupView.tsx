@@ -12,16 +12,27 @@ interface GroupMemberCardProps {
     unitConfig: UnitConfig;
     dispatch: React.Dispatch<AppAction>;
     otherGroups: Group[];
+    unitCostMap: Map<string, number>;
 }
-const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitConfig, dispatch, otherGroups }: GroupMemberCardProps) => {
+const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitConfig, dispatch, otherGroups, unitCostMap }: GroupMemberCardProps) => {
     const [manualUnitName, setManualUnitName] = useState("");
     const [isMoving, setIsMoving] = useState(false);
     
     const unitToTierMap = useMemo(() => {
         const map = new Map<string, string>();
-        Object.entries(unitConfig.tiers).forEach(([tier, units]) => units.forEach(unit => map.set(unit, tier)));
+        Object.entries(unitConfig.tiers).forEach(([tier, units]) => units.forEach(unit => map.set(unit.name, tier)));
         return map;
     }, [unitConfig]);
+
+    const usedLeadership = useMemo(() => {
+        return member.selectedUnits.reduce((total, selectedUnit) => {
+            return total + (unitCostMap.get(selectedUnit.unitName) || 0);
+        }, 0);
+    }, [member.selectedUnits, unitCostMap]);
+
+    const totalLeadership = player.totalLeadership || 0;
+    const remainingLeadership = totalLeadership - usedLeadership;
+    const hasExceededLeadership = remainingLeadership < 0;
 
     const handleAddManualUnit = () => {
         const unitToAdd = manualUnitName.trim();
@@ -52,8 +63,6 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
             if (!grouped[tier]) grouped[tier] = [];
             grouped[tier].push(unitName);
         });
-
-        // KORRIGERING: Skapar ett nytt objekt med sorterade listor istället för att mutera.
         const sortedGrouped: { [key: string]: string[] } = {};
         for (const tier in grouped) {
             sortedGrouped[tier] = [...grouped[tier]].sort();
@@ -74,20 +83,24 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
 
     return (
         <div className="bg-gray-800/30 p-4 rounded-lg">
-            <div className="flex justify-between items-center mb-3">
-                <h4 className={`text-xl font-bold flex items-center gap-2 ${isLeader ? 'text-yellow-300' : 'text-blue-300'}`}>
-                    {player.name}
-                    {isLeader && <Star size={16} className="fill-current" />}
-                    
-                    {player.info && (
-                        <div className="relative group">
-                            <AlertTriangle size={16} className="text-cyan-400 cursor-pointer" />
-                            <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 text-white text-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                                {player.info}
+            <div className="flex justify-between items-start mb-2">
+                <div>
+                     <h4 className={`text-xl font-bold flex items-center gap-2 ${isLeader ? 'text-yellow-300' : 'text-blue-300'}`}>
+                        {player.name}
+                        {isLeader && <Star size={16} className="fill-current" />}
+                        {player.info && (
+                            <div className="relative group">
+                                <AlertTriangle size={16} className="text-cyan-400 cursor-pointer" />
+                                <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 text-white text-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                                    {player.info}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </h4>
+                        )}
+                    </h4>
+                    <p className={`text-sm font-semibold mt-1 ${hasExceededLeadership ? 'text-red-400' : 'text-gray-400'}`}>
+                        Leadership: {usedLeadership} / {totalLeadership} ({remainingLeadership} remaining)
+                    </p>
+                </div>
                 <div className="flex items-center gap-2">
                     <div className="relative">
                         <button onClick={() => setIsMoving(!isMoving)} className="p-1 text-gray-400 hover:text-white" title="Move Player"><ArrowRightLeft size={18} /></button>
@@ -113,6 +126,7 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
                                 <div key={unitObj.unitName} className="flex items-center gap-2">
                                     <span className="font-bold text-lg w-6 text-center">{unitObj.rank > 0 ? unitObj.rank : '-'}</span>
                                     <span>{unitObj.unitName}</span>
+                                    <span className="text-xs text-gray-400">({unitCostMap.get(unitObj.unitName) || 0} LS)</span>
                                 </div>
                             ))
                         }
@@ -124,23 +138,23 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
                         <div key={tier}>
                             <h5 className={`font-semibold text-sm mb-2 pb-1 border-b ${tierColorClasses[tier]}`}>{tier}</h5>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 pt-2">
-                                {unitsToDisplayByTier[tier].map(unit => (
-                                    <div key={unit} className="flex items-center justify-between p-1 rounded hover:bg-gray-700/50">
-                                        <label className="flex items-center space-x-2 flex-grow cursor-pointer">
-                                            <div 
-                                                className={`w-4 h-4 rounded-sm border-2 flex-shrink-0 ${playerMasteryUnitsSet.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500'}`}
-                                                title="Mastery"
-                                            ></div>
-                                            <div 
-                                                className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${playerPreparedUnitsSet.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-500'}`}
-                                                title="Maxed"
-                                            ></div>
-                                            <input type="checkbox" checked={selectedUnitsMap.has(unit)} onChange={() => toggleUnit(unit)} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500/50" />
-                                            <span className="truncate">{unit}</span>
-                                        </label>
-                                        {selectedUnitsMap.has(unit) && <select value={selectedUnitsMap.get(unit)?.rank || 0} onChange={(e) => setRank(unit, e.target.value)} className="bg-gray-700 border border-gray-600 rounded-md text-xs py-0.5 px-1 ml-2" onClick={e => e.stopPropagation()}><option value="0">Rank</option>{[1, 2, 3, 4, 5].map(r => <option key={r} value={r}>{r}</option>)}</select>}
-                                    </div>
-                                ))}
+                                {unitsToDisplayByTier[tier].map(unit => {
+                                    const cost = unitCostMap.get(unit);
+                                    return (
+                                        <div key={unit} className="flex items-center justify-between p-1 rounded hover:bg-gray-700/50">
+                                            <label className="flex items-center space-x-2 flex-grow cursor-pointer min-w-0">
+                                                <div className={`w-4 h-4 rounded-sm border-2 flex-shrink-0 ${playerMasteryUnitsSet.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500'}`} title="Mastery"></div>
+                                                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${playerPreparedUnitsSet.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-500'}`} title="Maxed"></div>
+                                                <input type="checkbox" checked={selectedUnitsMap.has(unit)} onChange={() => toggleUnit(unit)} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500/50" />
+                                                <div className="flex items-baseline min-w-0">
+                                                    <span className="truncate" title={unit}>{unit}</span>
+                                                    {cost && <span className="text-xs text-gray-400 ml-1 flex-shrink-0">({cost} LS)</span>}
+                                                </div>
+                                            </label>
+                                            {selectedUnitsMap.has(unit) && <select value={selectedUnitsMap.get(unit)?.rank || 0} onChange={(e) => setRank(unit, e.target.value)} className="bg-gray-700 border border-gray-600 rounded-md text-xs py-0.5 px-1 ml-2" onClick={e => e.stopPropagation()}><option value="0">Rank</option>{[1, 2, 3, 4, 5].map(r => <option key={r} value={r}>{r}</option>)}</select>}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     ))}
@@ -169,6 +183,16 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, allGroups, players,
     const [playerSearch, setPlayerSearch] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
+
+    const unitCostMap = useMemo(() => {
+        const map = new Map<string, number>();
+        Object.values(unitConfig.tiers).flat().forEach(unit => {
+            if (unit.leadershipCost) {
+                map.set(unit.name, unit.leadershipCost);
+            }
+        });
+        return map;
+    }, [unitConfig]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -208,11 +232,16 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, allGroups, players,
             const player = players.find(p => p.id === member.playerId);
             if (!player) return '';
             let playerLine = player.name + (player.id === group.leaderId ? " (Lead)" : "");
-            const unitsText = [...member.selectedUnits].sort((a, b) => (a.rank || 99) - (b.rank || 99)).map(u => `  ${u.rank > 0 ? `${u.rank}.` : "-"} ${u.unitName}`).join('\n');
+            
+            const usedLeadership = member.selectedUnits.reduce((total, u) => total + (unitCostMap.get(u.unitName) || 0), 0);
+            const totalLeadership = player.totalLeadership || 0;
+            playerLine += ` -- LS: ${usedLeadership} / ${totalLeadership}`;
+
+            const unitsText = [...member.selectedUnits].sort((a, b) => (a.rank || 99) - (b.rank || 99)).map(u => `  ${u.rank > 0 ? `${u.rank}.` : "-"} ${u.unitName} (${unitCostMap.get(u.unitName) || 0} LS)`).join('\n');
             return unitsText ? `${playerLine}\n${unitsText}` : playerLine;
         }).join('\n\n');
         onCopy(`${groupHeaderText}\`\`\`md\n${memberContent}\n\`\`\``);
-    }, [group, sortedMembers, players, onCopy]);
+    }, [group, sortedMembers, players, onCopy, unitCostMap]);
 
     return (
         <div className="h-full flex flex-col">
@@ -224,7 +253,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, allGroups, players,
             <div className="mb-6 bg-gray-800/50 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold mb-2">Add Player to Group</h3>
                 <div className="relative" ref={searchContainerRef}>
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                    <Search className="absolute left-3 top-1-2 -translate-y-1/2 text-gray-400" size={20} />
                     <input type="text" value={playerSearch} onChange={e => setPlayerSearch(e.target.value)} onFocus={() => setShowSuggestions(true)} placeholder="Search for player to add..." className="w-full bg-gray-700 border border-gray-600 rounded-md pl-10 pr-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={group.members.length >= 5} />
                     {showSuggestions && playerSearch && availablePlayers.length > 0 && (
                         <ul className="absolute z-10 w-full bg-gray-600 border border-gray-500 rounded-md mt-1 max-h-48 overflow-y-auto">
@@ -240,7 +269,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, allGroups, players,
                     const player = players.find(p => p.id === member.playerId);
                     if (!player) return null;
                     const otherGroups = allGroups.filter(g => g.id !== group.id && g.members.length < 5);
-                    return <GroupMemberCard key={member.playerId} member={member} player={player} groupId={group.id} isLeader={group.leaderId === member.playerId} unitConfig={unitConfig} dispatch={dispatch} otherGroups={otherGroups} />;
+                    return <GroupMemberCard key={member.playerId} member={member} player={player} groupId={group.id} isLeader={group.leaderId === member.playerId} unitConfig={unitConfig} dispatch={dispatch} otherGroups={otherGroups} unitCostMap={unitCostMap} />;
                 })}
             </div>
         </div>
