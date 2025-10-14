@@ -35,7 +35,6 @@ const App: React.FC = () => {
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
     const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
     
-    // KORRIGERING: "fileHandle" är ersatt för att ta bort varning.
     const [, setFileHandle] = useState<FileSystemFileHandle | null>(null);
 
     const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -85,7 +84,8 @@ const App: React.FC = () => {
     }, [hasUnsavedChanges]);
 
     // Memoized derived data
-    const ALL_UNITS = useMemo(() => Object.values(unitConfig.tiers).flat(), [unitConfig]);
+    // --- KORRIGERINGEN ÄR PÅ RADEN NEDAN ---
+    const ALL_UNITS = useMemo(() => Object.values(unitConfig.tiers).flat().map(u => u.name), [unitConfig]);
     const selectedPlayer = useMemo(() => players.find(p => p.id === selectedPlayerId), [players, selectedPlayerId]);
     const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
 
