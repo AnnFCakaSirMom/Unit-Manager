@@ -32,7 +32,8 @@ export const DEFAULT_UNIT_TIERS: UnitTiers = {
         { name: "Spear Sergeants" }, { name: "Vassal Longbowmen" }, { name: "Yeomen" },
         { name: "Khevtuul Cavalry" }, { name: "Tseregs" }, { name: "Galahad Spearmen" },
         { name: "Laconic Javelins" }, { name: "Zealot" },
-        { name: "Yorkist Household Knights" }
+        { name: "Yorkist Household Knights" },
+        { name: "Lancastrian Billmen" }
     ],
     "Rare": [
         { name: "Demesne Arbalists" }, { name: "Demesne Arquebusiers" }, { name: "Halberdiers" },
@@ -48,8 +49,7 @@ export const DEFAULT_UNIT_TIERS: UnitTiers = {
         { name: "Ronin" }, { name: "Qin's Footbow" }, { name: "Bagpipers" },
         { name: "Bedivere Rangers" }, { name: "Silla Guards" }, { name: "Schutzdieners" },
         { name: "Helot Auxilary" }, { name: "Landsknechts" }, { name: "Naginata Monks" },
-        { name: "Squires" }, { name: "Wuxing Pikemen" }, { name: "Doppelsoldner" },
-        { name: "Lancastrian Billmen" }
+        { name: "Squires" }, { name: "Wuxing Pikemen" }, { name: "Doppelsoldner" }
     ],
     "Uncommon": [
         { name: "Black Dragon Archers" }, { name: "Sea Stag Deathdealers" }, { name: "Coutiliers" },
