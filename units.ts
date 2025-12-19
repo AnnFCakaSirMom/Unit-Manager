@@ -13,7 +13,8 @@ export const DEFAULT_UNIT_TIERS: UnitTiers = {
         { name: "Empire Chariot" }, { name: "Cataphract Lancers" }, { name: "Fire Lancers" },
         { name: "Iron Reapers" }, { name: "Monastic Knights" }, { name: "Tercio Arquebusiers" },
         { name: "Winged Hussars" }, { name: "Kheshigs" }, { name: "Rattan Rangers" },
-        { name: "Spartan Chosen" }, { name: "Order of the Dragon" }
+        { name: "Spartan Chosen" }, { name: "Order of the Dragon" },
+        { name: "Royal Longbowmen" }
     ],
     "Epic": [
         { name: "Fortebraccio Pikemen" }, { name: "Azaps" }, { name: "Sipahis" },
@@ -30,7 +31,8 @@ export const DEFAULT_UNIT_TIERS: UnitTiers = {
         { name: "Men-at-Arms" }, { name: "Palace Guards" }, { name: "Prefecture Heavy Cavalry" },
         { name: "Spear Sergeants" }, { name: "Vassal Longbowmen" }, { name: "Yeomen" },
         { name: "Khevtuul Cavalry" }, { name: "Tseregs" }, { name: "Galahad Spearmen" },
-        { name: "Laconic Javelins" }, { name: "Zealot" }
+        { name: "Laconic Javelins" }, { name: "Zealot" },
+        { name: "Yorkist Household Knights" }
     ],
     "Rare": [
         { name: "Demesne Arbalists" }, { name: "Demesne Arquebusiers" }, { name: "Halberdiers" },
@@ -46,7 +48,8 @@ export const DEFAULT_UNIT_TIERS: UnitTiers = {
         { name: "Ronin" }, { name: "Qin's Footbow" }, { name: "Bagpipers" },
         { name: "Bedivere Rangers" }, { name: "Silla Guards" }, { name: "Schutzdieners" },
         { name: "Helot Auxilary" }, { name: "Landsknechts" }, { name: "Naginata Monks" },
-        { name: "Squires" }, { name: "Wuxing Pikemen" }, { name: "Doppelsoldner" }
+        { name: "Squires" }, { name: "Wuxing Pikemen" }, { name: "Doppelsoldner" },
+        { name: "Lancastrian Billmen" }
     ],
     "Uncommon": [
         { name: "Black Dragon Archers" }, { name: "Sea Stag Deathdealers" }, { name: "Coutiliers" },
