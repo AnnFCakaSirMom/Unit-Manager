@@ -179,8 +179,11 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
 
         Object.entries(unitConfig.tiers).forEach(([tier, units]) => {
             formText += `--- ${tier} ---\n`;
-            units.forEach(unit => {
-                // Här lades ett extra \n till i slutet
+            
+            // HÄR ÄR ÄNDRINGEN: Vi skapar en sorterad kopia av enheterna (A-Ö)
+            const sortedUnits = [...units].sort((a, b) => a.name.localeCompare(b.name));
+            
+            sortedUnits.forEach(unit => {
                 formText += `${padRight(unit.name, NAME_WIDTH)} - ✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ]\n\n`;
             });
             formText += `\n`;
