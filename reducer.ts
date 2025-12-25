@@ -105,12 +105,12 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const newMasteryUnits: string[] = [];
 
             const lines = formData.split('\n');
-            const regex = /✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\].*- (.*)/;
+            const regex = /(.*?) - ✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\]/;
 
             for (const line of lines) {
                 const match = line.match(regex);
                 if (match) {
-                    const [_, ownedStr, maxedStr, masteryStr, unitNameStr] = match;
+                    const [_, unitNameStr, ownedStr, maxedStr, masteryStr] = match;
                     const unitName = unitNameStr.trim();
 
                     if (allUnitNamesSet.has(unitName)) {

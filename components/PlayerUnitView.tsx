@@ -167,12 +167,12 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
     const handleCopyForm = () => {
         let formText = `Hello ${player.name}!\n\nPlease fill out which units you have and their status.\n\n`;
         formText += `Instructions:\nPut an 'x' in the brackets [] for each status that applies.\n\n`;
-        formText += `Example:\n✅ Owned: [x]  🌟 Maxed: [x]  👑 Mastery: [ ] - Silahdars\n\n`;
+        formText += `Example:\nSilahdars - ✅ Owned: [x]  🌟 Maxed: [x]  👑 Mastery: [ ]\n\n`;
 
         Object.entries(unitConfig.tiers).forEach(([tier, units]) => {
             formText += `--- ${tier} ---\n`;
             units.forEach(unit => {
-                formText += `✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ] - ${unit.name}\n`;
+                formText += `${unit.name} - ✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ]\n`;
             });
             formText += `\n`;
         });
