@@ -73,7 +73,7 @@ const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, preparedUn
             const ownedInTier = unitsInTier
                 .map(u => u.name)
                 .filter(unitName => existingOwnedUnits.includes(unitName))
-                .sort();
+                .sort(); // Denna sorterar redan 'Owned View', så den är korrekt
             if (ownedInTier.length > 0) result[tier] = ownedInTier;
         });
         return result;
@@ -134,6 +134,18 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
     const [infoText, setInfoText] = useState(player?.info || "");
     const [leadership, setLeadership] = useState(String(player?.totalLeadership || ''));
 
+    // --- SORTERING HÄR ---
+    // Vi skapar en sorterad version av unitConfig.tiers direkt här.
+    // Detta påverkar både visningen i rutnätet OCH kopieringsfunktionen.
+    const allUnitsByTier = useMemo(() => {
+        const sortedTiers: { [key: string]: Unit[] } = {};
+        Object.entries(unitConfig.tiers).forEach(([tier, units]) => {
+            // Sortera enheterna A-Ö
+            sortedTiers[tier] = [...units].sort((a, b) => a.name.localeCompare(b.name));
+        });
+        return sortedTiers;
+    }, [unitConfig]);
+
     useEffect(() => {
         setInfoText(player.info || "");
         setLeadership(String(player.totalLeadership || ''));
@@ -170,20 +182,15 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
     };
 
     const handleCopyForm = () => {
-        // Fast bredd för enhetsnamnet
         const NAME_WIDTH = 30;
-
         let formText = `Hello ${player.name}!\n\nPlease fill out which units you have and their status.\n\n`;
         formText += `Instructions:\nPut an 'x' in the brackets [] for each status that applies.\n\n`;
         formText += `Example:\n${padRight('Silahdars', NAME_WIDTH)} - ✅ Owned: [x]  🌟 Maxed: [x]  👑 Mastery: [ ]\n\n`;
 
-        Object.entries(unitConfig.tiers).forEach(([tier, units]) => {
+        // Använd den sorterade listan 'allUnitsByTier' istället för 'unitConfig.tiers'
+        Object.entries(allUnitsByTier).forEach(([tier, units]) => {
             formText += `--- ${tier} ---\n`;
-            
-            // HÄR ÄR ÄNDRINGEN: Vi skapar en sorterad kopia av enheterna (A-Ö)
-            const sortedUnits = [...units].sort((a, b) => a.name.localeCompare(b.name));
-            
-            sortedUnits.forEach(unit => {
+            units.forEach(unit => {
                 formText += `${padRight(unit.name, NAME_WIDTH)} - ✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ]\n\n`;
             });
             formText += `\n`;
@@ -197,8 +204,6 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
         setIsParseModalOpen(false);
         setStatusMessage(`Parsed unit data for ${player.name}.`);
     };
-
-    const allUnitsByTier = useMemo(() => unitConfig.tiers, [unitConfig]);
 
     return (
         <>
@@ -273,6 +278,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
                 <div className="flex-grow overflow-y-auto">
                     {unitViewMode === 'all' ? (
                         <div className="space-y-6">
+                            {/* Vi använder nu den sorterade listan 'allUnitsByTier' här */}
                             {Object.entries(allUnitsByTier).map(([tier, units]) => {
                                 const filteredUnits = mainUnitSearchQuery ? units.filter(u => u.name.toLowerCase().includes(mainUnitSearchQuery.toLowerCase())) : units;
                                 if (filteredUnits.length === 0) return null;
