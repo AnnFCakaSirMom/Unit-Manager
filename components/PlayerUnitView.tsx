@@ -180,7 +180,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
         Object.entries(unitConfig.tiers).forEach(([tier, units]) => {
             formText += `--- ${tier} ---\n`;
             units.forEach(unit => {
-                formText += `${padRight(unit.name, NAME_WIDTH)} - ✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ]\n`;
+                // Här lades ett extra \n till i slutet
+                formText += `${padRight(unit.name, NAME_WIDTH)} - ✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ]\n\n`;
             });
             formText += `\n`;
         });
