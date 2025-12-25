@@ -10,7 +10,7 @@ const validatePlayer = (player: any): Player => ({
     masteryUnits: Array.isArray(player.masteryUnits) ? player.masteryUnits : [],
     notInHouse: typeof player.notInHouse === 'boolean' ? player.notInHouse : false,
     info: player.info || "",
-    totalLeadership: typeof player.totalLeadership === 'number' ? player.totalLeadership : 0, // <-- TILLAGD
+    totalLeadership: typeof player.totalLeadership === 'number' ? player.totalLeadership : 0,
 });
 
 const validateGroup = (group: any): Group => ({
@@ -32,7 +32,6 @@ const validateUnitConfig = (config: any): UnitConfig => {
     for (const tier in config.tiers) {
         const units = config.tiers[tier];
         if (Array.isArray(units)) {
-            // Migrera från string[] till Unit[] om det behövs (för bakåtkompatibilitet)
             validatedTiers[tier] = units.map(unit =>
                 typeof unit === 'string' ? { name: unit } : unit
             );
@@ -69,7 +68,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 )
             };
         }
-        case 'UPDATE_PLAYER_LEADERSHIP': { // <-- NYTT CASE
+        case 'UPDATE_PLAYER_LEADERSHIP': {
             return {
                 ...state,
                 players: state.players.map(p =>
@@ -105,13 +104,16 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const newMasteryUnits: string[] = [];
 
             const lines = formData.split('\n');
-            const regex = /(.*?) - ✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\]/;
+            
+            // Justerat regex: (.*?) kommer fånga namnet inkl eventuella mellanslag i slutet om vi inte trimmar.
+            // Men \s*-\s*✅ säkerställer att vi hanterar mellanslagen mellan namnet och "Owned".
+            const regex = /(.*?)\s+-\s+✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\]/;
 
             for (const line of lines) {
                 const match = line.match(regex);
                 if (match) {
                     const [_, unitNameStr, ownedStr, maxedStr, masteryStr] = match;
-                    const unitName = unitNameStr.trim();
+                    const unitName = unitNameStr.trim(); // Trimma bort extra mellanslag vi la till för layouten
 
                     if (allUnitNamesSet.has(unitName)) {
                         if (ownedStr.trim().toLowerCase() === 'x') newUnits.push(unitName);
@@ -135,7 +137,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         case 'UPDATE_UNIT_CONFIG':
             return { ...state, unitConfig: action.payload.unitConfig };
 
-        case 'RENAME_UNIT_GLOBALLY': { // <-- UPPDATERAD LOGIK
+        case 'RENAME_UNIT_GLOBALLY': {
             const { oldName, newName } = action.payload;
             const newTiers = { ...state.unitConfig.tiers };
             for (const tier in newTiers) {
@@ -152,7 +154,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 }))
             };
         }
-        case 'DELETE_UNIT_GLOBALLY': { // <-- UPPDATERAD LOGIK
+        case 'DELETE_UNIT_GLOBALLY': {
             const { unitNameToDelete } = action.payload;
             const newTiers = { ...state.unitConfig.tiers };
             for (const tier in newTiers) {
@@ -292,7 +294,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return { ...state, groups: state.groups.map(g => g.id === groupId ? { ...g, leaderId: playerId } : g) };
         }
 
-        case 'LOAD_STATE': { // <-- UPPDATERAD LOGIK FÖR GAMLA FILER
+        case 'LOAD_STATE': {
             const loadedData = action.payload;
             return {
                 ...state,

@@ -164,15 +164,23 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
         }
     }, [leadership, player, dispatch, setStatusMessage]);
 
+    // Hjälpfunktion för att fylla ut text med mellanslag
+    const padRight = (str: string, length: number) => {
+        return str.padEnd(length, ' ');
+    };
+
     const handleCopyForm = () => {
+        // Fast bredd för enhetsnamnet
+        const NAME_WIDTH = 30;
+
         let formText = `Hello ${player.name}!\n\nPlease fill out which units you have and their status.\n\n`;
         formText += `Instructions:\nPut an 'x' in the brackets [] for each status that applies.\n\n`;
-        formText += `Example:\nSilahdars - ✅ Owned: [x]  🌟 Maxed: [x]  👑 Mastery: [ ]\n\n`;
+        formText += `Example:\n${padRight('Silahdars', NAME_WIDTH)} - ✅ Owned: [x]  🌟 Maxed: [x]  👑 Mastery: [ ]\n\n`;
 
         Object.entries(unitConfig.tiers).forEach(([tier, units]) => {
             formText += `--- ${tier} ---\n`;
             units.forEach(unit => {
-                formText += `${unit.name} - ✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ]\n`;
+                formText += `${padRight(unit.name, NAME_WIDTH)} - ✅ Owned: [ ]  🌟 Maxed: [ ]  👑 Mastery: [ ]\n`;
             });
             formText += `\n`;
         });
