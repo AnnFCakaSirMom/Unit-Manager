@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Player, Unit, UnitConfig, AppAction } from '../types';
-import { ChevronUp, ChevronDown, CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star } from './icons'; // Added Star
+import { ChevronUp, ChevronDown, CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star } from './icons';
 import { ParseFormModal } from './ParseFormModal';
 
 const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-400 border-yellow-400/50', Epic: 'text-purple-400 border-purple-400/50', Rare: 'text-blue-400 border-blue-400/50', Uncommon: 'text-green-400 border-green-400/50', Common: 'text-gray-400 border-gray-400/50' };
@@ -12,8 +12,8 @@ interface UnitTierSectionProps {
     selectedUnits: Set<string>;
     preparedUnits: Set<string>;
     masteryUnits: Set<string>;
-    favoriteUnits: Set<string>; // Added
-    onUnitToggle: (playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits') => void; // Updated
+    favoriteUnits: Set<string>; // <-- NYTT
+    onUnitToggle: (playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits') => void;
 }
 
 const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, selectedUnits, preparedUnits, masteryUnits, favoriteUnits, onUnitToggle }: UnitTierSectionProps) => {
@@ -30,6 +30,7 @@ const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, selectedUni
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-2 p-4 bg-gray-800/30 rounded-b-md">
                     {units.map(unit => (
                         <label key={unit.name} className="flex items-center space-x-2 cursor-pointer p-1 rounded hover:bg-gray-700/50 transition-colors">
+                            {/* FAVORIT-KNAPP (STJÄRNA) */}
                             <div
                                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'favoriteUnits'); }}
                                 className={`cursor-pointer transition-colors flex-shrink-0 ${favoriteUnits.has(unit.name) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-gray-400'}`}
@@ -37,6 +38,7 @@ const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, selectedUni
                             >
                                 <Star size={18} />
                             </div>
+
                             <div
                                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'masteryUnits'); }}
                                 className={`w-4 h-4 rounded-sm border-2 ${masteryUnits.has(unit.name) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
@@ -63,10 +65,10 @@ interface OwnedUnitsViewProps {
     selectedUnits: Set<string>;
     preparedUnits: Set<string>;
     masteryUnits: Set<string>;
-    favoriteUnits: Set<string>; // Added
+    favoriteUnits: Set<string>; // <-- NYTT
     unitConfig: UnitConfig;
     searchQuery: string;
-    onUnitToggle: (playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits') => void; // Updated
+    onUnitToggle: (playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits') => void;
 }
 const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, preparedUnits, masteryUnits, favoriteUnits, unitConfig, searchQuery, onUnitToggle }: OwnedUnitsViewProps) => {
     const ownedUnitsByTier = useMemo(() => {
@@ -100,6 +102,7 @@ const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, preparedUn
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-3 p-4 bg-gray-800/30 rounded-b-md">
                         {unitNames.map(unitName => (
                             <div key={unitName} className="flex items-center space-x-3">
+                                {/* FAVORIT-KNAPP (STJÄRNA) */}
                                 <div
                                     onClick={() => onUnitToggle(selectedPlayerId, unitName, 'favoriteUnits')}
                                     className={`cursor-pointer transition-colors flex-shrink-0 ${favoriteUnits.has(unitName) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-gray-400'}`}
@@ -166,9 +169,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
     const selectedPlayerUnits = useMemo(() => new Set(player?.units || []), [player]);
     const selectedPlayerPreparedUnits = useMemo(() => new Set(player?.preparedUnits || []), [player]);
     const selectedPlayerMasteryUnits = useMemo(() => new Set(player?.masteryUnits || []), [player]);
-    const selectedPlayerFavoriteUnits = useMemo(() => new Set(player?.favoriteUnits || []), [player]); // Added
+    const selectedPlayerFavoriteUnits = useMemo(() => new Set(player?.favoriteUnits || []), [player]); // <-- NYTT
 
-    const handleUnitToggle = useCallback((playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits') => { // Updated
+    const handleUnitToggle = useCallback((playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits') => {
         dispatch({ type: 'TOGGLE_PLAYER_UNIT', payload: { playerId, unitName, unitType } });
     }, [dispatch]);
 
@@ -282,6 +285,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
                         </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-gray-400 mt-2">
+                         {/* LEGEND FÖR STJÄRNA */}
                         <div className="flex items-center gap-2"><Star size={12} className="text-yellow-400 fill-yellow-400"/><span>= Favorite</span></div>
                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500"></div><span>= Full Mastery</span></div>
                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500 border-2 border-green-400 flex-shrink-0"></div><span>= Maxed Unit</span></div>

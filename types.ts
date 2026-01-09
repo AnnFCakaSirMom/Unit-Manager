@@ -1,5 +1,3 @@
-// types.ts
-
 export interface Unit {
   name: string;
   leadershipCost?: number;
@@ -29,7 +27,7 @@ export interface Player {
   units: string[];
   preparedUnits: string[];
   masteryUnits: string[];
-  favoriteUnits: string[]; // Added
+  favoriteUnits: string[]; // <-- NYTT: Favoritlistan
   notInHouse: boolean;
   info?: string;
   totalLeadership?: number;
@@ -55,7 +53,7 @@ export type AppAction =
   | { type: 'DELETE_PLAYER'; payload: { playerId: string } }
   | { type: 'UPDATE_PLAYER_NAME'; payload: { playerId: string; name: string } }
   | { type: 'TOGGLE_NOT_IN_HOUSE'; payload: { playerId: string } }
-  | { type: 'TOGGLE_PLAYER_UNIT'; payload: { playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits' } } // Updated
+  | { type: 'TOGGLE_PLAYER_UNIT'; payload: { playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits' } } // <-- NYTT: favoriteUnits tillagt
   | { type: 'PARSE_PLAYER_UNITS_FORM'; payload: { playerId: string; formData: string; allUnitNames: string[] } }
   | { type: 'UPDATE_UNIT_CONFIG'; payload: { unitConfig: UnitConfig } }
   | { type: 'RENAME_UNIT_GLOBALLY'; payload: { oldName: string; newName: string } }

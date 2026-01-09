@@ -1,4 +1,3 @@
-// reducer.ts
 import type { AppState, AppAction, Player, Group, UnitConfig, Unit } from './types';
 
 // --- Data Validation and Migration ---
@@ -8,7 +7,7 @@ const validatePlayer = (player: any): Player => ({
     units: Array.isArray(player.units) ? player.units : [],
     preparedUnits: Array.isArray(player.preparedUnits) ? player.preparedUnits : [],
     masteryUnits: Array.isArray(player.masteryUnits) ? player.masteryUnits : [],
-    favoriteUnits: Array.isArray(player.favoriteUnits) ? player.favoriteUnits : [], // Added
+    favoriteUnits: Array.isArray(player.favoriteUnits) ? player.favoriteUnits : [], // <-- NYTT: Säkrar att listan finns
     notInHouse: typeof player.notInHouse === 'boolean' ? player.notInHouse : false,
     info: player.info || "",
     totalLeadership: typeof player.totalLeadership === 'number' ? player.totalLeadership : 0,
@@ -47,7 +46,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
     switch (action.type) {
         // Player actions
         case 'ADD_PLAYER': {
-            const newPlayer: Player = { id: crypto.randomUUID(), name: action.payload.name.trim(), units: [], preparedUnits: [], masteryUnits: [], favoriteUnits: [], notInHouse: false, totalLeadership: 0 }; // Added favoriteUnits: []
+            const newPlayer: Player = { id: crypto.randomUUID(), name: action.payload.name.trim(), units: [], preparedUnits: [], masteryUnits: [], favoriteUnits: [], notInHouse: false, totalLeadership: 0 };
             return { ...state, players: [...state.players, newPlayer].sort((a, b) => a.name.localeCompare(b.name)) };
         }
         case 'DELETE_PLAYER': {
@@ -82,7 +81,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
 
         // Unit actions for a specific player
         case 'TOGGLE_PLAYER_UNIT': {
-            const { playerId, unitName, unitType } = action.payload; // unitType: 'units', 'preparedUnits', 'masteryUnits', 'favoriteUnits'
+            const { playerId, unitName, unitType } = action.payload; // unitType kan nu vara 'favoriteUnits'
             return {
                 ...state,
                 players: state.players.map(p => {
@@ -103,23 +102,26 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const newUnits: string[] = [];
             const newPreparedUnits: string[] = [];
             const newMasteryUnits: string[] = [];
+            const newFavoriteUnits: string[] = []; // <-- NYTT
 
             const lines = formData.split('\n');
             
-            // Justerat regex: (.*?) kommer fånga namnet inkl eventuella mellanslag i slutet om vi inte trimmar.
-            // Men \s*-\s*✅ säkerställer att vi hanterar mellanslagen mellan namnet och "Owned".
-            const regex = /(.*?)\s+-\s+✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\]/;
+            // --- NY REGEX --- 
+            // Denna klarar både det gamla formatet OCH det nya med "Favorite" på slutet
+            const regex = /(.*?)\s+-\s+✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\](?:.*❤️ Favorite: \[(.*?)\])?/;
 
             for (const line of lines) {
                 const match = line.match(regex);
                 if (match) {
-                    const [_, unitNameStr, ownedStr, maxedStr, masteryStr] = match;
-                    const unitName = unitNameStr.trim(); // Trimma bort extra mellanslag vi la till för layouten
+                    const [_, unitNameStr, ownedStr, maxedStr, masteryStr, favoriteStr] = match;
+                    const unitName = unitNameStr.trim();
 
                     if (allUnitNamesSet.has(unitName)) {
                         if (ownedStr.trim().toLowerCase() === 'x') newUnits.push(unitName);
                         if (maxedStr.trim().toLowerCase() === 'x') newPreparedUnits.push(unitName);
                         if (masteryStr.trim().toLowerCase() === 'x') newMasteryUnits.push(unitName);
+                        // Kollar om favoriteStr finns (den är valfri) och är ikryssad
+                        if (favoriteStr && favoriteStr.trim().toLowerCase() === 'x') newFavoriteUnits.push(unitName);
                     }
                 }
             }
@@ -128,7 +130,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 ...state,
                 players: state.players.map(p =>
                     p.id === playerId
-                    ? { ...p, units: newUnits, preparedUnits: newPreparedUnits, masteryUnits: newMasteryUnits }
+                    ? { ...p, units: newUnits, preparedUnits: newPreparedUnits, masteryUnits: newMasteryUnits, favoriteUnits: newFavoriteUnits }
                     : p
                 )
             };
@@ -152,7 +154,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     units: player.units.map(u => u === oldName ? newName : u),
                     preparedUnits: (player.preparedUnits || []).map(u => u === oldName ? newName : u),
                     masteryUnits: (player.masteryUnits || []).map(u => u === oldName ? newName : u),
-                    favoriteUnits: (player.favoriteUnits || []).map(u => u === oldName ? newName : u) // Added
+                    favoriteUnits: (player.favoriteUnits || []).map(u => u === oldName ? newName : u) // <-- NYTT
                 }))
             };
         }
@@ -170,7 +172,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     units: player.units.filter(u => u !== unitNameToDelete),
                     preparedUnits: (player.preparedUnits || []).filter(u => u !== unitNameToDelete),
                     masteryUnits: (player.masteryUnits || []).filter(u => u !== unitNameToDelete),
-                    favoriteUnits: (player.favoriteUnits || []).filter(u => u !== unitNameToDelete) // Added
+                    favoriteUnits: (player.favoriteUnits || []).filter(u => u !== unitNameToDelete) // <-- NYTT
                 }))
             };
         }
@@ -232,7 +234,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 return group;
             });
 
-            if (!memberToMove) return state; // Player not found in source group
+            if (!memberToMove) return state;
 
             return {
                 ...state,
@@ -312,20 +314,15 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
     }
 };
 
-
-// --- Higher-Order Reducer for Unsaved Changes ---
 export const withUnsavedChanges = (reducer: typeof appReducer) => {
     return (state: AppState, action: AppAction): AppState => {
         const newState = reducer(state, action);
-
         if (action.type === 'LOAD_STATE' || action.type === 'SAVE_SUCCESS') {
             return { ...newState, hasUnsavedChanges: false };
         }
-
         if (JSON.stringify(newState) !== JSON.stringify(state)) {
             return { ...newState, hasUnsavedChanges: true };
         }
-
         return newState;
     };
 };
