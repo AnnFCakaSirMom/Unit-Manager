@@ -53,6 +53,7 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
     const playerOwnedUnitsSet = useMemo(() => new Set(player.units || []), [player.units]);
     const playerPreparedUnitsSet = useMemo(() => new Set(player.preparedUnits || []), [player.preparedUnits]);
     const playerMasteryUnitsSet = useMemo(() => new Set(player.masteryUnits || []), [player.masteryUnits]);
+    const playerFavoriteUnitsSet = useMemo(() => new Set(player.favoriteUnits || []), [player.favoriteUnits]); // Added
     const selectedUnitsMap = useMemo(() => new Map((member.selectedUnits || []).map(u => [u.unitName, u])), [member.selectedUnits]);
     const allAvailableUnits = useMemo(() => new Set([...playerOwnedUnitsSet, ...Array.from(selectedUnitsMap.keys())]), [playerOwnedUnitsSet, selectedUnitsMap]);
     
@@ -143,6 +144,9 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
                                     return (
                                         <div key={unit} className="flex items-center justify-between p-1 rounded hover:bg-gray-700/50">
                                             <label className="flex items-center space-x-2 flex-grow cursor-pointer min-w-0">
+                                                <div className={`flex-shrink-0 ${playerFavoriteUnitsSet.has(unit) ? 'text-yellow-400 fill-yellow-400' : 'text-transparent'}`} title="Favorite">
+                                                    <Star size={14} /> 
+                                                </div>
                                                 <div className={`w-4 h-4 rounded-sm border-2 flex-shrink-0 ${playerMasteryUnitsSet.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500'}`} title="Mastery"></div>
                                                 <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${playerPreparedUnitsSet.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-500'}`} title="Maxed"></div>
                                                 <input type="checkbox" checked={selectedUnitsMap.has(unit)} onChange={() => toggleUnit(unit)} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500/50" />

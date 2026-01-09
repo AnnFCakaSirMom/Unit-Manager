@@ -29,13 +29,14 @@ export interface Player {
   units: string[];
   preparedUnits: string[];
   masteryUnits: string[];
+  favoriteUnits: string[]; // Added
   notInHouse: boolean;
   info?: string;
-  totalLeadership?: number; // <-- TILLAGD
+  totalLeadership?: number;
 }
 
 export interface UnitTiers {
-  [tier: string]: Unit[]; // <-- ÄNDRAD från string[]
+  [tier: string]: Unit[];
 }
 
 export interface UnitConfig {
@@ -54,7 +55,7 @@ export type AppAction =
   | { type: 'DELETE_PLAYER'; payload: { playerId: string } }
   | { type: 'UPDATE_PLAYER_NAME'; payload: { playerId: string; name: string } }
   | { type: 'TOGGLE_NOT_IN_HOUSE'; payload: { playerId: string } }
-  | { type: 'TOGGLE_PLAYER_UNIT'; payload: { playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' } }
+  | { type: 'TOGGLE_PLAYER_UNIT'; payload: { playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits' } } // Updated
   | { type: 'PARSE_PLAYER_UNITS_FORM'; payload: { playerId: string; formData: string; allUnitNames: string[] } }
   | { type: 'UPDATE_UNIT_CONFIG'; payload: { unitConfig: UnitConfig } }
   | { type: 'RENAME_UNIT_GLOBALLY'; payload: { oldName: string; newName: string } }
@@ -70,7 +71,7 @@ export type AppAction =
   | { type: 'TOGGLE_GROUP_MEMBER_LOCK'; payload: { groupId: string; playerId: string } }
   | { type: 'SET_GROUP_LEADER'; payload: { groupId: string; playerId: string } }
   | { type: 'UPDATE_PLAYER_INFO'; payload: { playerId: string; info: string } }
-  | { type: 'UPDATE_PLAYER_LEADERSHIP'; payload: { playerId: string; leadership: number } } // <-- TILLAGD
+  | { type: 'UPDATE_PLAYER_LEADERSHIP'; payload: { playerId: string; leadership: number } }
   | { type: 'LOAD_STATE'; payload: Omit<AppState, 'hasUnsavedChanges'> }
   | { type: 'SAVE_SUCCESS' };
 
