@@ -6,6 +6,7 @@ import { DEFAULT_UNIT_TIERS } from './units';
 import { Sidebar } from './components/Sidebar';
 import { PlayerUnitView } from './components/PlayerUnitView';
 import { GroupView } from './components/GroupView';
+import { TWAttendanceView } from './components/TWAttendanceView';
 import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
@@ -22,15 +23,18 @@ const App: React.FC = () => {
         players: [],
         unitConfig: { tiers: DEFAULT_UNIT_TIERS },
         groups: [],
+        twAttendance: [],
         hasUnsavedChanges: false,
     };
 
     const [aktivFilHandle, setAktivFilHandle] = useState<FileSystemFileHandle | null>(null);
     const [state, dispatch] = useReducer(withUnsavedChanges(appReducer), initialState);
-    const { players, unitConfig, groups, hasUnsavedChanges } = state;
+    const { players, unitConfig, groups, twAttendance, hasUnsavedChanges } = state;
 
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+    const [showAttendanceView, setShowAttendanceView] = useState<boolean>(false);
+
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
     const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
@@ -44,6 +48,7 @@ const App: React.FC = () => {
         setSelectedPlayerId(playerId);
         if (playerId) {
             setSelectedGroupId(null);
+            setShowAttendanceView(false); 
             if (!isPlayerListOpen) setPlayerListOpen(true);
         }
     }, [isPlayerListOpen]);
@@ -52,7 +57,14 @@ const App: React.FC = () => {
         setSelectedGroupId(groupId);
         if (groupId) {
             setSelectedPlayerId(null);
+            setShowAttendanceView(false); 
         }
+    }, []);
+
+    const handleOpenAttendance = useCallback(() => {
+        setShowAttendanceView(true);
+        setSelectedPlayerId(null);
+        setSelectedGroupId(null);
     }, []);
 
     const handleTogglePlayerList = useCallback(() => {
@@ -63,7 +75,6 @@ const App: React.FC = () => {
     }, [isPlayerListOpen]);
 
 
-    // Effect for status message timeout
     useEffect(() => {
         if (statusMessage) {
             const timer = setTimeout(() => setStatusMessage(""), 4000);
@@ -71,25 +82,21 @@ const App: React.FC = () => {
         }
     }, [statusMessage]);
 
-    // Effect for unsaved changes warning
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (hasUnsavedChanges) {
                 e.preventDefault();
-                e.returnValue = ''; // Required by some browsers
+                e.returnValue = '';
             }
         };
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [hasUnsavedChanges]);
 
-    // Memoized derived data
-    // --- KORRIGERINGEN ÄR PÅ RADEN NEDAN ---
     const ALL_UNITS = useMemo(() => Object.values(unitConfig.tiers).flat().map(u => u.name), [unitConfig]);
     const selectedPlayer = useMemo(() => players.find(p => p.id === selectedPlayerId), [players, selectedPlayerId]);
     const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
 
-    // File handling logic
     const processFile = useCallback((file: File, handle: FileSystemFileHandle | null) => {
         if (!file || !file.type.match('application/json')) {
             setStatusMessage("Error: Invalid file type. Please select a .json file.");
@@ -110,7 +117,8 @@ const App: React.FC = () => {
                 const validatedPayload = {
                     players: data.players,
                     unitConfig: data.unitConfig,
-                    groups: data.groups || []
+                    groups: data.groups || [],
+                    twAttendance: data.twAttendance || []
                 };
 
                 dispatch({ type: 'LOAD_STATE', payload: validatedPayload });
@@ -126,7 +134,7 @@ const App: React.FC = () => {
     }, [handleSelectPlayer]);
     
     const handleSaveData = useCallback(async () => {
-        const dataToSave = JSON.stringify({ players, unitConfig, groups }, null, 2);
+        const dataToSave = JSON.stringify({ players, unitConfig, groups, twAttendance }, null, 2);
 
         if (aktivFilHandle) {
             try {
@@ -157,7 +165,7 @@ const App: React.FC = () => {
                 setStatusMessage('Error: Could not save the file.');
             }
         }
-    }, [players, unitConfig, groups, aktivFilHandle, dispatch]);
+    }, [players, unitConfig, groups, twAttendance, aktivFilHandle, dispatch]);
 
     const handleLoadData = useCallback(() => {
         const input = document.createElement('input');
@@ -233,6 +241,7 @@ const App: React.FC = () => {
                     onSave={handleSaveData}
                     onLoad={handleModernOpenFile}
                     onOpenUnitManager={() => setIsMgmtModalOpen(true)}
+                    onOpenAttendance={handleOpenAttendance}
                     hasUnsavedChanges={hasUnsavedChanges}
                     statusMessage={statusMessage}
                     setConfirmModal={setConfirmModal}
@@ -241,7 +250,15 @@ const App: React.FC = () => {
                 />
 
                 <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
-                    {selectedGroup ? (
+                    {showAttendanceView ? (
+                        <TWAttendanceView 
+                            attendance={twAttendance}
+                            players={players}
+                            groups={groups}
+                            dispatch={dispatch}
+                            onSelectPlayer={handleSelectPlayer} 
+                        />
+                    ) : selectedGroup ? (
                         <GroupView 
                             key={selectedGroupId}
                             group={selectedGroup}

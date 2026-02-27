@@ -1,4 +1,4 @@
-import type { AppState, AppAction, Player, Group, UnitConfig, Unit } from './types';
+import type { AppState, AppAction, Player, Group, UnitConfig, Unit, TWAttendancePlayer } from './types';
 
 // --- Data Validation and Migration ---
 const validatePlayer = (player: any): Player => ({
@@ -7,7 +7,7 @@ const validatePlayer = (player: any): Player => ({
     units: Array.isArray(player.units) ? player.units : [],
     preparedUnits: Array.isArray(player.preparedUnits) ? player.preparedUnits : [],
     masteryUnits: Array.isArray(player.masteryUnits) ? player.masteryUnits : [],
-    favoriteUnits: Array.isArray(player.favoriteUnits) ? player.favoriteUnits : [], // <-- NYTT: Säkrar att listan finns
+    favoriteUnits: Array.isArray(player.favoriteUnits) ? player.favoriteUnits : [],
     notInHouse: typeof player.notInHouse === 'boolean' ? player.notInHouse : false,
     info: player.info || "",
     totalLeadership: typeof player.totalLeadership === 'number' ? player.totalLeadership : 0,
@@ -79,9 +79,8 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             };
         }
 
-        // Unit actions for a specific player
         case 'TOGGLE_PLAYER_UNIT': {
-            const { playerId, unitName, unitType } = action.payload; // unitType kan nu vara 'favoriteUnits'
+            const { playerId, unitName, unitType } = action.payload; 
             return {
                 ...state,
                 players: state.players.map(p => {
@@ -102,12 +101,9 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const newUnits: string[] = [];
             const newPreparedUnits: string[] = [];
             const newMasteryUnits: string[] = [];
-            const newFavoriteUnits: string[] = []; // <-- NYTT
+            const newFavoriteUnits: string[] = []; 
 
             const lines = formData.split('\n');
-            
-            // --- NY REGEX --- 
-            // Denna klarar både det gamla formatet OCH det nya med "Favorite" på slutet
             const regex = /(.*?)\s+-\s+✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\](?:.*❤️ Favorite: \[(.*?)\])?/;
 
             for (const line of lines) {
@@ -120,7 +116,6 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                         if (ownedStr.trim().toLowerCase() === 'x') newUnits.push(unitName);
                         if (maxedStr.trim().toLowerCase() === 'x') newPreparedUnits.push(unitName);
                         if (masteryStr.trim().toLowerCase() === 'x') newMasteryUnits.push(unitName);
-                        // Kollar om favoriteStr finns (den är valfri) och är ikryssad
                         if (favoriteStr && favoriteStr.trim().toLowerCase() === 'x') newFavoriteUnits.push(unitName);
                     }
                 }
@@ -136,7 +131,6 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             };
         }
 
-        // Global unit config actions
         case 'UPDATE_UNIT_CONFIG':
             return { ...state, unitConfig: action.payload.unitConfig };
 
@@ -154,7 +148,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     units: player.units.map(u => u === oldName ? newName : u),
                     preparedUnits: (player.preparedUnits || []).map(u => u === oldName ? newName : u),
                     masteryUnits: (player.masteryUnits || []).map(u => u === oldName ? newName : u),
-                    favoriteUnits: (player.favoriteUnits || []).map(u => u === oldName ? newName : u) // <-- NYTT
+                    favoriteUnits: (player.favoriteUnits || []).map(u => u === oldName ? newName : u) 
                 }))
             };
         }
@@ -172,12 +166,11 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     units: player.units.filter(u => u !== unitNameToDelete),
                     preparedUnits: (player.preparedUnits || []).filter(u => u !== unitNameToDelete),
                     masteryUnits: (player.masteryUnits || []).filter(u => u !== unitNameToDelete),
-                    favoriteUnits: (player.favoriteUnits || []).filter(u => u !== unitNameToDelete) // <-- NYTT
+                    favoriteUnits: (player.favoriteUnits || []).filter(u => u !== unitNameToDelete) 
                 }))
             };
         }
 
-        // Group actions
         case 'ADD_GROUP': {
             const newGroup: Group = { id: crypto.randomUUID(), name: `Group ${state.groups.length + 1}`, leaderId: null, members: [] };
             return { ...state, groups: [...state.groups, newGroup] };
@@ -299,13 +292,68 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return { ...state, groups: state.groups.map(g => g.id === groupId ? { ...g, leaderId: playerId } : g) };
         }
 
+        // --- TW ATTENDANCE LOGIC ---
+        case 'IMPORT_TW_ATTENDANCE': {
+            try {
+                const data = JSON.parse(action.payload.jsonString);
+                if (!data.signUps) throw new Error("Invalid Raid Helper format");
+
+                // Tvättmaskinen: Tar bort klamrar, apostrofer, och mellanslag OCH accenter
+                const washName = (name: string) => (name || "")
+                    .normalize("NFD")                           
+                    .replace(/[\u0300-\u036f]/g, "")            
+                    .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '') 
+                    .toLowerCase();
+
+                const attendance: TWAttendancePlayer[] = [];
+
+                const washedUMPlayers = state.players.map(p => ({
+                    id: p.id,
+                    washedName: washName(p.name)
+                }));
+
+                data.signUps.forEach((signup: any) => {
+                    if (signup.className === 'Accepted' || signup.className === 'Maybe') {
+                        const washedDiscordName = washName(signup.name);
+                        
+                        const match = washedUMPlayers.find(p => 
+                            p.washedName === washedDiscordName || 
+                            washedDiscordName.includes(p.washedName) || 
+                            p.washedName.includes(washedDiscordName)
+                        );
+
+                        attendance.push({
+                            discordName: signup.name,
+                            status: signup.className as 'Accepted' | 'Maybe',
+                            matchedPlayerId: match ? match.id : null
+                        });
+                    }
+                });
+
+                attendance.sort((a, b) => {
+                    if (a.status === 'Accepted' && b.status === 'Maybe') return -1;
+                    if (a.status === 'Maybe' && b.status === 'Accepted') return 1;
+                    return a.discordName.localeCompare(b.discordName);
+                });
+
+                return { ...state, twAttendance: attendance };
+            } catch (e) {
+                console.error("Could not parse Raid Helper data", e);
+                return state; 
+            }
+        }
+        case 'CLEAR_TW_ATTENDANCE': {
+            return { ...state, twAttendance: [] };
+        }
+
         case 'LOAD_STATE': {
             const loadedData = action.payload;
             return {
                 ...state,
                 players: loadedData.players.map(validatePlayer),
                 unitConfig: validateUnitConfig(loadedData.unitConfig),
-                groups: (loadedData.groups || []).map(validateGroup)
+                groups: (loadedData.groups || []).map(validateGroup),
+                twAttendance: loadedData.twAttendance || [] 
             };
         }
 

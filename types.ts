@@ -27,7 +27,7 @@ export interface Player {
   units: string[];
   preparedUnits: string[];
   masteryUnits: string[];
-  favoriteUnits: string[]; // <-- NYTT: Favoritlistan
+  favoriteUnits: string[]; 
   notInHouse: boolean;
   info?: string;
   totalLeadership?: number;
@@ -41,10 +41,18 @@ export interface UnitConfig {
   tiers: UnitTiers;
 }
 
+// NYTT: Typ för spelare i TW-listan
+export interface TWAttendancePlayer {
+  discordName: string;
+  status: 'Accepted' | 'Maybe';
+  matchedPlayerId: string | null;
+}
+
 export interface AppState {
   players: Player[];
   unitConfig: UnitConfig;
   groups: Group[];
+  twAttendance: TWAttendancePlayer[]; // NYTT: Listan i vår state
   hasUnsavedChanges: boolean;
 }
 
@@ -53,7 +61,7 @@ export type AppAction =
   | { type: 'DELETE_PLAYER'; payload: { playerId: string } }
   | { type: 'UPDATE_PLAYER_NAME'; payload: { playerId: string; name: string } }
   | { type: 'TOGGLE_NOT_IN_HOUSE'; payload: { playerId: string } }
-  | { type: 'TOGGLE_PLAYER_UNIT'; payload: { playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits' } } // <-- NYTT: favoriteUnits tillagt
+  | { type: 'TOGGLE_PLAYER_UNIT'; payload: { playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits' } }
   | { type: 'PARSE_PLAYER_UNITS_FORM'; payload: { playerId: string; formData: string; allUnitNames: string[] } }
   | { type: 'UPDATE_UNIT_CONFIG'; payload: { unitConfig: UnitConfig } }
   | { type: 'RENAME_UNIT_GLOBALLY'; payload: { oldName: string; newName: string } }
@@ -70,6 +78,9 @@ export type AppAction =
   | { type: 'SET_GROUP_LEADER'; payload: { groupId: string; playerId: string } }
   | { type: 'UPDATE_PLAYER_INFO'; payload: { playerId: string; info: string } }
   | { type: 'UPDATE_PLAYER_LEADERSHIP'; payload: { playerId: string; leadership: number } }
+  // NYTT: Actions för TW Attendance
+  | { type: 'IMPORT_TW_ATTENDANCE'; payload: { jsonString: string } }
+  | { type: 'CLEAR_TW_ATTENDANCE' }
   | { type: 'LOAD_STATE'; payload: Omit<AppState, 'hasUnsavedChanges'> }
   | { type: 'SAVE_SUCCESS' };
 

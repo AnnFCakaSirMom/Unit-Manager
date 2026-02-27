@@ -3,8 +3,6 @@ import type { Player, Group, AppAction, ConfirmModalInfo, UnitConfig } from '../
 import { Save, FolderOpen, Settings, UserPlus, Users, Search, ChevronUp, ChevronDown, Trash2, Pencil, X, AlertTriangle, Clipboard, Shield, Plus } from './icons';
 import { UnitSearch } from './UnitSearch';
 
-// --- Prop Interfaces for Helper Components ---
-
 interface PlayerListProps {
     players: Player[];
     selectedPlayerId: string | null;
@@ -25,12 +23,7 @@ interface GroupsListProps {
     onCopy: (text: string) => void;
 }
 
-
-// --- Helper Components for Sidebar (defined outside main component) ---
-
-const PlayerList = React.memo(({
-    players, selectedPlayerId, onSelectPlayer, setConfirmModal, dispatch, notInHouse, setNotInHouse
-}: PlayerListProps) => {
+const PlayerList = React.memo(({ players, selectedPlayerId, onSelectPlayer, setConfirmModal, dispatch, notInHouse, setNotInHouse }: PlayerListProps) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [editingPlayer, setEditingPlayer] = useState<{id: string | null; name: string}>({ id: null, name: '' });
 
@@ -113,9 +106,7 @@ const PlayerList = React.memo(({
     );
 });
 
-const GroupsList = React.memo(({
-    groups, players, selectedGroupId, onSelectGroup, dispatch, setConfirmModal, onCopy
-}: GroupsListProps) => {
+const GroupsList = React.memo(({ groups, players, selectedGroupId, onSelectGroup, dispatch, setConfirmModal, onCopy }: GroupsListProps) => {
     const [editingGroup, setEditingGroup] = useState<{id: string | null; name: string}>({ id: null, name: '' });
 
     const handleSaveGroupName = useCallback(() => {
@@ -217,9 +208,6 @@ const GroupsList = React.memo(({
     );
 });
 
-
-// --- Main Sidebar Component ---
-
 interface SidebarProps {
     players: Player[];
     groups: Group[];
@@ -232,6 +220,7 @@ interface SidebarProps {
     onSave: () => void;
     onLoad: () => void;
     onOpenUnitManager: () => void;
+    onOpenAttendance: () => void; // NY PROP: Öppna TW listan
     hasUnsavedChanges: boolean;
     statusMessage: string;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
@@ -241,9 +230,8 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = (props) => {
     const {
-        // KORRIGERING: unitConfig är borttagen härifrån
         players, groups, dispatch, selectedPlayerId, selectedGroupId,
-        onSelectPlayer, onSelectGroup, onSave, onLoad, onOpenUnitManager,
+        onSelectPlayer, onSelectGroup, onSave, onLoad, onOpenUnitManager, onOpenAttendance,
         hasUnsavedChanges, statusMessage, setConfirmModal, isPlayerListOpen, 
         onTogglePlayerList
     } = props;
@@ -267,7 +255,8 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             <header className="mb-4">
                 <h1 className="text-2xl font-bold text-blue-400">Unit Manager</h1>
                 <p className="text-sm text-gray-400">Manage players, units, and groups.</p>
-                <div className="grid grid-cols-3 gap-2 mt-4">
+                {/* UPPDATERAT: 2x2 Rutnät för att rymma Attendance-knappen snyggt */}
+                <div className="grid grid-cols-2 gap-2 mt-4">
                     <button onClick={onSave} className="relative bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-2">
                         {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span></span>}
                         <Save size={16} />
@@ -277,9 +266,13 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                         <FolderOpen size={16} />
                         <span>Load</span>
                     </button>
-                    <button onClick={onOpenUnitManager} className="bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-2" title="Manage Units">
+                    <button onClick={onOpenUnitManager} className="bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-2">
                         <Settings size={16} />
                         <span>Units</span>
+                    </button>
+                    <button onClick={onOpenAttendance} className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-2">
+                        <Users size={16} />
+                        <span>Attendance</span>
                     </button>
                 </div>
                 <div className="h-5 mt-2 text-center">
