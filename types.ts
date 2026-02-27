@@ -27,7 +27,7 @@ export interface Player {
   units: string[];
   preparedUnits: string[];
   masteryUnits: string[];
-  favoriteUnits: string[]; 
+  favoriteUnits: string[];
   notInHouse: boolean;
   info?: string;
   totalLeadership?: number;
@@ -41,7 +41,6 @@ export interface UnitConfig {
   tiers: UnitTiers;
 }
 
-// NYTT: Typ för spelare i TW-listan
 export interface TWAttendancePlayer {
   discordName: string;
   status: 'Accepted' | 'Maybe';
@@ -52,7 +51,7 @@ export interface AppState {
   players: Player[];
   unitConfig: UnitConfig;
   groups: Group[];
-  twAttendance: TWAttendancePlayer[]; // NYTT: Listan i vår state
+  twAttendance: TWAttendancePlayer[];
   hasUnsavedChanges: boolean;
 }
 
@@ -72,13 +71,13 @@ export type AppAction =
   | { type: 'ADD_PLAYER_TO_GROUP'; payload: { groupId: string; playerId: string } }
   | { type: 'REMOVE_PLAYER_FROM_GROUP'; payload: { groupId: string; playerId: string } }
   | { type: 'MOVE_PLAYER_BETWEEN_GROUPS'; payload: { playerId: string; sourceGroupId: string; targetGroupId: string } }
+  | { type: 'REORDER_GROUP_MEMBER'; payload: { groupId: string; playerId: string; targetPlayerId: string } } // <-- NYTT
   | { type: 'TOGGLE_GROUP_MEMBER_UNIT'; payload: { groupId: string; playerId: string; unitName: string } }
   | { type: 'SET_GROUP_MEMBER_UNIT_RANK'; payload: { groupId: string; playerId: string; unitName: string; rank: number } }
   | { type: 'TOGGLE_GROUP_MEMBER_LOCK'; payload: { groupId: string; playerId: string } }
   | { type: 'SET_GROUP_LEADER'; payload: { groupId: string; playerId: string } }
   | { type: 'UPDATE_PLAYER_INFO'; payload: { playerId: string; info: string } }
   | { type: 'UPDATE_PLAYER_LEADERSHIP'; payload: { playerId: string; leadership: number } }
-  // NYTT: Actions för TW Attendance
   | { type: 'IMPORT_TW_ATTENDANCE'; payload: { jsonString: string } }
   | { type: 'CLEAR_TW_ATTENDANCE' }
   | { type: 'LOAD_STATE'; payload: Omit<AppState, 'hasUnsavedChanges'> }

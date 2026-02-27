@@ -207,13 +207,26 @@ const App: React.FC = () => {
         }
     }, [processFile, handleLoadData]);
 
-    const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); }, []);
-    const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); }, []);
+    // --- UPPDATERAD DRAG & DROP FÖR FILER ---
+    const handleDragOver = useCallback((e: React.DragEvent) => { 
+        e.preventDefault(); 
+        // Aktivera BARA overlayn om det som dras faktiskt är en fil (Files) från operativsystemet
+        if (e.dataTransfer.types.includes('Files')) {
+            setIsDragging(true); 
+        }
+    }, []);
+    
+    const handleDragLeave = useCallback((e: React.DragEvent) => { 
+        e.preventDefault(); 
+        setIsDragging(false); 
+    }, []);
+    
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
-        const file = e.dataTransfer.files[0];
-        if (file) {
+        // Säkerställ att en fil faktiskt släpptes
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
             processFile(file, null);
         }
     }, [processFile]);

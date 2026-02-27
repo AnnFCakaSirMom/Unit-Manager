@@ -23,7 +23,9 @@ interface GroupsListProps {
     onCopy: (text: string) => void;
 }
 
-const PlayerList = React.memo(({ players, selectedPlayerId, onSelectPlayer, setConfirmModal, dispatch, notInHouse, setNotInHouse }: PlayerListProps) => {
+const PlayerList = React.memo(({
+    players, selectedPlayerId, onSelectPlayer, setConfirmModal, dispatch, notInHouse, setNotInHouse
+}: PlayerListProps) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [editingPlayer, setEditingPlayer] = useState<{id: string | null; name: string}>({ id: null, name: '' });
 
@@ -106,7 +108,9 @@ const PlayerList = React.memo(({ players, selectedPlayerId, onSelectPlayer, setC
     );
 });
 
-const GroupsList = React.memo(({ groups, players, selectedGroupId, onSelectGroup, dispatch, setConfirmModal, onCopy }: GroupsListProps) => {
+const GroupsList = React.memo(({
+    groups, players, selectedGroupId, onSelectGroup, dispatch, setConfirmModal, onCopy
+}: GroupsListProps) => {
     const [editingGroup, setEditingGroup] = useState<{id: string | null; name: string}>({ id: null, name: '' });
 
     const handleSaveGroupName = useCallback(() => {
@@ -130,13 +134,9 @@ const GroupsList = React.memo(({ groups, players, selectedGroupId, onSelectGroup
         const textToCopy = groups.map(group => {
             let groupHeaderText = `--- ${group.name} ---\n`;
             
-            const sortedMembers = [...group.members].sort((a, b) => {
-                if (a.playerId === group.leaderId) return -1;
-                if (b.playerId === group.leaderId) return 1;
-                const playerA = players.find(p => p.id === a.playerId);
-                const playerB = players.find(p => p.id === b.playerId);
-                return playerA && playerB ? playerA.name.localeCompare(playerB.name) : 0;
-            });
+            const leader = group.members.find(m => m.playerId === group.leaderId);
+            const others = group.members.filter(m => m.playerId !== group.leaderId);
+            const sortedMembers = leader ? [leader, ...others] : others;
 
             const memberContent = sortedMembers.map(member => {
                 const player = players.find(p => p.id === member.playerId);
@@ -220,7 +220,7 @@ interface SidebarProps {
     onSave: () => void;
     onLoad: () => void;
     onOpenUnitManager: () => void;
-    onOpenAttendance: () => void; // NY PROP: Öppna TW listan
+    onOpenAttendance: () => void;
     hasUnsavedChanges: boolean;
     statusMessage: string;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
@@ -255,7 +255,6 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             <header className="mb-4">
                 <h1 className="text-2xl font-bold text-blue-400">Unit Manager</h1>
                 <p className="text-sm text-gray-400">Manage players, units, and groups.</p>
-                {/* UPPDATERAT: 2x2 Rutnät för att rymma Attendance-knappen snyggt */}
                 <div className="grid grid-cols-2 gap-2 mt-4">
                     <button onClick={onSave} className="relative bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-2">
                         {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span></span>}

@@ -44,7 +44,6 @@ const validateUnitConfig = (config: any): UnitConfig => {
 // --- Main Reducer ---
 export const appReducer = (state: AppState, action: AppAction): AppState => {
     switch (action.type) {
-        // Player actions
         case 'ADD_PLAYER': {
             const newPlayer: Player = { id: crypto.randomUUID(), name: action.payload.name.trim(), units: [], preparedUnits: [], masteryUnits: [], favoriteUnits: [], notInHouse: false, totalLeadership: 0 };
             return { ...state, players: [...state.players, newPlayer].sort((a, b) => a.name.localeCompare(b.name)) };
@@ -78,7 +77,6 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 )
             };
         }
-
         case 'TOGGLE_PLAYER_UNIT': {
             const { playerId, unitName, unitType } = action.payload; 
             return {
@@ -93,7 +91,6 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 })
             };
         }
-
         case 'PARSE_PLAYER_UNITS_FORM': {
             const { playerId, formData, allUnitNames } = action.payload;
 
@@ -130,7 +127,6 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 )
             };
         }
-
         case 'UPDATE_UNIT_CONFIG':
             return { ...state, unitConfig: action.payload.unitConfig };
 
@@ -170,7 +166,6 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 }))
             };
         }
-
         case 'ADD_GROUP': {
             const newGroup: Group = { id: crypto.randomUUID(), name: `Group ${state.groups.length + 1}`, leaderId: null, members: [] };
             return { ...state, groups: [...state.groups, newGroup] };
@@ -239,6 +234,29 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 })
             };
         }
+        case 'REORDER_GROUP_MEMBER': {
+            const { groupId, playerId, targetPlayerId } = action.payload;
+            if (playerId === targetPlayerId) return state;
+
+            return {
+                ...state,
+                groups: state.groups.map(g => {
+                    if (g.id === groupId) {
+                        const currentIndex = g.members.findIndex(m => m.playerId === playerId);
+                        const targetIndex = g.members.findIndex(m => m.playerId === targetPlayerId);
+                        
+                        if (currentIndex === -1 || targetIndex === -1) return g;
+                        
+                        const newMembers = [...g.members];
+                        const [movedMember] = newMembers.splice(currentIndex, 1);
+                        newMembers.splice(targetIndex, 0, movedMember);
+                        
+                        return { ...g, members: newMembers };
+                    }
+                    return g;
+                })
+            };
+        }
         case 'TOGGLE_GROUP_MEMBER_UNIT': {
             const { groupId, playerId, unitName } = action.payload;
             return {
@@ -291,14 +309,11 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const { groupId, playerId } = action.payload;
             return { ...state, groups: state.groups.map(g => g.id === groupId ? { ...g, leaderId: playerId } : g) };
         }
-
-        // --- TW ATTENDANCE LOGIC ---
         case 'IMPORT_TW_ATTENDANCE': {
             try {
                 const data = JSON.parse(action.payload.jsonString);
                 if (!data.signUps) throw new Error("Invalid Raid Helper format");
 
-                // Tvättmaskinen: Tar bort klamrar, apostrofer, och mellanslag OCH accenter
                 const washName = (name: string) => (name || "")
                     .normalize("NFD")                           
                     .replace(/[\u0300-\u036f]/g, "")            
@@ -345,7 +360,6 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         case 'CLEAR_TW_ATTENDANCE': {
             return { ...state, twAttendance: [] };
         }
-
         case 'LOAD_STATE': {
             const loadedData = action.payload;
             return {
@@ -356,7 +370,6 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 twAttendance: loadedData.twAttendance || [] 
             };
         }
-
         default:
             return state;
     }

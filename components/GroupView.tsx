@@ -14,6 +14,7 @@ interface GroupMemberCardProps {
     otherGroups: Group[];
     unitCostMap: Map<string, number>;
 }
+
 const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitConfig, dispatch, otherGroups, unitCostMap }: GroupMemberCardProps) => {
     const [manualUnitName, setManualUnitName] = useState("");
     const [isMoving, setIsMoving] = useState(false);
@@ -53,7 +54,7 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
     const playerOwnedUnitsSet = useMemo(() => new Set(player.units || []), [player.units]);
     const playerPreparedUnitsSet = useMemo(() => new Set(player.preparedUnits || []), [player.preparedUnits]);
     const playerMasteryUnitsSet = useMemo(() => new Set(player.masteryUnits || []), [player.masteryUnits]);
-    const playerFavoriteUnitsSet = useMemo(() => new Set(player.favoriteUnits || []), [player.favoriteUnits]); // <-- NYTT
+    const playerFavoriteUnitsSet = useMemo(() => new Set(player.favoriteUnits || []), [player.favoriteUnits]);
     const selectedUnitsMap = useMemo(() => new Map((member.selectedUnits || []).map(u => [u.unitName, u])), [member.selectedUnits]);
     const allAvailableUnits = useMemo(() => new Set([...playerOwnedUnitsSet, ...Array.from(selectedUnitsMap.keys())]), [playerOwnedUnitsSet, selectedUnitsMap]);
     
@@ -144,7 +145,6 @@ const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCon
                                     return (
                                         <div key={unit} className="flex items-center justify-between p-1 rounded hover:bg-gray-700/50">
                                             <label className="flex items-center space-x-2 flex-grow cursor-pointer min-w-0">
-                                                {/* FAVORIT-STJÄRNA (VISAS ENDAST OM VALD) */}
                                                 <div className={`flex-shrink-0 ${playerFavoriteUnitsSet.has(unit) ? 'text-yellow-400 fill-yellow-400' : 'text-transparent'}`} title="Favorite">
                                                     <Star size={14} /> 
                                                 </div>
@@ -185,6 +185,7 @@ interface GroupViewProps {
     dispatch: React.Dispatch<AppAction>;
     onCopy: (text: string) => void;
 }
+
 export const GroupView: React.FC<GroupViewProps> = ({ group, allGroups, players, unitConfig, dispatch, onCopy }) => {
     const [playerSearch, setPlayerSearch] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -223,14 +224,10 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, allGroups, players,
     };
 
     const sortedMembers = useMemo(() => {
-        return [...group.members].sort((a, b) => {
-            if (a.playerId === group.leaderId) return -1;
-            if (b.playerId === group.leaderId) return 1;
-            const playerA = players.find(p => p.id === a.playerId);
-            const playerB = players.find(p => p.id === b.playerId);
-            return playerA && playerB ? playerA.name.localeCompare(playerB.name) : 0;
-        });
-    }, [group.members, group.leaderId, players]);
+        const leader = group.members.find(m => m.playerId === group.leaderId);
+        const others = group.members.filter(m => m.playerId !== group.leaderId);
+        return leader ? [leader, ...others] : others;
+    }, [group.members, group.leaderId]);
 
     const handleCopyGroup = useCallback(() => {
         let groupHeaderText = `--- ${group.name} ---\n`;
