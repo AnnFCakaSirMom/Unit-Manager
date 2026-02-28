@@ -321,6 +321,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     .toLowerCase();
 
                 const attendance: TWAttendancePlayer[] = [];
+                const declinedPlayerIds = new Set<string>(); // Listan för de som tackat nej
 
                 const washedUMPlayers = state.players.map(p => ({
                     id: p.id,
@@ -328,20 +329,22 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 }));
 
                 data.signUps.forEach((signup: any) => {
-                    if (signup.className === 'Accepted' || signup.className === 'Maybe') {
-                        const washedDiscordName = washName(signup.name);
-                        
-                        const match = washedUMPlayers.find(p => 
-                            p.washedName === washedDiscordName || 
-                            washedDiscordName.includes(p.washedName) || 
-                            p.washedName.includes(washedDiscordName)
-                        );
+                    const washedDiscordName = washName(signup.name);
+                    const match = washedUMPlayers.find(p => 
+                        p.washedName === washedDiscordName || 
+                        washedDiscordName.includes(p.washedName) || 
+                        p.washedName.includes(washedDiscordName)
+                    );
 
+                    if (signup.className === 'Accepted' || signup.className === 'Maybe') {
                         attendance.push({
                             discordName: signup.name,
                             status: signup.className as 'Accepted' | 'Maybe',
                             matchedPlayerId: match ? match.id : null
                         });
+                    } else if (match) {
+                        // Spelaren hittades, men har Decline/Absence/Late etc.
+                        declinedPlayerIds.add(match.id);
                     }
                 });
 
@@ -351,7 +354,21 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     return a.discordName.localeCompare(b.discordName);
                 });
 
-                return { ...state, twAttendance: attendance };
+                // Auto-städa grupperna från spelare som tackat nej
+                const newGroups = state.groups.map(group => {
+                    // Kasta ut alla som finns på declined-listan
+                    const newMembers = group.members.filter(m => !declinedPlayerIds.has(m.playerId));
+                    
+                    // Om gruppledaren råkade vara en av dem som försvann, välj nästa person som ny ledare
+                    let newLeaderId = group.leaderId;
+                    if (newLeaderId && !newMembers.some(m => m.playerId === newLeaderId)) {
+                        newLeaderId = newMembers.length > 0 ? newMembers[0].playerId : null;
+                    }
+                    
+                    return { ...group, members: newMembers, leaderId: newLeaderId };
+                });
+
+                return { ...state, twAttendance: attendance, groups: newGroups };
             } catch (e) {
                 console.error("Could not parse Raid Helper data", e);
                 return state; 
