@@ -2,6 +2,7 @@ import React, { useState, useReducer, useEffect, useMemo, useCallback } from 're
 import type { AppState, ConfirmModalInfo } from './types';
 import { appReducer, withUnsavedChanges } from './reducer';
 import { DEFAULT_UNIT_TIERS } from './units';
+import { AppStateSchema } from './schema';
 
 import { Sidebar } from './components/Sidebar';
 import { PlayerUnitView } from './components/PlayerUnitView';
@@ -12,10 +13,10 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
 
 declare global {
-  interface Window {
-    showOpenFilePicker(options?: any): Promise<FileSystemFileHandle[]>;
-    showSaveFilePicker(options?: any): Promise<FileSystemFileHandle>;
-  }
+    interface Window {
+        showOpenFilePicker(options?: any): Promise<FileSystemFileHandle[]>;
+        showSaveFilePicker(options?: any): Promise<FileSystemFileHandle>;
+    }
 }
 
 const App: React.FC = () => {
@@ -37,8 +38,8 @@ const App: React.FC = () => {
 
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
-    const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-    
+    const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+
     const [, setFileHandle] = useState<FileSystemFileHandle | null>(null);
 
     const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -48,7 +49,7 @@ const App: React.FC = () => {
         setSelectedPlayerId(playerId);
         if (playerId) {
             setSelectedGroupId(null);
-            setShowAttendanceView(false); 
+            setShowAttendanceView(false);
             if (!isPlayerListOpen) setPlayerListOpen(true);
         }
     }, [isPlayerListOpen]);
@@ -57,7 +58,7 @@ const App: React.FC = () => {
         setSelectedGroupId(groupId);
         if (groupId) {
             setSelectedPlayerId(null);
-            setShowAttendanceView(false); 
+            setShowAttendanceView(false);
         }
     }, []);
 
@@ -107,19 +108,17 @@ const App: React.FC = () => {
         reader.onload = (event) => {
             try {
                 const content = event.target?.result as string;
-                const data = JSON.parse(content);
-                
-                if (!data || !Array.isArray(data.players) || !data.unitConfig) {
-                     setStatusMessage("Error: Invalid or corrupted file format.");
-                     return;
+                const rawData = JSON.parse(content);
+
+                const validationResult = AppStateSchema.safeParse(rawData);
+
+                if (!validationResult.success) {
+                    console.error("Data validation failed:", validationResult.error);
+                    setStatusMessage("Error: Invalid or corrupted file format. Please ensure this is a correct backup file.");
+                    return;
                 }
-                
-                const validatedPayload = {
-                    players: data.players,
-                    unitConfig: data.unitConfig,
-                    groups: data.groups || [],
-                    twAttendance: data.twAttendance || []
-                };
+
+                const validatedPayload = validationResult.data;
 
                 dispatch({ type: 'LOAD_STATE', payload: validatedPayload });
                 setFileHandle(handle);
@@ -132,7 +131,7 @@ const App: React.FC = () => {
         };
         reader.readAsText(file);
     }, [handleSelectPlayer]);
-    
+
     const handleSaveData = useCallback(async () => {
         const dataToSave = JSON.stringify({ players, unitConfig, groups, twAttendance }, null, 2);
 
@@ -208,19 +207,19 @@ const App: React.FC = () => {
     }, [processFile, handleLoadData]);
 
     // --- UPPDATERAD DRAG & DROP FÖR FILER ---
-    const handleDragOver = useCallback((e: React.DragEvent) => { 
-        e.preventDefault(); 
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
         // Aktivera BARA overlayn om det som dras faktiskt är en fil (Files) från operativsystemet
         if (e.dataTransfer.types.includes('Files')) {
-            setIsDragging(true); 
+            setIsDragging(true);
         }
     }, []);
-    
-    const handleDragLeave = useCallback((e: React.DragEvent) => { 
-        e.preventDefault(); 
-        setIsDragging(false); 
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
     }, []);
-    
+
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
@@ -264,15 +263,15 @@ const App: React.FC = () => {
 
                 <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
                     {showAttendanceView ? (
-                        <TWAttendanceView 
+                        <TWAttendanceView
                             attendance={twAttendance}
                             players={players}
                             groups={groups}
                             dispatch={dispatch}
-                            onSelectPlayer={handleSelectPlayer} 
+                            onSelectPlayer={handleSelectPlayer}
                         />
                     ) : selectedGroup ? (
-                        <GroupView 
+                        <GroupView
                             key={selectedGroupId}
                             group={selectedGroup}
                             allGroups={groups}
@@ -302,15 +301,15 @@ const App: React.FC = () => {
             </div>
 
             {isMgmtModalOpen && (
-                <UnitManagementModal 
-                    onClose={() => setIsMgmtModalOpen(false)} 
-                    unitConfig={unitConfig} 
-                    dispatch={dispatch} 
+                <UnitManagementModal
+                    onClose={() => setIsMgmtModalOpen(false)}
+                    unitConfig={unitConfig}
+                    dispatch={dispatch}
                 />
             )}
-            
+
             {confirmModal.isOpen && (
-                <ConfirmationModal 
+                <ConfirmationModal
                     {...confirmModal}
                     onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
                 />
