@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import type { Player, Unit, UnitConfig, AppAction } from '../types';
+import type { Player, Unit } from '../types';
 import { CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star } from './icons';
 import { ParseFormModal } from './ParseFormModal';
 import { UnitTierSection } from './UnitTierSection';
@@ -8,13 +8,15 @@ import { OwnedUnitsView } from './OwnedUnitsView';
 
 interface PlayerUnitViewProps {
     player: Player;
-    unitConfig: UnitConfig;
-    allUnits: string[];
-    dispatch: React.Dispatch<AppAction>;
     setStatusMessage: (message: string) => void;
 }
 
-export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConfig, allUnits, dispatch, setStatusMessage }) => {
+import { useAppState, useAppDispatch } from '../AppContext';
+
+export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatusMessage }) => {
+    const { unitConfig } = useAppState();
+    const dispatch = useAppDispatch();
+    const allUnits = useMemo(() => Object.values(unitConfig.tiers).flat().map(u => u.name), [unitConfig]);
     if (!player) {
         return (
             <div className="flex items-center justify-center h-full text-center text-gray-500">
@@ -176,7 +178,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, unitConf
                             })}
                         </div>
                     ) : (
-                        <OwnedUnitsView selectedPlayerId={player.id} selectedUnits={selectedPlayerUnits} preparedUnits={selectedPlayerPreparedUnits} masteryUnits={selectedPlayerMasteryUnits} favoriteUnits={selectedPlayerFavoriteUnits} unitConfig={unitConfig} searchQuery={mainUnitSearchQuery} onUnitToggle={handleUnitToggle} />
+                        <OwnedUnitsView selectedPlayerId={player.id} selectedUnits={selectedPlayerUnits} preparedUnits={selectedPlayerPreparedUnits} masteryUnits={selectedPlayerMasteryUnits} favoriteUnits={selectedPlayerFavoriteUnits} searchQuery={mainUnitSearchQuery} onUnitToggle={handleUnitToggle} />
                     )}
                 </div>
             </div>

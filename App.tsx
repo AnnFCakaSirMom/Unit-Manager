@@ -3,6 +3,7 @@ import type { AppState, ConfirmModalInfo } from './types';
 import { appReducer, withUnsavedChanges } from './reducer';
 import { DEFAULT_UNIT_TIERS } from './units';
 import { AppStateSchema } from './schema';
+import { AppStateContext, AppDispatchContext } from './AppContext';
 
 import { Sidebar } from './components/Sidebar';
 import { PlayerUnitView } from './components/PlayerUnitView';
@@ -94,7 +95,6 @@ const App: React.FC = () => {
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [hasUnsavedChanges]);
 
-    const ALL_UNITS = useMemo(() => Object.values(unitConfig.tiers).flat().map(u => u.name), [unitConfig]);
     const selectedPlayer = useMemo(() => players.find(p => p.id === selectedPlayerId), [players, selectedPlayerId]);
     const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
 
@@ -102,9 +102,7 @@ const App: React.FC = () => {
         if (!file || !file.type.match('application/json')) {
             setStatusMessage("Error: Invalid file type. Please select a .json file.");
             return;
-        }
-
-        const reader = new FileReader();
+        } const reader = new FileReader();
         reader.onload = (event) => {
             try {
                 const content = event.target?.result as string;
@@ -231,90 +229,79 @@ const App: React.FC = () => {
     }, [processFile]);
 
     return (
-        <div className="bg-gray-900 text-gray-200 min-h-screen font-sans" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-            {isDragging && (
-                <div className="drag-over-overlay">
-                    <div className="text-center text-white">
-                        <UploadCloud size={64} className="mx-auto mb-4" />
-                        <h2 className="text-2xl font-bold">Drop your .json file here</h2>
-                    </div>
-                </div>
-            )}
-            <div className="flex flex-col md:flex-row h-full min-h-screen">
-                <Sidebar
-                    players={players}
-                    groups={groups}
-                    unitConfig={unitConfig}
-                    dispatch={dispatch}
-                    selectedPlayerId={selectedPlayerId}
-                    selectedGroupId={selectedGroupId}
-                    onSelectPlayer={handleSelectPlayer}
-                    onSelectGroup={handleSelectGroup}
-                    onSave={handleSaveData}
-                    onLoad={handleModernOpenFile}
-                    onOpenUnitManager={() => setIsMgmtModalOpen(true)}
-                    onOpenAttendance={handleOpenAttendance}
-                    hasUnsavedChanges={hasUnsavedChanges}
-                    statusMessage={statusMessage}
-                    setConfirmModal={setConfirmModal}
-                    isPlayerListOpen={isPlayerListOpen}
-                    onTogglePlayerList={handleTogglePlayerList}
-                />
-
-                <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
-                    {showAttendanceView ? (
-                        <TWAttendanceView
-                            attendance={twAttendance}
-                            players={players}
-                            groups={groups}
-                            dispatch={dispatch}
-                            onSelectPlayer={handleSelectPlayer}
-                        />
-                    ) : selectedGroup ? (
-                        <GroupView
-                            key={selectedGroupId}
-                            group={selectedGroup}
-                            allGroups={groups}
-                            players={players}
-                            unitConfig={unitConfig}
-                            dispatch={dispatch}
-                            onCopy={(text) => {
-                                navigator.clipboard.writeText(text);
-                                setStatusMessage('Group copied to clipboard!');
-                            }}
-                        />
-                    ) : selectedPlayer ? (
-                        <PlayerUnitView
-                            key={selectedPlayerId}
-                            player={selectedPlayer}
-                            unitConfig={unitConfig}
-                            allUnits={ALL_UNITS}
-                            dispatch={dispatch}
-                            setStatusMessage={setStatusMessage}
-                        />
-                    ) : (
-                        <div className="flex items-center justify-center h-full text-center text-gray-500">
-                            <h2 className="text-xl">Select a player or group to get started.</h2>
+        <AppStateContext.Provider value={state}>
+            <AppDispatchContext.Provider value={dispatch}>
+                <div className="bg-gray-900 text-gray-200 min-h-screen font-sans" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+                    {isDragging && (
+                        <div className="drag-over-overlay">
+                            <div className="text-center text-white">
+                                <UploadCloud size={64} className="mx-auto mb-4" />
+                                <h2 className="text-2xl font-bold">Drop your .json file here</h2>
+                            </div>
                         </div>
                     )}
-                </main>
-            </div>
+                    <div className="flex flex-col md:flex-row h-full min-h-screen">
+                        <Sidebar
+                            selectedPlayerId={selectedPlayerId}
+                            selectedGroupId={selectedGroupId}
+                            onSelectPlayer={handleSelectPlayer}
+                            onSelectGroup={handleSelectGroup}
+                            onSave={handleSaveData}
+                            onLoad={handleModernOpenFile}
+                            onOpenUnitManager={() => setIsMgmtModalOpen(true)}
+                            onOpenAttendance={handleOpenAttendance}
+                            hasUnsavedChanges={hasUnsavedChanges}
+                            statusMessage={statusMessage}
+                            setConfirmModal={setConfirmModal}
+                            isPlayerListOpen={isPlayerListOpen}
+                            onTogglePlayerList={handleTogglePlayerList}
+                        />
 
-            {isMgmtModalOpen && (
-                <UnitManagementModal
-                    onClose={() => setIsMgmtModalOpen(false)}
-                    unitConfig={unitConfig}
-                    dispatch={dispatch}
-                />
-            )}
+                        <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
+                            {showAttendanceView ? (
+                                <div className="flex-1 overflow-hidden p-4 min-w-[300px]">
+                                    <TWAttendanceView
+                                        onSelectPlayer={handleSelectPlayer}
+                                    />
+                                </div>
+                            ) : selectedGroup ? (
+                                <GroupView
+                                    key={selectedGroupId}
+                                    group={selectedGroup!}
+                                    onCopy={(text) => {
+                                        navigator.clipboard.writeText(text);
+                                        setStatusMessage('Group copied to clipboard!');
+                                    }}
+                                />
+                            ) : selectedPlayer ? (
+                                <PlayerUnitView
+                                    key={selectedPlayerId}
+                                    player={selectedPlayer!}
+                                    setStatusMessage={setStatusMessage}
+                                />
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-center text-gray-500">
+                                    <h2 className="text-xl">Select a player or group to get started.</h2>
+                                </div>
+                            )}
+                        </main>
+                    </div>
 
-            {confirmModal.isOpen && (
-                <ConfirmationModal
-                    {...confirmModal}
-                    onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                />
-            )}
-        </div>
+                    {isMgmtModalOpen && (
+                        <UnitManagementModal
+                            onClose={() => setIsMgmtModalOpen(false)}
+                        />
+                    )}
+
+                    {confirmModal.isOpen && (
+                        <ConfirmationModal
+                            {...confirmModal}
+                            onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                        />
+                    )}
+                </div>
+            </AppDispatchContext.Provider>
+        </AppStateContext.Provider>
     );
 };
 

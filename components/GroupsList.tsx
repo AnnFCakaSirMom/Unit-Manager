@@ -1,20 +1,22 @@
 import React, { useState, useCallback } from 'react';
-import type { Group, Player, AppAction, ConfirmModalInfo } from '../types';
+import type { ConfirmModalInfo } from '../types';
 import { Save, Shield, Clipboard, Plus, X, Pencil, Trash2 } from './icons';
 
 export interface GroupsListProps {
-    groups: Group[];
-    players: Player[];
     selectedGroupId: string | null;
     onSelectGroup: (id: string | null) => void;
-    dispatch: React.Dispatch<AppAction>;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
     onCopy: (text: string) => void;
 }
 
+import { useAppState, useAppDispatch } from '../AppContext';
+
 export const GroupsList = React.memo(({
-    groups, players, selectedGroupId, onSelectGroup, dispatch, setConfirmModal, onCopy
+    selectedGroupId, onSelectGroup, setConfirmModal, onCopy
 }: GroupsListProps) => {
+    const { groups, players } = useAppState();
+    const dispatch = useAppDispatch();
+
     const [editingGroup, setEditingGroup] = useState<{ id: string | null; name: string }>({ id: null, name: '' });
 
     const handleSaveGroupName = useCallback(() => {

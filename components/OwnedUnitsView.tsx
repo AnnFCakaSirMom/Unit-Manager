@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { UnitConfig } from '../types';
+
 import { Star } from './icons';
 
 const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-400 border-yellow-400/50', Epic: 'text-purple-400 border-purple-400/50', Rare: 'text-blue-400 border-blue-400/50', Uncommon: 'text-green-400 border-green-400/50', Common: 'text-gray-400 border-gray-400/50' };
@@ -10,11 +10,15 @@ export interface OwnedUnitsViewProps {
     preparedUnits: Set<string>;
     masteryUnits: Set<string>;
     favoriteUnits: Set<string>;
-    unitConfig: UnitConfig;
     searchQuery: string;
     onUnitToggle: (playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits') => void;
 }
-export const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, preparedUnits, masteryUnits, favoriteUnits, unitConfig, searchQuery, onUnitToggle }: OwnedUnitsViewProps) => {
+
+import { useAppState } from '../AppContext';
+
+export const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, preparedUnits, masteryUnits, favoriteUnits, searchQuery, onUnitToggle }: OwnedUnitsViewProps) => {
+    const { unitConfig } = useAppState();
+
     const ownedUnitsByTier = useMemo(() => {
         const result: { [key: string]: string[] } = {};
         const lowerCaseQuery = searchQuery.toLowerCase();

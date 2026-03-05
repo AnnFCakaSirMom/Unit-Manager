@@ -1,19 +1,20 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import type { Group, Player, UnitConfig, AppAction } from '../types';
+import type { Group } from '../types';
 import { Search, Clipboard, UserPlus } from './icons';
 
 import { GroupMemberCard } from './GroupMemberCard';
 
 interface GroupViewProps {
     group: Group;
-    allGroups: Group[];
-    players: Player[];
-    unitConfig: UnitConfig;
-    dispatch: React.Dispatch<AppAction>;
     onCopy: (text: string) => void;
 }
 
-export const GroupView: React.FC<GroupViewProps> = ({ group, allGroups, players, unitConfig, dispatch, onCopy }) => {
+import { useAppState, useAppDispatch } from '../AppContext';
+
+export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
+    const { players, unitConfig } = useAppState();
+    const dispatch = useAppDispatch();
+
     const [playerSearch, setPlayerSearch] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -98,8 +99,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, allGroups, players,
                 {sortedMembers.map(member => {
                     const player = players.find(p => p.id === member.playerId);
                     if (!player) return null;
-                    const otherGroups = allGroups.filter(g => g.id !== group.id && g.members.length < 5);
-                    return <GroupMemberCard key={member.playerId} member={member} player={player} groupId={group.id} isLeader={group.leaderId === member.playerId} unitConfig={unitConfig} dispatch={dispatch} otherGroups={otherGroups} unitCostMap={unitCostMap} />;
+                    return <GroupMemberCard key={member.playerId} member={member} player={player} groupId={group.id} isLeader={group.leaderId === member.playerId} unitCostMap={unitCostMap} />;
                 })}
             </div>
         </div>

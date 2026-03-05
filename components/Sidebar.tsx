@@ -1,15 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import type { Player, Group, AppAction, ConfirmModalInfo, UnitConfig } from '../types';
+import type { ConfirmModalInfo } from '../types';
 import { Save, FolderOpen, Settings, UserPlus, Users, ChevronUp, ChevronDown } from './icons';
 import { UnitSearch } from './UnitSearch';
 import { PlayerList } from './PlayerList';
 import { GroupsList } from './GroupsList';
 
 interface SidebarProps {
-    players: Player[];
-    groups: Group[];
-    unitConfig: UnitConfig;
-    dispatch: React.Dispatch<AppAction>;
     selectedPlayerId: string | null;
     selectedGroupId: string | null;
     onSelectPlayer: (id: string | null) => void;
@@ -25,9 +21,14 @@ interface SidebarProps {
     onTogglePlayerList: () => void;
 }
 
+import { useAppState, useAppDispatch } from '../AppContext';
+
 export const Sidebar: React.FC<SidebarProps> = (props) => {
+    const { players } = useAppState();
+    const dispatch = useAppDispatch();
+
     const {
-        players, groups, dispatch, selectedPlayerId, selectedGroupId,
+        selectedPlayerId, selectedGroupId,
         onSelectPlayer, onSelectGroup, onSave, onLoad, onOpenUnitManager, onOpenAttendance,
         hasUnsavedChanges, statusMessage, setConfirmModal, isPlayerListOpen,
         onTogglePlayerList
@@ -91,11 +92,9 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 </button>
                 {isPlayerListOpen && (
                     <PlayerList
-                        players={players}
                         selectedPlayerId={selectedPlayerId}
                         onSelectPlayer={onSelectPlayer}
                         setConfirmModal={setConfirmModal}
-                        dispatch={dispatch}
                         notInHouse={notInHouse}
                         setNotInHouse={setNotInHouse}
                     />
@@ -110,11 +109,8 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             />
 
             <GroupsList
-                groups={groups}
-                players={players}
                 selectedGroupId={selectedGroupId}
                 onSelectGroup={onSelectGroup}
-                dispatch={dispatch}
                 setConfirmModal={setConfirmModal}
                 onCopy={handleCopy}
             />

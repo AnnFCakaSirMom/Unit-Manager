@@ -1,20 +1,23 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import type { Player, AppAction, ConfirmModalInfo } from '../types';
+import type { Player, ConfirmModalInfo } from '../types';
 import { Save, Search, X, Pencil, Trash2, AlertTriangle } from './icons';
 
 export interface PlayerListProps {
-    players: Player[];
     selectedPlayerId: string | null;
     onSelectPlayer: (id: string | null) => void;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
-    dispatch: React.Dispatch<AppAction>;
     notInHouse: boolean;
     setNotInHouse: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+import { useAppState, useAppDispatch } from '../AppContext';
+
 export const PlayerList = React.memo(({
-    players, selectedPlayerId, onSelectPlayer, setConfirmModal, dispatch, notInHouse, setNotInHouse
+    selectedPlayerId, onSelectPlayer, setConfirmModal, notInHouse, setNotInHouse
 }: PlayerListProps) => {
+    const { players } = useAppState();
+    const dispatch = useAppDispatch();
+
     const [searchQuery, setSearchQuery] = useState("");
     const [editingPlayer, setEditingPlayer] = useState<{ id: string | null; name: string }>({ id: null, name: '' });
 

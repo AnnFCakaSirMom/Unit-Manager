@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { Group, Player, UnitConfig, AppAction, GroupMember } from '../types';
+import type { Player, GroupMember } from '../types';
 import { Star, Trash2, ArrowRightLeft, Lock, Unlock, Plus, AlertTriangle } from './icons';
 
 const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-400 border-yellow-400/50', Epic: 'text-purple-400 border-purple-400/50', Rare: 'text-blue-400 border-blue-400/50', Uncommon: 'text-green-400 border-green-400/50', Common: 'text-gray-400 border-gray-400/50', "Manually Added": 'text-gray-400 border-gray-500/50' };
@@ -9,16 +9,20 @@ export interface GroupMemberCardProps {
     player: Player;
     groupId: string;
     isLeader: boolean;
-    unitConfig: UnitConfig;
-    dispatch: React.Dispatch<AppAction>;
-    otherGroups: Group[];
     unitCostMap: Map<string, number>;
 }
 
-export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitConfig, dispatch, otherGroups, unitCostMap }: GroupMemberCardProps) => {
+import { useAppState, useAppDispatch } from '../AppContext';
+
+export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCostMap }: GroupMemberCardProps) => {
+    const { groups: otherGroupsInner, unitConfig } = useAppState();
+    const dispatch = useAppDispatch();
+
+    const otherGroups = useMemo(() => otherGroupsInner.filter(g => g.id !== groupId && g.members.length < 5), [otherGroupsInner, groupId]);
+
     const [manualUnitName, setManualUnitName] = useState("");
     const [isMoving, setIsMoving] = useState(false);
-    
+
     const unitToTierMap = useMemo(() => {
         const map = new Map<string, string>();
         Object.entries(unitConfig.tiers).forEach(([tier, units]) => units.forEach(unit => map.set(unit.name, tier)));
@@ -42,7 +46,7 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
             setManualUnitName("");
         }
     };
-    
+
     const handleMoveSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const targetGroupId = e.target.value;
         if (targetGroupId) {
@@ -57,7 +61,7 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
     const playerFavoriteUnitsSet = useMemo(() => new Set(player.favoriteUnits || []), [player.favoriteUnits]);
     const selectedUnitsMap = useMemo(() => new Map((member.selectedUnits || []).map(u => [u.unitName, u])), [member.selectedUnits]);
     const allAvailableUnits = useMemo(() => new Set([...playerOwnedUnitsSet, ...Array.from(selectedUnitsMap.keys())]), [playerOwnedUnitsSet, selectedUnitsMap]);
-    
+
     const unitsToDisplayByTier = useMemo(() => {
         const grouped: { [tier: string]: string[] } = {};
         allAvailableUnits.forEach(unitName => {
@@ -77,17 +81,17 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
     const sortedTiers = Object.keys(unitsToDisplayByTier).sort((a, b) => tierOrder.indexOf(a) - tierOrder.indexOf(b));
 
     const setRank = (unitName: string, rank: string) => {
-        dispatch({ type: 'SET_GROUP_MEMBER_UNIT_RANK', payload: { groupId, playerId: player.id, unitName, rank: parseInt(rank, 10) || 0 }});
+        dispatch({ type: 'SET_GROUP_MEMBER_UNIT_RANK', payload: { groupId, playerId: player.id, unitName, rank: parseInt(rank, 10) || 0 } });
     };
     const toggleUnit = (unitName: string) => {
-        dispatch({ type: 'TOGGLE_GROUP_MEMBER_UNIT', payload: { groupId, playerId: player.id, unitName }});
+        dispatch({ type: 'TOGGLE_GROUP_MEMBER_UNIT', payload: { groupId, playerId: player.id, unitName } });
     };
 
     return (
         <div className="bg-gray-800/30 p-4 rounded-lg">
             <div className="flex justify-between items-start mb-2">
                 <div>
-                     <h4 className={`text-xl font-bold flex items-center gap-2 ${isLeader ? 'text-yellow-300' : 'text-blue-300'}`}>
+                    <h4 className={`text-xl font-bold flex items-center gap-2 ${isLeader ? 'text-yellow-300' : 'text-blue-300'}`}>
                         {player.name}
                         {isLeader && <Star size={16} className="fill-current" />}
                         {player.info && (
@@ -108,9 +112,9 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                         <button onClick={() => setIsMoving(!isMoving)} className="p-1 text-gray-400 hover:text-white" title="Move Player"><ArrowRightLeft size={18} /></button>
                         {isMoving && <select onChange={handleMoveSelect} onBlur={() => setIsMoving(false)} className="absolute right-0 top-full mt-1 bg-gray-700 border border-gray-600 rounded-md text-white z-20" defaultValue="" autoFocus><option value="" disabled>Move to...</option>{otherGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select>}
                     </div>
-                    {!isLeader && <button onClick={() => dispatch({ type: 'SET_GROUP_LEADER', payload: { groupId, playerId: player.id }})} className="p-1 text-gray-400 hover:text-yellow-400" title="Set as Group Lead"><Star size={18} /></button>}
-                    <button onClick={() => dispatch({ type: 'TOGGLE_GROUP_MEMBER_LOCK', payload: { groupId, playerId: player.id }})} className={`p-1 rounded-full ${member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700"}`} title={member.isLocked ? "Unlock" : "Lock"}>{member.isLocked ? <Lock size={18} /> : <Unlock size={18} />}</button>
-                    <button onClick={() => dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId, playerId: player.id }})} className="p-1 text-red-500 hover:bg-gray-700 rounded-full"><Trash2 size={18} /></button>
+                    {!isLeader && <button onClick={() => dispatch({ type: 'SET_GROUP_LEADER', payload: { groupId, playerId: player.id } })} className="p-1 text-gray-400 hover:text-yellow-400" title="Set as Group Lead"><Star size={18} /></button>}
+                    <button onClick={() => dispatch({ type: 'TOGGLE_GROUP_MEMBER_LOCK', payload: { groupId, playerId: player.id } })} className={`p-1 rounded-full ${member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700"}`} title={member.isLocked ? "Unlock" : "Lock"}>{member.isLocked ? <Lock size={18} /> : <Unlock size={18} />}</button>
+                    <button onClick={() => dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId, playerId: player.id } })} className="p-1 text-red-500 hover:bg-gray-700 rounded-full"><Trash2 size={18} /></button>
                 </div>
             </div>
             {member.isLocked ? (
@@ -146,9 +150,9 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                                         <div key={unit} className="flex items-center justify-between p-1 rounded hover:bg-gray-700/50">
                                             <label className="flex items-center space-x-2 flex-grow cursor-pointer min-w-0">
                                                 <div className={`flex-shrink-0 ${playerFavoriteUnitsSet.has(unit) ? 'text-yellow-400 fill-yellow-400' : 'text-transparent'}`} title="Favorite">
-                                                    <Star size={14} /> 
+                                                    <Star size={14} />
                                                 </div>
-                                                
+
                                                 <div className={`w-4 h-4 rounded-sm border-2 flex-shrink-0 ${playerMasteryUnitsSet.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500'}`} title="Mastery"></div>
                                                 <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${playerPreparedUnitsSet.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-500'}`} title="Maxed"></div>
                                                 <input type="checkbox" checked={selectedUnitsMap.has(unit)} onChange={() => toggleUnit(unit)} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500/50" />
