@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Player, GroupMember } from '../types';
 import { Star, Trash2, ArrowRightLeft, Lock, Unlock, Plus, AlertTriangle } from './icons';
+import { cn } from '../utils';
 
 const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-400 border-yellow-400/50', Epic: 'text-purple-400 border-purple-400/50', Rare: 'text-blue-400 border-blue-400/50', Uncommon: 'text-green-400 border-green-400/50', Common: 'text-gray-400 border-gray-400/50', "Manually Added": 'text-gray-400 border-gray-500/50' };
 
@@ -91,7 +92,7 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
         <div className="bg-gray-800/30 p-4 rounded-lg">
             <div className="flex justify-between items-start mb-2">
                 <div>
-                    <h4 className={`text-xl font-bold flex items-center gap-2 ${isLeader ? 'text-yellow-300' : 'text-blue-300'}`}>
+                    <h4 className={cn("text-xl font-bold flex items-center gap-2", isLeader ? 'text-yellow-300' : 'text-blue-300')}>
                         {player.name}
                         {isLeader && <Star size={16} className="fill-current" />}
                         {player.info && (
@@ -103,7 +104,7 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                             </div>
                         )}
                     </h4>
-                    <p className={`text-sm font-semibold mt-1 ${hasExceededLeadership ? 'text-red-400' : 'text-gray-400'}`}>
+                    <p className={cn("text-sm font-semibold mt-1", hasExceededLeadership ? 'text-red-400' : 'text-gray-400')}>
                         Leadership: {usedLeadership} / {totalLeadership} ({remainingLeadership} remaining)
                     </p>
                 </div>
@@ -113,7 +114,7 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                         {isMoving && <select onChange={handleMoveSelect} onBlur={() => setIsMoving(false)} className="absolute right-0 top-full mt-1 bg-gray-700 border border-gray-600 rounded-md text-white z-20" defaultValue="" autoFocus><option value="" disabled>Move to...</option>{otherGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select>}
                     </div>
                     {!isLeader && <button onClick={() => dispatch({ type: 'SET_GROUP_LEADER', payload: { groupId, playerId: player.id } })} className="p-1 text-gray-400 hover:text-yellow-400" title="Set as Group Lead"><Star size={18} /></button>}
-                    <button onClick={() => dispatch({ type: 'TOGGLE_GROUP_MEMBER_LOCK', payload: { groupId, playerId: player.id } })} className={`p-1 rounded-full ${member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700"}`} title={member.isLocked ? "Unlock" : "Lock"}>{member.isLocked ? <Lock size={18} /> : <Unlock size={18} />}</button>
+                    <button onClick={() => dispatch({ type: 'TOGGLE_GROUP_MEMBER_LOCK', payload: { groupId, playerId: player.id } })} className={cn("p-1 rounded-full", member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700")} title={member.isLocked ? "Unlock" : "Lock"}>{member.isLocked ? <Lock size={18} /> : <Unlock size={18} />}</button>
                     <button onClick={() => dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId, playerId: player.id } })} className="p-1 text-red-500 hover:bg-gray-700 rounded-full"><Trash2 size={18} /></button>
                 </div>
             </div>
@@ -142,19 +143,19 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                 <div className="space-y-4">
                     {sortedTiers.map(tier => (
                         <div key={tier}>
-                            <h5 className={`font-semibold text-sm mb-2 pb-1 border-b ${tierColorClasses[tier]}`}>{tier}</h5>
+                            <h5 className={cn("font-semibold text-sm mb-2 pb-1 border-b", tierColorClasses[tier])}>{tier}</h5>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 pt-2">
                                 {unitsToDisplayByTier[tier].map(unit => {
                                     const cost = unitCostMap.get(unit);
                                     return (
                                         <div key={unit} className="flex items-center justify-between p-1 rounded hover:bg-gray-700/50">
                                             <label className="flex items-center space-x-2 flex-grow cursor-pointer min-w-0">
-                                                <div className={`flex-shrink-0 ${playerFavoriteUnitsSet.has(unit) ? 'text-yellow-400 fill-yellow-400' : 'text-transparent'}`} title="Favorite">
+                                                <div className={cn("flex-shrink-0", playerFavoriteUnitsSet.has(unit) ? 'text-yellow-400 fill-yellow-400' : 'text-transparent')} title="Favorite">
                                                     <Star size={14} />
                                                 </div>
 
-                                                <div className={`w-4 h-4 rounded-sm border-2 flex-shrink-0 ${playerMasteryUnitsSet.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500'}`} title="Mastery"></div>
-                                                <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${playerPreparedUnitsSet.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-500'}`} title="Maxed"></div>
+                                                <div className={cn("w-4 h-4 rounded-sm border-2 flex-shrink-0", playerMasteryUnitsSet.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500')} title="Mastery"></div>
+                                                <div className={cn("w-4 h-4 rounded-full border-2 flex-shrink-0", playerPreparedUnitsSet.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-500')} title="Maxed"></div>
                                                 <input type="checkbox" checked={selectedUnitsMap.has(unit)} onChange={() => toggleUnit(unit)} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500/50" />
                                                 <div className="flex items-baseline min-w-0">
                                                     <span className="truncate" title={unit}>{unit}</span>

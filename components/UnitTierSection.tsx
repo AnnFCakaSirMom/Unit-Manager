@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Unit } from '../types';
 import { ChevronUp, ChevronDown, Star } from './icons';
+import { cn } from '../utils';
 
 const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-400 border-yellow-400/50', Epic: 'text-purple-400 border-purple-400/50', Rare: 'text-blue-400 border-blue-400/50', Uncommon: 'text-green-400 border-green-400/50', Common: 'text-gray-400 border-gray-400/50' };
 
@@ -21,7 +22,7 @@ export const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, sele
 
     return (
         <section>
-            <button onClick={() => setIsOpen(!isOpen)} className={`w-full flex justify-between items-center p-2 rounded-t-md border-b-2 ${tierColorClasses[tier]}`}>
+            <button onClick={() => setIsOpen(!isOpen)} className={cn("w-full flex justify-between items-center p-2 rounded-t-md border-b-2", tierColorClasses[tier])}>
                 <h3 className="text-xl font-semibold">{tier}</h3>
                 {isOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
             </button>
@@ -31,7 +32,7 @@ export const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, sele
                         <label key={unit.name} className="flex items-center space-x-2 cursor-pointer p-1 rounded hover:bg-gray-700/50 transition-colors">
                             <div
                                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'favoriteUnits'); }}
-                                className={`cursor-pointer transition-colors flex-shrink-0 ${favoriteUnits.has(unit.name) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-gray-400'}`}
+                                className={cn("cursor-pointer transition-colors flex-shrink-0", favoriteUnits.has(unit.name) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-gray-400')}
                                 title="Toggle Favorite"
                             >
                                 <Star size={18} />
@@ -39,12 +40,12 @@ export const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, sele
 
                             <div
                                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'masteryUnits'); }}
-                                className={`w-4 h-4 rounded-sm border-2 ${masteryUnits.has(unit.name) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
+                                className={cn("w-4 h-4 rounded-sm border-2 transition-colors flex-shrink-0", masteryUnits.has(unit.name) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-400')}
                                 title="Toggle Mastery"
                             ></div>
                             <div
                                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'preparedUnits'); }}
-                                className={`w-4 h-4 rounded-full border-2 ${preparedUnits.has(unit.name) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
+                                className={cn("w-4 h-4 rounded-full border-2 transition-colors flex-shrink-0", preparedUnits.has(unit.name) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-400')}
                                 title="Toggle Maxed"
                             ></div>
                             <input type="checkbox" checked={selectedUnits.has(unit.name)} onChange={() => onUnitToggle(selectedPlayerId, unit.name, 'units')} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500/50" />

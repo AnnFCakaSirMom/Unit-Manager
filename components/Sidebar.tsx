@@ -4,6 +4,7 @@ import { Save, FolderOpen, Settings, UserPlus, Users, ChevronUp, ChevronDown } f
 import { UnitSearch } from './UnitSearch';
 import { PlayerList } from './PlayerList';
 import { GroupsList } from './GroupsList';
+import { cn } from '../utils';
 
 interface SidebarProps {
     selectedPlayerId: string | null;
@@ -73,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                     </button>
                 </div>
                 <div className="h-5 mt-2 text-center">
-                    {statusMessage && <p className={`text-sm ${statusMessage.startsWith('Error') ? 'text-red-400' : 'text-green-400'}`}>{statusMessage}</p>}
+                    {statusMessage && <p className={cn("text-sm", statusMessage.startsWith('Error') ? 'text-red-400' : 'text-green-400')}>{statusMessage}</p>}
                 </div>
             </header>
 

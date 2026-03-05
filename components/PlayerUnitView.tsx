@@ -4,6 +4,7 @@ import { CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star } from '
 import { ParseFormModal } from './ParseFormModal';
 import { UnitTierSection } from './UnitTierSection';
 import { OwnedUnitsView } from './OwnedUnitsView';
+import { cn } from '../utils';
 
 
 interface PlayerUnitViewProps {
@@ -147,8 +148,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                 <div className="mb-4">
                     <div className="flex items-center gap-4">
                         <div className="bg-gray-800/60 rounded-md p-1 flex items-center gap-1 self-start">
-                            <button onClick={() => setUnitViewMode('all')} className={`px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors ${unitViewMode === 'all' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700/50'}`}><CheckSquare size={16} /> Show All</button>
-                            <button onClick={() => setUnitViewMode('owned')} className={`px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors ${unitViewMode === 'owned' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700/50'}`}><List size={16} /> Show Owned</button>
+                            <button onClick={() => setUnitViewMode('all')} className={cn("px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors", unitViewMode === 'all' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700/50')}><CheckSquare size={16} /> Show All</button>
+                            <button onClick={() => setUnitViewMode('owned')} className={cn("px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors", unitViewMode === 'owned' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700/50')}><List size={16} /> Show Owned</button>
                         </div>
                         <div className="relative flex-grow">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />

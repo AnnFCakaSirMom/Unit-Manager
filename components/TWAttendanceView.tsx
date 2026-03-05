@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { AppState } from '../types';
 import { UserPlus, AlertTriangle, CheckSquare, Users, ImportIcon, Trash2, Shield, Plus } from './icons';
 import { ImportRaidHelperModal } from './ImportRaidHelperModal';
+import { cn } from '../utils';
 
 const GripIcon = ({ className = "", size = 16 }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -112,7 +113,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
 
     const renderList = (list: AppState['twAttendance'], title: string, colorClass: string, icon: React.ReactNode) => (
         <div className="mb-6">
-            <h3 className={`text-lg font-bold mb-3 flex items-center gap-2 border-b-2 pb-2 ${colorClass}`}>
+            <h3 className={cn("text-lg font-bold mb-3 flex items-center gap-2 border-b-2 pb-2", colorClass)}>
                 {icon} {title} ({list.length})
             </h3>
             <div className="space-y-2">
@@ -126,9 +127,12 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                             draggable={isDraggable}
                             onDragStart={(e) => isDraggable && handleDragStart(e, person.matchedPlayerId!)}
                             onDragEnd={handleDragEnd}
-                            className={`flex items-center justify-between p-2 rounded-md border transition-all ${existingGroup ? 'bg-green-900/20 border-green-700/50' : 'bg-gray-800/50 border-gray-700'
-                                } ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:bg-gray-700/60' : ''} ${draggedPlayer === person.matchedPlayerId ? 'opacity-50' : 'opacity-100'
-                                }`}
+                            className={cn(
+                                "flex items-center justify-between p-2 rounded-md border transition-all",
+                                existingGroup ? 'bg-green-900/20 border-green-700/50' : 'bg-gray-800/50 border-gray-700',
+                                isDraggable && 'cursor-grab active:cursor-grabbing hover:bg-gray-700/60',
+                                draggedPlayer === person.matchedPlayerId && 'opacity-50'
+                            )}
                         >
                             <div className="flex items-center gap-2 min-w-0">
                                 {isDraggable ? (
@@ -168,8 +172,10 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                                     <select
                                         value={existingGroup ? existingGroup.id : ""}
                                         onChange={(e) => handleAssignGroup(person.matchedPlayerId!, e.target.value)}
-                                        className={`text-xs font-semibold py-1 px-2 rounded focus:outline-none cursor-pointer ${existingGroup ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-600 hover:bg-gray-500 text-white"
-                                            }`}
+                                        className={cn(
+                                            "text-xs font-semibold py-1 px-2 rounded focus:outline-none cursor-pointer",
+                                            existingGroup ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-600 hover:bg-gray-500 text-white"
+                                        )}
                                     >
                                         <option value="" disabled>Group...</option>
                                         {groups.map(g => (
@@ -200,15 +206,20 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                         key={group.id}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDropOnGroup(e, group.id)}
-                        className={`bg-gray-800/80 border-2 rounded-lg flex flex-col transition-colors ${draggedPlayer ? (isFull ? 'border-red-500/30' : 'border-blue-500/50 border-dashed bg-gray-800') : 'border-gray-700'
-                            }`}
+                        className={cn(
+                            "bg-gray-800/80 border-2 rounded-lg flex flex-col transition-colors",
+                            draggedPlayer ? (isFull ? 'border-red-500/30' : 'border-blue-500/50 border-dashed bg-gray-800') : 'border-gray-700'
+                        )}
                     >
                         <div className="bg-gray-900/50 p-2 rounded-t-lg border-b border-gray-700 flex justify-between items-center">
                             <h4 className="font-bold text-gray-200 flex items-center gap-2 text-sm">
                                 <Shield size={14} className="text-blue-400" />
                                 {group.name}
                             </h4>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isFull ? 'bg-red-500/20 text-red-400' : 'bg-gray-700 text-gray-300'}`}>
+                            <span className={cn(
+                                "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                                isFull ? 'bg-red-500/20 text-red-400' : 'bg-gray-700 text-gray-300'
+                            )}>
                                 {group.members.length} / 5
                             </span>
                         </div>
@@ -229,10 +240,12 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                                         }}
                                         onDragLeave={() => setDragOverPlayer(null)}
                                         onDrop={(e) => handleDropOnMember(e, group.id, member.playerId)}
-                                        className={`p-1.5 rounded flex justify-between items-center cursor-grab active:cursor-grabbing border transition-colors ${dragOverPlayer === member.playerId
-                                            ? 'border-blue-500 bg-blue-500/20'
-                                            : 'border-transparent bg-gray-700/50 hover:border-gray-500 hover:bg-gray-600'
-                                            }`}
+                                        className={cn(
+                                            "p-1.5 rounded flex justify-between items-center cursor-grab active:cursor-grabbing border transition-colors",
+                                            dragOverPlayer === member.playerId
+                                                ? 'border-blue-500 bg-blue-500/20'
+                                                : 'border-transparent bg-gray-700/50 hover:border-gray-500 hover:bg-gray-600'
+                                        )}
                                     >
                                         <div className="flex items-center gap-2 truncate">
                                             <GripIcon size={14} className="text-gray-500" />
