@@ -2,6 +2,7 @@ import React from 'react';
 import type { AppState, Group } from '../types';
 import { UserPlus, AlertTriangle } from './icons';
 import { Button } from './Button';
+import { Select } from './Select';
 import { cn } from '../utils';
 
 const GripIcon = ({ className = "", size = 16 }) => (
@@ -100,12 +101,12 @@ export const AttendancePlayerList: React.FC<AttendancePlayerListProps> = ({
                                         <UserPlus size={14} /> Create
                                     </Button>
                                 ) : (
-                                    <select
+                                    <Select
                                         value={existingGroup ? existingGroup.id : ""}
                                         onChange={(e) => handleAssignGroup(person.matchedPlayerId!, e.target.value)}
                                         className={cn(
-                                            "text-xs font-semibold py-1 px-2 rounded focus:outline-none cursor-pointer",
-                                            existingGroup ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-600 hover:bg-gray-500 text-white"
+                                            "text-xs font-semibold py-1 px-2 w-[110px]",
+                                            existingGroup ? "bg-green-600 hover:bg-green-700 border-green-500" : "bg-gray-600 hover:bg-gray-500 border-gray-500"
                                         )}
                                     >
                                         <option value="" disabled>Group...</option>
@@ -117,7 +118,7 @@ export const AttendancePlayerList: React.FC<AttendancePlayerListProps> = ({
                                         {existingGroup && (
                                             <option value="REMOVE">❌ Remove</option>
                                         )}
-                                    </select>
+                                    </Select>
                                 )}
                             </div>
                         </div>

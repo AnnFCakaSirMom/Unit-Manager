@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import type { Player, ConfirmModalInfo } from '../types';
 import { Save, Search, X, Pencil, Trash2, AlertTriangle } from './icons';
 import { Button } from './Button';
+import { Input } from './Input';
 
 export interface PlayerListProps {
     selectedPlayerId: string | null;
@@ -57,7 +58,7 @@ export const PlayerList = React.memo(({
             <div className="flex items-center gap-2 mb-4">
                 <div className="relative flex-grow">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search players..." className="w-full bg-gray-700 border border-gray-600 rounded-md pl-10 pr-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <Input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search players..." className="w-full pl-10 pr-3 py-2" />
                 </div>
                 <label className="flex items-center space-x-2 text-sm text-gray-400 cursor-pointer" title="Show 'Not in House' players">
                     <input type="checkbox" checked={notInHouse} onChange={() => setNotInHouse(!notInHouse)} className="form-checkbox h-4 w-4 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500" />
@@ -71,7 +72,7 @@ export const PlayerList = React.memo(({
                             <li key={player.id} className={`p-2 rounded-md transition-all duration-200 flex justify-between items-center group ${selectedPlayerId === player.id ? 'bg-blue-500/20' : 'bg-gray-700/50'} ${player.notInHouse ? 'opacity-60' : ''}`}>
                                 {editingPlayer.id === player.id ? (
                                     <div className="flex-grow flex items-center gap-2">
-                                        <input type="text" value={editingPlayer.name} onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })} onKeyPress={(e) => e.key === 'Enter' && handleSavePlayerName()} className="flex-grow bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white" autoFocus aria-label="Player Name Input" />
+                                        <Input type="text" value={editingPlayer.name} onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })} onKeyPress={(e) => e.key === 'Enter' && handleSavePlayerName()} className="flex-grow bg-gray-600 border-gray-500 px-2 py-1" autoFocus aria-label="Player Name Input" />
                                         <Button variant="success" size="icon" onClick={handleSavePlayerName} title="Save Player Name" aria-label="Save Player Name"><Save size={18} /></Button>
                                         <Button variant="ghost" size="icon" className="text-gray-400" onClick={() => setEditingPlayer({ id: null, name: '' })} title="Cancel Editing" aria-label="Cancel Editing"><X size={18} /></Button>
                                     </div>

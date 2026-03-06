@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import type { ConfirmModalInfo } from '../types';
 import { Save, FolderOpen, Settings, UserPlus, Users, ChevronUp, ChevronDown } from './icons';
 import { Button } from './Button';
+import { Input } from './Input';
 import { UnitSearch } from './UnitSearch';
 import { PlayerList } from './PlayerList';
 import { GroupsList } from './GroupsList';
@@ -80,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             </header>
 
             <div className="flex items-center gap-2 mb-4">
-                <input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()} placeholder="New player name..." className="flex-grow bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="New Player Name Input" />
+                <Input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()} placeholder="New player name..." className="flex-grow px-3 py-2" aria-label="New Player Name Input" />
                 <Button variant="primary" size="icon" className="p-2" onClick={handleAddPlayer} disabled={!newPlayerName.trim()} title="Add Player" aria-label="Add Player"><UserPlus size={20} /></Button>
             </div>
 

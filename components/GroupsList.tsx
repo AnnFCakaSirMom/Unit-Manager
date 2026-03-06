@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import type { ConfirmModalInfo } from '../types';
 import { Save, Shield, Clipboard, Plus, X, Pencil, Trash2 } from './icons';
 import { Button } from './Button';
+import { Input } from './Input';
 
 export interface GroupsListProps {
     selectedGroupId: string | null;
@@ -91,7 +92,7 @@ export const GroupsList = React.memo(({
                             <li key={group.id} className={`p-3 rounded-md transition-all duration-200 flex justify-between items-center group ${selectedGroupId === group.id ? 'bg-green-500/20' : 'bg-gray-700/50'}`}>
                                 {editingGroup.id === group.id ? (
                                     <div className="flex-grow flex items-center gap-2">
-                                        <input type="text" value={editingGroup.name} onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })} onKeyPress={(e) => e.key === 'Enter' && handleSaveGroupName()} className="flex-grow bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white" autoFocus aria-label="Group Name Input" />
+                                        <Input type="text" value={editingGroup.name} onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })} onKeyPress={(e) => e.key === 'Enter' && handleSaveGroupName()} className="flex-grow bg-gray-600 border-gray-500 px-2 py-1" autoFocus aria-label="Group Name Input" />
                                         <Button variant="success" size="icon" onClick={handleSaveGroupName} title="Save Group Name" aria-label="Save Group Name"><Save size={18} /></Button>
                                         <Button variant="ghost" size="icon" className="text-gray-400" onClick={() => setEditingGroup({ id: null, name: '' })} title="Cancel Editing" aria-label="Cancel Editing"><X size={18} /></Button>
                                     </div>

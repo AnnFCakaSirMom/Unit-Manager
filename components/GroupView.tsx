@@ -4,6 +4,7 @@ import { Search, Clipboard, UserPlus } from './icons';
 
 import { GroupMemberCard } from './GroupMemberCard';
 import { Button } from './Button';
+import { Input } from './Input';
 
 interface GroupViewProps {
     group: Group;
@@ -86,7 +87,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
                 <h3 className="text-lg font-semibold mb-2">Add Player to Group</h3>
                 <div className="relative" ref={searchContainerRef}>
                     <Search className="absolute left-3 top-1-2 -translate-y-1/2 text-gray-400" size={20} />
-                    <input type="text" value={playerSearch} onChange={e => setPlayerSearch(e.target.value)} onFocus={() => setShowSuggestions(true)} placeholder="Search for player to add..." className="w-full bg-gray-700 border border-gray-600 rounded-md pl-10 pr-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={group.members.length >= 5} />
+                    <Input type="text" value={playerSearch} onChange={e => setPlayerSearch(e.target.value)} onFocus={() => setShowSuggestions(true)} placeholder="Search for player to add..." className="w-full pl-10 pr-3 py-2" disabled={group.members.length >= 5} />
                     {showSuggestions && playerSearch && availablePlayers.length > 0 && (
                         <ul className="absolute z-10 w-full bg-gray-600 border border-gray-500 rounded-md mt-1 max-h-48 overflow-y-auto">
                             {availablePlayers.map(p => <li key={p.id} onClick={() => handleSelectPlayer(p.id)} className="px-3 py-2 cursor-pointer hover:bg-gray-500 flex items-center gap-2"><UserPlus size={16} /> {p.name}</li>)}

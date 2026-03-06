@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Star, Plus } from './icons';
 import { Button } from './Button';
+import { Input } from './Input';
+import { Select } from './Select';
 import { cn } from '../utils';
 
 const tierColorClasses: { [key: string]: string } = {
@@ -71,15 +73,15 @@ export const UnlockedMemberView: React.FC<UnlockedMemberViewProps> = ({
                                         </div>
                                     </label>
                                     {selectedUnitsMap.has(unit) && (
-                                        <select
+                                        <Select
                                             value={selectedUnitsMap.get(unit)?.rank || 0}
                                             onChange={(e) => setRank(unit, e.target.value)}
-                                            className="bg-gray-700 border border-gray-600 rounded-md text-xs py-0.5 px-1 ml-2"
+                                            className="text-xs py-0.5 px-1 ml-2 min-w-[3.5rem]"
                                             onClick={e => e.stopPropagation()}
                                         >
                                             <option value="0">Rank</option>
                                             {[1, 2, 3, 4, 5].map(r => <option key={r} value={r}>{r}</option>)}
-                                        </select>
+                                        </Select>
                                     )}
                                 </div>
                             );
@@ -89,13 +91,13 @@ export const UnlockedMemberView: React.FC<UnlockedMemberViewProps> = ({
             ))}
             <div className="mt-4 pt-4 border-t border-gray-700/50">
                 <div className="relative flex items-center gap-2">
-                    <input
+                    <Input
                         type="text"
                         value={manualUnitName}
                         onChange={e => setManualUnitName(e.target.value)}
                         onKeyPress={e => e.key === 'Enter' && onAddManualUnit()}
                         placeholder="Add unit manually..."
-                        className="flex-grow bg-gray-700 border border-gray-600 rounded-md px-3 py-1.5 text-white placeholder-gray-400"
+                        className="flex-grow py-1.5"
                     />
                     <Button onClick={onAddManualUnit} variant="primary" className="py-1.5 px-3" aria-label="Add Unit Manually" title="Add Unit Manually"><Plus size={18} /></Button>
                 </div>

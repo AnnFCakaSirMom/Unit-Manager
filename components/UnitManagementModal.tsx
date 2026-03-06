@@ -3,6 +3,8 @@ import type { Unit, ConfirmModalInfo } from '../types';
 import { ConfirmationModal } from './ConfirmationModal';
 import { X, Plus, Save, Trash2, Search, Pencil } from './icons';
 import { Button } from './Button';
+import { Input } from './Input';
+import { Select } from './Select';
 
 interface UnitManagementModalProps {
     onClose: () => void;
@@ -106,20 +108,20 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                         <div className="bg-gray-900/50 p-4 rounded-lg mb-6">
                             <h3 className="text-lg font-semibold mb-2">Add New Unit</h3>
                             <div className="flex items-center gap-2 flex-wrap">
-                                <input type="text" placeholder="Unit name" value={newUnit.name} onChange={e => setNewUnit({ ...newUnit, name: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleAddUnit()} className="flex-grow bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white min-w-[200px]" />
+                                <Input type="text" placeholder="Unit name" value={newUnit.name} onChange={e => setNewUnit({ ...newUnit, name: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleAddUnit()} className="flex-grow px-3 py-2 min-w-[200px]" />
                                 {tiersWithCost.includes(newUnit.tier) && (
-                                    <input type="number" placeholder="Leadership" value={newUnit.cost} onChange={e => setNewUnit({ ...newUnit, cost: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleAddUnit()} className="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white w-28" />
+                                    <Input type="number" placeholder="Leadership" value={newUnit.cost} onChange={e => setNewUnit({ ...newUnit, cost: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleAddUnit()} className="px-3 py-2 w-28" />
                                 )}
-                                <select value={newUnit.tier} onChange={e => setNewUnit({ ...newUnit, tier: e.target.value })} className="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
+                                <Select value={newUnit.tier} onChange={e => setNewUnit({ ...newUnit, tier: e.target.value })} className="px-3 py-2 min-w-[120px]">
                                     {Object.keys(unitConfig.tiers).sort((a, b) => tiersWithCost.indexOf(b) - tiersWithCost.indexOf(a)).map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
+                                </Select>
                                 <Button variant="primary" onClick={handleAddUnit}><Plus size={18} /> Add</Button>
                             </div>
                         </div>
 
                         <div className="relative mb-4">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                            <input type="text" value={unitSearchQuery} onChange={(e) => setUnitSearchQuery(e.target.value)} placeholder="Search units..." className="w-full bg-gray-700 border border-gray-600 rounded-md pl-10 pr-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <Input type="text" value={unitSearchQuery} onChange={(e) => setUnitSearchQuery(e.target.value)} placeholder="Search units..." className="w-full pl-10 pr-3 py-2" />
                         </div>
 
                         <div className="space-y-4">
@@ -135,9 +137,9 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                                                 <li key={unit.name} className="bg-gray-700/50 p-2 rounded-md flex items-center justify-between group">
                                                     {editingUnit?.originalUnit.name === unit.name ? (
                                                         <div className="flex-grow flex items-center gap-2">
-                                                            <input type="text" value={editingUnit.newName} onChange={e => setEditingUnit({ ...editingUnit, newName: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleSaveEdit()} className="flex-grow bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white" autoFocus aria-label="Unit Name Input" />
+                                                            <Input type="text" value={editingUnit.newName} onChange={e => setEditingUnit({ ...editingUnit, newName: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleSaveEdit()} className="flex-grow bg-gray-600 border-gray-500 px-2 py-1" autoFocus aria-label="Unit Name Input" />
                                                             {tiersWithCost.includes(tier) && (
-                                                                <input type="number" value={editingUnit.newCost} onChange={e => setEditingUnit({ ...editingUnit, newCost: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleSaveEdit()} className="bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white w-24" aria-label="Leadership Cost Input" />
+                                                                <Input type="number" value={editingUnit.newCost} onChange={e => setEditingUnit({ ...editingUnit, newCost: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleSaveEdit()} className="bg-gray-600 border-gray-500 px-2 py-1 w-24" aria-label="Leadership Cost Input" />
                                                             )}
                                                             <Button variant="success" size="icon" onClick={handleSaveEdit} title="Save Unit" aria-label="Save Unit"><Save size={18} /></Button>
                                                             <Button variant="ghost" size="icon" className="text-gray-400" onClick={() => setEditingUnit(null)} title="Cancel Editing" aria-label="Cancel Editing"><X size={18} /></Button>
