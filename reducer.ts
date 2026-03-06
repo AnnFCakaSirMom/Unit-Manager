@@ -1,7 +1,6 @@
-import type { AppState, AppAction, Player, Group, Unit, TWAttendancePlayer } from './types';
+import type { AppState, AppAction, Player, Group } from './types';
 
-import { AppStateSchema } from './schema';
-import { DEFAULT_UNIT_TIERS } from './units';
+import { handleParsePlayerUnitsForm, handleTWAttendanceImport, handleLoadState } from './utils/reducerHelpers';
 
 
 // --- Main Reducer ---
@@ -55,40 +54,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             };
         }
         case 'PARSE_PLAYER_UNITS_FORM': {
-            const { playerId, formData, allUnitNames } = action.payload;
-
-            const allUnitNamesSet = new Set(allUnitNames);
-            const newUnits: string[] = [];
-            const newPreparedUnits: string[] = [];
-            const newMasteryUnits: string[] = [];
-            const newFavoriteUnits: string[] = [];
-
-            const lines = formData.split('\n');
-            const regex = /(.*?)\s+-\s+✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\](?:.*❤️ Favorite: \[(.*?)\])?/;
-
-            for (const line of lines) {
-                const match = line.match(regex);
-                if (match) {
-                    const [_, unitNameStr, ownedStr, maxedStr, masteryStr, favoriteStr] = match;
-                    const unitName = unitNameStr.trim();
-
-                    if (allUnitNamesSet.has(unitName)) {
-                        if (ownedStr.trim().toLowerCase() === 'x') newUnits.push(unitName);
-                        if (maxedStr.trim().toLowerCase() === 'x') newPreparedUnits.push(unitName);
-                        if (masteryStr.trim().toLowerCase() === 'x') newMasteryUnits.push(unitName);
-                        if (favoriteStr && favoriteStr.trim().toLowerCase() === 'x') newFavoriteUnits.push(unitName);
-                    }
-                }
-            }
-
-            return {
-                ...state,
-                players: state.players.map(p =>
-                    p.id === playerId
-                        ? { ...p, units: newUnits, preparedUnits: newPreparedUnits, masteryUnits: newMasteryUnits, favoriteUnits: newFavoriteUnits }
-                        : p
-                )
-            };
+            return handleParsePlayerUnitsForm(state, action.payload);
         }
         case 'UPDATE_UNIT_CONFIG':
             return { ...state, unitConfig: action.payload.unitConfig };
@@ -273,123 +239,13 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return { ...state, groups: state.groups.map(g => g.id === groupId ? { ...g, leaderId: playerId } : g) };
         }
         case 'IMPORT_TW_ATTENDANCE': {
-            try {
-                const data = JSON.parse(action.payload.jsonString);
-                if (!data.signUps) throw new Error("Invalid Raid Helper format");
-
-                const washName = (name: string) => (name || "")
-                    .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "")
-                    .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '')
-                    .toLowerCase();
-
-                const attendance: TWAttendancePlayer[] = [];
-                const declinedPlayerIds = new Set<string>(); // Listan för de som tackat nej
-
-                const washedUMPlayers = state.players.map(p => ({
-                    id: p.id,
-                    washedName: washName(p.name)
-                }));
-
-                data.signUps.forEach((signup: any) => {
-                    const washedDiscordName = washName(signup.name);
-                    const match = washedUMPlayers.find(p =>
-                        p.washedName === washedDiscordName ||
-                        washedDiscordName.includes(p.washedName) ||
-                        p.washedName.includes(washedDiscordName)
-                    );
-
-                    if (signup.className === 'Accepted' || signup.className === 'Maybe') {
-                        attendance.push({
-                            discordName: signup.name,
-                            status: signup.className as 'Accepted' | 'Maybe',
-                            matchedPlayerId: match ? match.id : null
-                        });
-                    } else if (match) {
-                        // Spelaren hittades, men har Decline/Absence/Late etc.
-                        declinedPlayerIds.add(match.id);
-                    }
-                });
-
-                attendance.sort((a, b) => {
-                    if (a.status === 'Accepted' && b.status === 'Maybe') return -1;
-                    if (a.status === 'Maybe' && b.status === 'Accepted') return 1;
-                    return a.discordName.localeCompare(b.discordName);
-                });
-
-                // Auto-städa grupperna från spelare som tackat nej
-                const newGroups = state.groups.map(group => {
-                    // Kasta ut alla som finns på declined-listan
-                    const newMembers = group.members.filter(m => !declinedPlayerIds.has(m.playerId));
-
-                    // Om gruppledaren råkade vara en av dem som försvann, välj nästa person som ny ledare
-                    let newLeaderId = group.leaderId;
-                    if (newLeaderId && !newMembers.some(m => m.playerId === newLeaderId)) {
-                        newLeaderId = newMembers.length > 0 ? newMembers[0].playerId : null;
-                    }
-
-                    return { ...group, members: newMembers, leaderId: newLeaderId };
-                });
-
-                return { ...state, twAttendance: attendance, groups: newGroups };
-            } catch (e) {
-                console.error("Could not parse Raid Helper data", e);
-                return state;
-            }
+            return handleTWAttendanceImport(state, action.payload);
         }
         case 'CLEAR_TW_ATTENDANCE': {
             return { ...state, twAttendance: [] };
         }
         case 'LOAD_STATE': {
-            try {
-                // Validate data using Zod schema to ensure correct structure and defaults
-                const loadedData = AppStateSchema.parse(action.payload);
-
-                // --- Smart Unit Merge Strategy ---
-                const mergedTiers: { [tier: string]: Unit[] } = {};
-
-                // Deep copy loaded tiers
-                if (loadedData.unitConfig && loadedData.unitConfig.tiers) {
-                    for (const tier in loadedData.unitConfig.tiers) {
-                        mergedTiers[tier] = [...loadedData.unitConfig.tiers[tier]];
-                    }
-                }
-
-                const loadedUnitNames = new Set<string>();
-
-                // Gather all units from the loaded save file
-                for (const tier in mergedTiers) {
-                    mergedTiers[tier].forEach(u => loadedUnitNames.add(u.name));
-                }
-
-                // Check hardcoded defaults (units.ts) for any newly released units
-                for (const tier in DEFAULT_UNIT_TIERS) {
-                    if (!mergedTiers[tier]) {
-                        mergedTiers[tier] = [];
-                    }
-                    DEFAULT_UNIT_TIERS[tier].forEach(defaultUnit => {
-                        if (!loadedUnitNames.has(defaultUnit.name)) {
-                            // Add new unit that wasn't present in the old save file
-                            mergedTiers[tier].push(defaultUnit);
-                            loadedUnitNames.add(defaultUnit.name);
-                        }
-                    });
-
-                    // Keep the list sorted for a clean UI
-                    mergedTiers[tier].sort((a, b) => a.name.localeCompare(b.name));
-                }
-
-                return {
-                    ...state,
-                    players: loadedData.players,
-                    unitConfig: { tiers: mergedTiers },
-                    groups: loadedData.groups,
-                    twAttendance: loadedData.twAttendance
-                };
-            } catch (error) {
-                console.error("Failed to parse and load save file. JSON schema mismatch:", error);
-                return state;
-            }
+            return handleLoadState(state, action.payload);
         }
         default:
             return state;
