@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, CheckIcon } from './icons';
+import { Button } from './Button';
 
 interface ImportRaidHelperModalProps {
     isOpen: boolean;
@@ -39,7 +40,7 @@ export const ImportRaidHelperModal: React.FC<ImportRaidHelperModalProps> = ({ is
                     <h2 className="text-xl font-bold text-white">
                         Import Raid Helper Data
                     </h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700" title="Close" aria-label="Close"><X size={24} /></button>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-gray-700" title="Close" aria-label="Close"><X size={24} /></Button>
                 </header>
                 <div className="p-4 flex-grow">
                     <p className="text-gray-400 mb-4">Paste the JSON code from the Raid Helper export below.</p>
@@ -52,13 +53,13 @@ export const ImportRaidHelperModal: React.FC<ImportRaidHelperModalProps> = ({ is
                     {error && <p className="text-red-400 mt-2 text-sm">{error}</p>}
                 </div>
                 <footer className="p-4 bg-gray-900/50 rounded-b-lg flex justify-end items-center gap-3">
-                    <button onClick={onClose} className="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition-colors">
+                    <Button variant="ghost" className="bg-gray-600 hover:bg-gray-500" onClick={onClose}>
                         Cancel
-                    </button>
-                    <button onClick={handleImport} disabled={!text.trim()} className="px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white font-semibold transition-colors flex items-center gap-2">
+                    </Button>
+                    <Button variant="success" onClick={handleImport} disabled={!text.trim()}>
                         <CheckIcon size={20} />
                         Import
-                    </button>
+                    </Button>
                 </footer>
             </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Unit, ConfirmModalInfo } from '../types';
 import { ConfirmationModal } from './ConfirmationModal';
 import { X, Plus, Save, Trash2, Search, Pencil } from './icons';
+import { Button } from './Button';
 
 interface UnitManagementModalProps {
     onClose: () => void;
@@ -99,7 +100,7 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                 <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
                     <header className="p-4 border-b border-gray-700 flex justify-between items-center">
                         <h2 className="text-xl font-bold">Manage Units</h2>
-                        <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700" title="Close" aria-label="Close"><X size={24} /></button>
+                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-gray-700" title="Close" aria-label="Close"><X size={24} /></Button>
                     </header>
                     <div className="p-4 flex-grow overflow-y-auto">
                         <div className="bg-gray-900/50 p-4 rounded-lg mb-6">
@@ -112,7 +113,7 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                                 <select value={newUnit.tier} onChange={e => setNewUnit({ ...newUnit, tier: e.target.value })} className="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white">
                                     {Object.keys(unitConfig.tiers).sort((a, b) => tiersWithCost.indexOf(b) - tiersWithCost.indexOf(a)).map(t => <option key={t} value={t}>{t}</option>)}
                                 </select>
-                                <button onClick={handleAddUnit} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-md flex items-center gap-2"><Plus size={18} /> Add</button>
+                                <Button variant="primary" onClick={handleAddUnit}><Plus size={18} /> Add</Button>
                             </div>
                         </div>
 
@@ -138,8 +139,8 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                                                             {tiersWithCost.includes(tier) && (
                                                                 <input type="number" value={editingUnit.newCost} onChange={e => setEditingUnit({ ...editingUnit, newCost: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleSaveEdit()} className="bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white w-24" aria-label="Leadership Cost Input" />
                                                             )}
-                                                            <button onClick={handleSaveEdit} className="p-1 text-green-400 hover:bg-gray-600 rounded" title="Save Unit" aria-label="Save Unit"><Save size={18} /></button>
-                                                            <button onClick={() => setEditingUnit(null)} className="p-1 text-gray-400 hover:bg-gray-600 rounded" title="Cancel Editing" aria-label="Cancel Editing"><X size={18} /></button>
+                                                            <Button variant="success" size="icon" onClick={handleSaveEdit} title="Save Unit" aria-label="Save Unit"><Save size={18} /></Button>
+                                                            <Button variant="ghost" size="icon" className="text-gray-400" onClick={() => setEditingUnit(null)} title="Cancel Editing" aria-label="Cancel Editing"><X size={18} /></Button>
                                                         </div>
                                                     ) : (
                                                         <>
@@ -148,12 +149,12 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                                                                 {unit.leadershipCost && <span className="text-xs text-gray-400">({unit.leadershipCost} LD)</span>}
                                                             </div>
                                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <button onClick={() => setEditingUnit({ tier, originalUnit: unit, newName: unit.name, newCost: String(unit.leadershipCost || '') })} className="p-1 text-blue-400 hover:bg-gray-600 rounded" title="Edit Unit" aria-label="Edit Unit">
+                                                                <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setEditingUnit({ tier, originalUnit: unit, newName: unit.name, newCost: String(unit.leadershipCost || '') })} title="Edit Unit" aria-label="Edit Unit">
                                                                     <Pencil size={18} />
-                                                                </button>
-                                                                <button onClick={() => handleDeleteUnit(unit.name)} className="p-1 text-red-500 hover:bg-gray-600 rounded" title="Delete Unit" aria-label="Delete Unit">
+                                                                </Button>
+                                                                <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDeleteUnit(unit.name)} title="Delete Unit" aria-label="Delete Unit">
                                                                     <Trash2 size={18} />
-                                                                </button>
+                                                                </Button>
                                                             </div>
                                                         </>
                                                     )}

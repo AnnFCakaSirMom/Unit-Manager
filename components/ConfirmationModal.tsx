@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from './Button';
 import { AlertTriangle } from './icons';
 
 interface ConfirmationModalProps {
@@ -13,7 +14,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, ti
     if (!isOpen) return null;
 
     return (
-        <div 
+        <div
             className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
             role="dialog"
             aria-modal="true"
@@ -29,12 +30,12 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, ti
                     <p>{message}</p>
                 </div>
                 <footer className="p-4 bg-gray-900/50 rounded-b-lg flex justify-end items-center gap-3">
-                    <button onClick={onClose} className="px-4 py-2 rounded-md bg-gray-600 hover:bg-gray-500 text-white font-semibold transition-colors">
+                    <Button variant="ghost" className="bg-gray-600 hover:bg-gray-500" onClick={onClose}>
                         Cancel
-                    </button>
-                    <button onClick={onConfirm} className="px-4 py-2 rounded-md bg-red-600 hover:bg-red-500 text-white font-semibold transition-colors">
+                    </Button>
+                    <Button variant="danger" onClick={onConfirm}>
                         Confirm
-                    </button>
+                    </Button>
                 </footer>
             </div>
         </div>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import type { Player, ConfirmModalInfo } from '../types';
 import { Save, Search, X, Pencil, Trash2, AlertTriangle } from './icons';
+import { Button } from './Button';
 
 export interface PlayerListProps {
     selectedPlayerId: string | null;
@@ -71,8 +72,8 @@ export const PlayerList = React.memo(({
                                 {editingPlayer.id === player.id ? (
                                     <div className="flex-grow flex items-center gap-2">
                                         <input type="text" value={editingPlayer.name} onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })} onKeyPress={(e) => e.key === 'Enter' && handleSavePlayerName()} className="flex-grow bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white" autoFocus aria-label="Player Name Input" />
-                                        <button onClick={handleSavePlayerName} className="p-1 text-green-400 hover:bg-gray-600 rounded" title="Save Player Name" aria-label="Save Player Name"><Save size={18} /></button>
-                                        <button onClick={() => setEditingPlayer({ id: null, name: '' })} className="p-1 text-gray-400 hover:bg-gray-600 rounded" title="Cancel Editing" aria-label="Cancel Editing"><X size={18} /></button>
+                                        <Button variant="success" size="icon" onClick={handleSavePlayerName} title="Save Player Name" aria-label="Save Player Name"><Save size={18} /></Button>
+                                        <Button variant="ghost" size="icon" className="text-gray-400" onClick={() => setEditingPlayer({ id: null, name: '' })} title="Cancel Editing" aria-label="Cancel Editing"><X size={18} /></Button>
                                     </div>
                                 ) : (
                                     <>
@@ -86,8 +87,8 @@ export const PlayerList = React.memo(({
                                             <label className="flex items-center mr-2 cursor-pointer text-xs text-gray-400" title="Not in House">
                                                 <input type="checkbox" checked={player.notInHouse || false} onChange={() => handleNotInHouseToggle(player.id)} className="form-checkbox h-4 w-4 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500" aria-label="Mark as Not in House" />
                                             </label>
-                                            <button onClick={() => setEditingPlayer({ id: player.id, name: player.name })} className="p-1 text-blue-400 hover:bg-gray-600 rounded" title="Edit Player Name" aria-label="Edit Player Name"><Pencil size={18} /></button>
-                                            <button onClick={() => handleDeletePlayer(player.id, player.name)} className="p-1 text-red-500 hover:bg-gray-600 rounded" title="Delete Player" aria-label="Delete Player"><Trash2 size={18} /></button>
+                                            <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setEditingPlayer({ id: player.id, name: player.name })} title="Edit Player Name" aria-label="Edit Player Name"><Pencil size={18} /></Button>
+                                            <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDeletePlayer(player.id, player.name)} title="Delete Player" aria-label="Delete Player"><Trash2 size={18} /></Button>
                                         </div>
                                     </>
                                 )}

@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import type { ConfirmModalInfo } from '../types';
 import { Save, FolderOpen, Settings, UserPlus, Users, ChevronUp, ChevronDown } from './icons';
+import { Button } from './Button';
 import { UnitSearch } from './UnitSearch';
 import { PlayerList } from './PlayerList';
 import { GroupsList } from './GroupsList';
@@ -55,23 +56,23 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 <h1 className="text-2xl font-bold text-blue-400">Unit Manager</h1>
                 <p className="text-sm text-gray-400">Manage players, units, and groups.</p>
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                    <button onClick={onSave} className="relative bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-2">
+                    <Button variant="primary" onClick={onSave} className="relative">
                         {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span></span>}
                         <Save size={16} />
                         <span>Save</span>
-                    </button>
-                    <button onClick={onLoad} className="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-2">
+                    </Button>
+                    <Button variant="success" onClick={onLoad}>
                         <FolderOpen size={16} />
                         <span>Load</span>
-                    </button>
-                    <button onClick={onOpenUnitManager} className="bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-2">
+                    </Button>
+                    <Button variant="secondary" onClick={onOpenUnitManager}>
                         <Settings size={16} />
                         <span>Units</span>
-                    </button>
-                    <button onClick={onOpenAttendance} className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-1.5 px-2 rounded-md transition-colors flex items-center justify-center gap-2">
+                    </Button>
+                    <Button variant="primary" className="bg-purple-600 hover:bg-purple-700" onClick={onOpenAttendance}>
                         <Users size={16} />
                         <span>Attendance</span>
-                    </button>
+                    </Button>
                 </div>
                 <div className="h-5 mt-2 text-center">
                     {statusMessage && <p className={cn("text-sm", statusMessage.startsWith('Error') ? 'text-red-400' : 'text-green-400')}>{statusMessage}</p>}
@@ -80,7 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
             <div className="flex items-center gap-2 mb-4">
                 <input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()} placeholder="New player name..." className="flex-grow bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="New Player Name Input" />
-                <button onClick={handleAddPlayer} disabled={!newPlayerName.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 text-white font-bold py-2 px-3 rounded-md transition-colors flex items-center justify-center" title="Add Player" aria-label="Add Player"><UserPlus size={20} /></button>
+                <Button variant="primary" size="icon" className="p-2" onClick={handleAddPlayer} disabled={!newPlayerName.trim()} title="Add Player" aria-label="Add Player"><UserPlus size={20} /></Button>
             </div>
 
             <div className="border-t border-gray-700 pt-2">
