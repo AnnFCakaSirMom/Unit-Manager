@@ -97,7 +97,7 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                         {isLeader && <Star size={16} className="fill-current" />}
                         {player.info && (
                             <div className="relative group">
-                                <AlertTriangle size={16} className="text-cyan-400 cursor-pointer" />
+                                <AlertTriangle size={16} className="text-cyan-400 cursor-pointer" aria-label="Player Warning/Info" />
                                 <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 text-white text-sm rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
                                     {player.info}
                                 </div>
@@ -110,12 +110,12 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative">
-                        <button onClick={() => setIsMoving(!isMoving)} className="p-1 text-gray-400 hover:text-white" title="Move Player"><ArrowRightLeft size={18} /></button>
+                        <button onClick={() => setIsMoving(!isMoving)} className="p-1 text-gray-400 hover:text-white" title="Move Player" aria-label="Move Player"><ArrowRightLeft size={18} /></button>
                         {isMoving && <select onChange={handleMoveSelect} onBlur={() => setIsMoving(false)} className="absolute right-0 top-full mt-1 bg-gray-700 border border-gray-600 rounded-md text-white z-20" defaultValue="" autoFocus><option value="" disabled>Move to...</option>{otherGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select>}
                     </div>
-                    {!isLeader && <button onClick={() => dispatch({ type: 'SET_GROUP_LEADER', payload: { groupId, playerId: player.id } })} className="p-1 text-gray-400 hover:text-yellow-400" title="Set as Group Lead"><Star size={18} /></button>}
-                    <button onClick={() => dispatch({ type: 'TOGGLE_GROUP_MEMBER_LOCK', payload: { groupId, playerId: player.id } })} className={cn("p-1 rounded-full", member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700")} title={member.isLocked ? "Unlock" : "Lock"}>{member.isLocked ? <Lock size={18} /> : <Unlock size={18} />}</button>
-                    <button onClick={() => dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId, playerId: player.id } })} className="p-1 text-red-500 hover:bg-gray-700 rounded-full"><Trash2 size={18} /></button>
+                    {!isLeader && <button onClick={() => dispatch({ type: 'SET_GROUP_LEADER', payload: { groupId, playerId: player.id } })} className="p-1 text-gray-400 hover:text-yellow-400" title="Set as Group Lead" aria-label="Set as Group Lead"><Star size={18} /></button>}
+                    <button onClick={() => dispatch({ type: 'TOGGLE_GROUP_MEMBER_LOCK', payload: { groupId, playerId: player.id } })} className={cn("p-1 rounded-full", member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700")} title={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"} aria-label={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"}>{member.isLocked ? <Lock size={18} /> : <Unlock size={18} />}</button>
+                    <button onClick={() => dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId, playerId: player.id } })} className="p-1 text-red-500 hover:bg-gray-700 rounded-full" title="Remove Player from Group" aria-label="Remove Player from Group"><Trash2 size={18} /></button>
                 </div>
             </div>
             {member.isLocked ? (
@@ -172,7 +172,7 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                     <div className="mt-4 pt-4 border-t border-gray-700/50">
                         <div className="relative flex items-center gap-2">
                             <input type="text" value={manualUnitName} onChange={e => setManualUnitName(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleAddManualUnit()} placeholder="Add unit manually..." className="flex-grow bg-gray-700 border border-gray-600 rounded-md px-3 py-1.5 text-white placeholder-gray-400" />
-                            <button onClick={handleAddManualUnit} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-md flex items-center justify-center"><Plus size={18} /></button>
+                            <button onClick={handleAddManualUnit} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-md flex items-center justify-center" aria-label="Add Unit Manually" title="Add Unit Manually"><Plus size={18} /></button>
                         </div>
                     </div>
                 </div>

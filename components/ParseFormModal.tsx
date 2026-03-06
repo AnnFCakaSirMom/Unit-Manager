@@ -18,7 +18,7 @@ export const ParseFormModal: React.FC<ParseFormModalProps> = ({ isOpen, onClose,
     };
 
     return (
-        <div 
+        <div
             className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
             role="dialog"
             aria-modal="true"
@@ -29,7 +29,7 @@ export const ParseFormModal: React.FC<ParseFormModalProps> = ({ isOpen, onClose,
                     <h2 id="parse-form-title" className="text-xl font-bold text-white">
                         Import From Form
                     </h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700"><X size={24} /></button>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700" title="Close" aria-label="Close"><X size={24} /></button>
                 </header>
                 <div className="p-4 flex-grow">
                     <p className="text-gray-400 mb-4">Paste the filled-out form text below. The player's current unit data will be overwritten.</p>

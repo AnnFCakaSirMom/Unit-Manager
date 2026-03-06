@@ -99,7 +99,7 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                 <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
                     <header className="p-4 border-b border-gray-700 flex justify-between items-center">
                         <h2 className="text-xl font-bold">Manage Units</h2>
-                        <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700"><X size={24} /></button>
+                        <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700" title="Close" aria-label="Close"><X size={24} /></button>
                     </header>
                     <div className="p-4 flex-grow overflow-y-auto">
                         <div className="bg-gray-900/50 p-4 rounded-lg mb-6">
@@ -134,12 +134,12 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                                                 <li key={unit.name} className="bg-gray-700/50 p-2 rounded-md flex items-center justify-between group">
                                                     {editingUnit?.originalUnit.name === unit.name ? (
                                                         <div className="flex-grow flex items-center gap-2">
-                                                            <input type="text" value={editingUnit.newName} onChange={e => setEditingUnit({ ...editingUnit, newName: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleSaveEdit()} className="flex-grow bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white" autoFocus />
+                                                            <input type="text" value={editingUnit.newName} onChange={e => setEditingUnit({ ...editingUnit, newName: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleSaveEdit()} className="flex-grow bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white" autoFocus aria-label="Unit Name Input" />
                                                             {tiersWithCost.includes(tier) && (
-                                                                <input type="number" value={editingUnit.newCost} onChange={e => setEditingUnit({ ...editingUnit, newCost: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleSaveEdit()} className="bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white w-24" />
+                                                                <input type="number" value={editingUnit.newCost} onChange={e => setEditingUnit({ ...editingUnit, newCost: e.target.value })} onKeyPress={e => e.key === 'Enter' && handleSaveEdit()} className="bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white w-24" aria-label="Leadership Cost Input" />
                                                             )}
-                                                            <button onClick={handleSaveEdit} className="p-1 text-green-400 hover:bg-gray-600 rounded"><Save size={18} /></button>
-                                                            <button onClick={() => setEditingUnit(null)} className="p-1 text-gray-400 hover:bg-gray-600 rounded"><X size={18} /></button>
+                                                            <button onClick={handleSaveEdit} className="p-1 text-green-400 hover:bg-gray-600 rounded" title="Save Unit" aria-label="Save Unit"><Save size={18} /></button>
+                                                            <button onClick={() => setEditingUnit(null)} className="p-1 text-gray-400 hover:bg-gray-600 rounded" title="Cancel Editing" aria-label="Cancel Editing"><X size={18} /></button>
                                                         </div>
                                                     ) : (
                                                         <>
@@ -148,10 +148,10 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                                                                 {unit.leadershipCost && <span className="text-xs text-gray-400">({unit.leadershipCost} LD)</span>}
                                                             </div>
                                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <button onClick={() => setEditingUnit({ tier, originalUnit: unit, newName: unit.name, newCost: String(unit.leadershipCost || '') })} className="p-1 text-blue-400 hover:bg-gray-600 rounded" title="Edit Unit">
+                                                                <button onClick={() => setEditingUnit({ tier, originalUnit: unit, newName: unit.name, newCost: String(unit.leadershipCost || '') })} className="p-1 text-blue-400 hover:bg-gray-600 rounded" title="Edit Unit" aria-label="Edit Unit">
                                                                     <Pencil size={18} />
                                                                 </button>
-                                                                <button onClick={() => handleDeleteUnit(unit.name)} className="p-1 text-red-500 hover:bg-gray-600 rounded" title="Delete Unit">
+                                                                <button onClick={() => handleDeleteUnit(unit.name)} className="p-1 text-red-500 hover:bg-gray-600 rounded" title="Delete Unit" aria-label="Delete Unit">
                                                                     <Trash2 size={18} />
                                                                 </button>
                                                             </div>

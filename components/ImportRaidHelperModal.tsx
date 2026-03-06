@@ -29,7 +29,7 @@ export const ImportRaidHelperModal: React.FC<ImportRaidHelperModalProps> = ({ is
     };
 
     return (
-        <div 
+        <div
             className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
             role="dialog"
             aria-modal="true"
@@ -39,7 +39,7 @@ export const ImportRaidHelperModal: React.FC<ImportRaidHelperModalProps> = ({ is
                     <h2 className="text-xl font-bold text-white">
                         Import Raid Helper Data
                     </h2>
-                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700"><X size={24} /></button>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700" title="Close" aria-label="Close"><X size={24} /></button>
                 </header>
                 <div className="p-4 flex-grow">
                     <p className="text-gray-400 mb-4">Paste the JSON code from the Raid Helper export below.</p>

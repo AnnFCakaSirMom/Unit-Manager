@@ -79,14 +79,16 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             </header>
 
             <div className="flex items-center gap-2 mb-4">
-                <input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()} placeholder="New player name..." className="flex-grow bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <button onClick={handleAddPlayer} disabled={!newPlayerName.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 text-white font-bold py-2 px-3 rounded-md transition-colors flex items-center justify-center"><UserPlus size={20} /></button>
+                <input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()} placeholder="New player name..." className="flex-grow bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="New Player Name Input" />
+                <button onClick={handleAddPlayer} disabled={!newPlayerName.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 text-white font-bold py-2 px-3 rounded-md transition-colors flex items-center justify-center" title="Add Player" aria-label="Add Player"><UserPlus size={20} /></button>
             </div>
 
             <div className="border-t border-gray-700 pt-2">
                 <button
                     onClick={onTogglePlayerList}
                     className="w-full flex justify-between items-center py-2"
+                    title={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
+                    aria-label={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
                 >
                     <h2 className="text-lg font-semibold text-gray-300 flex items-center gap-2"><Users size={20} /> Players ({players.filter(p => !p.notInHouse).length})</h2>
                     {isPlayerListOpen ? <ChevronUp /> : <ChevronDown />}
