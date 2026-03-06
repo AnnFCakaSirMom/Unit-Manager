@@ -1,44 +1,7 @@
 import type { AppState, AppAction, Player, Group, UnitConfig, Unit, TWAttendancePlayer } from './types';
 
-// --- Data Validation and Migration ---
-const validatePlayer = (player: any): Player => ({
-    id: player.id || crypto.randomUUID(),
-    name: player.name || "Unknown Player",
-    units: Array.isArray(player.units) ? player.units : [],
-    preparedUnits: Array.isArray(player.preparedUnits) ? player.preparedUnits : [],
-    masteryUnits: Array.isArray(player.masteryUnits) ? player.masteryUnits : [],
-    favoriteUnits: Array.isArray(player.favoriteUnits) ? player.favoriteUnits : [],
-    notInHouse: typeof player.notInHouse === 'boolean' ? player.notInHouse : false,
-    info: player.info || "",
-    totalLeadership: typeof player.totalLeadership === 'number' ? player.totalLeadership : 0,
-});
-
-const validateGroup = (group: any): Group => ({
-    id: group.id || crypto.randomUUID(),
-    name: group.name || "Unknown Group",
-    leaderId: group.leaderId || null,
-    members: Array.isArray(group.members) ? group.members.map((member: any) => ({
-        playerId: member.playerId,
-        selectedUnits: Array.isArray(member.selectedUnits) ? member.selectedUnits : [],
-        isLocked: typeof member.isLocked === 'boolean' ? member.isLocked : false,
-    })) : [],
-});
-
-const validateUnitConfig = (config: any): UnitConfig => {
-    if (!config || !config.tiers) {
-        return { tiers: {} };
-    }
-    const validatedTiers: { [tier: string]: Unit[] } = {};
-    for (const tier in config.tiers) {
-        const units = config.tiers[tier];
-        if (Array.isArray(units)) {
-            validatedTiers[tier] = units.map(unit =>
-                typeof unit === 'string' ? { name: unit } : unit
-            );
-        }
-    }
-    return { tiers: validatedTiers };
-};
+import { AppStateSchema } from './schema';
+import { DEFAULT_UNIT_TIERS } from './units';
 
 
 // --- Main Reducer ---
@@ -378,14 +341,55 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return { ...state, twAttendance: [] };
         }
         case 'LOAD_STATE': {
-            const loadedData = action.payload;
-            return {
-                ...state,
-                players: loadedData.players.map(validatePlayer),
-                unitConfig: validateUnitConfig(loadedData.unitConfig),
-                groups: (loadedData.groups || []).map(validateGroup),
-                twAttendance: loadedData.twAttendance || []
-            };
+            try {
+                // Validate data using Zod schema to ensure correct structure and defaults
+                const loadedData = AppStateSchema.parse(action.payload);
+
+                // --- Smart Unit Merge Strategy ---
+                const mergedTiers: { [tier: string]: Unit[] } = {};
+
+                // Deep copy loaded tiers
+                if (loadedData.unitConfig && loadedData.unitConfig.tiers) {
+                    for (const tier in loadedData.unitConfig.tiers) {
+                        mergedTiers[tier] = [...loadedData.unitConfig.tiers[tier]];
+                    }
+                }
+
+                const loadedUnitNames = new Set<string>();
+
+                // Gather all units from the loaded save file
+                for (const tier in mergedTiers) {
+                    mergedTiers[tier].forEach(u => loadedUnitNames.add(u.name));
+                }
+
+                // Check hardcoded defaults (units.ts) for any newly released units
+                for (const tier in DEFAULT_UNIT_TIERS) {
+                    if (!mergedTiers[tier]) {
+                        mergedTiers[tier] = [];
+                    }
+                    DEFAULT_UNIT_TIERS[tier].forEach(defaultUnit => {
+                        if (!loadedUnitNames.has(defaultUnit.name)) {
+                            // Add new unit that wasn't present in the old save file
+                            mergedTiers[tier].push(defaultUnit);
+                            loadedUnitNames.add(defaultUnit.name);
+                        }
+                    });
+
+                    // Keep the list sorted for a clean UI
+                    mergedTiers[tier].sort((a, b) => a.name.localeCompare(b.name));
+                }
+
+                return {
+                    ...state,
+                    players: loadedData.players,
+                    unitConfig: { tiers: mergedTiers },
+                    groups: loadedData.groups,
+                    twAttendance: loadedData.twAttendance
+                };
+            } catch (error) {
+                console.error("Failed to parse and load save file. JSON schema mismatch:", error);
+                return state;
+            }
         }
         default:
             return state;

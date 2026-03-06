@@ -50,7 +50,7 @@ export const TWAttendancePlayerSchema = z.object({
 
 export const AppStateSchema = z.object({
     players: z.array(PlayerSchema).default([]),
-    unitConfig: UnitConfigSchema,
+    unitConfig: UnitConfigSchema.optional().default({ tiers: {} }),
     groups: z.array(GroupSchema).default([]),
     twAttendance: z.array(TWAttendancePlayerSchema).optional().default([]),
     hasUnsavedChanges: z.boolean().optional().default(false), // Optional as we overwrite it on load anyway 
