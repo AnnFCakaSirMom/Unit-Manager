@@ -62,8 +62,8 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 ...state,
                 players: state.players.map(p =>
                     p.id === action.payload.playerId
-                    ? { ...p, info: action.payload.info }
-                    : p
+                        ? { ...p, info: action.payload.info }
+                        : p
                 )
             };
         }
@@ -72,13 +72,13 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 ...state,
                 players: state.players.map(p =>
                     p.id === action.payload.playerId
-                    ? { ...p, totalLeadership: action.payload.leadership }
-                    : p
+                        ? { ...p, totalLeadership: action.payload.leadership }
+                        : p
                 )
             };
         }
         case 'TOGGLE_PLAYER_UNIT': {
-            const { playerId, unitName, unitType } = action.payload; 
+            const { playerId, unitName, unitType } = action.payload;
             return {
                 ...state,
                 players: state.players.map(p => {
@@ -98,7 +98,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             const newUnits: string[] = [];
             const newPreparedUnits: string[] = [];
             const newMasteryUnits: string[] = [];
-            const newFavoriteUnits: string[] = []; 
+            const newFavoriteUnits: string[] = [];
 
             const lines = formData.split('\n');
             const regex = /(.*?)\s+-\s+✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\](?:.*❤️ Favorite: \[(.*?)\])?/;
@@ -122,8 +122,8 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 ...state,
                 players: state.players.map(p =>
                     p.id === playerId
-                    ? { ...p, units: newUnits, preparedUnits: newPreparedUnits, masteryUnits: newMasteryUnits, favoriteUnits: newFavoriteUnits }
-                    : p
+                        ? { ...p, units: newUnits, preparedUnits: newPreparedUnits, masteryUnits: newMasteryUnits, favoriteUnits: newFavoriteUnits }
+                        : p
                 )
             };
         }
@@ -144,7 +144,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     units: player.units.map(u => u === oldName ? newName : u),
                     preparedUnits: (player.preparedUnits || []).map(u => u === oldName ? newName : u),
                     masteryUnits: (player.masteryUnits || []).map(u => u === oldName ? newName : u),
-                    favoriteUnits: (player.favoriteUnits || []).map(u => u === oldName ? newName : u) 
+                    favoriteUnits: (player.favoriteUnits || []).map(u => u === oldName ? newName : u)
                 }))
             };
         }
@@ -162,7 +162,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     units: player.units.filter(u => u !== unitNameToDelete),
                     preparedUnits: (player.preparedUnits || []).filter(u => u !== unitNameToDelete),
                     masteryUnits: (player.masteryUnits || []).filter(u => u !== unitNameToDelete),
-                    favoriteUnits: (player.favoriteUnits || []).filter(u => u !== unitNameToDelete) 
+                    favoriteUnits: (player.favoriteUnits || []).filter(u => u !== unitNameToDelete)
                 }))
             };
         }
@@ -244,13 +244,13 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                     if (g.id === groupId) {
                         const currentIndex = g.members.findIndex(m => m.playerId === playerId);
                         const targetIndex = g.members.findIndex(m => m.playerId === targetPlayerId);
-                        
+
                         if (currentIndex === -1 || targetIndex === -1) return g;
-                        
+
                         const newMembers = [...g.members];
                         const [movedMember] = newMembers.splice(currentIndex, 1);
                         newMembers.splice(targetIndex, 0, movedMember);
-                        
+
                         return { ...g, members: newMembers };
                     }
                     return g;
@@ -263,17 +263,17 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 ...state,
                 groups: state.groups.map(g => {
                     if (g.id === groupId) {
-                       const newMembers = g.members.map(m => {
-                           if (m.playerId === playerId) {
-                               const isSelected = m.selectedUnits.some(u => u.unitName === unitName);
-                               const newSelectedUnits = isSelected
-                                 ? m.selectedUnits.filter(u => u.unitName !== unitName)
-                                 : [...m.selectedUnits, { unitName, rank: 0 }];
-                               return {...m, selectedUnits: newSelectedUnits};
-                           }
-                           return m;
-                       });
-                       return {...g, members: newMembers};
+                        const newMembers = g.members.map(m => {
+                            if (m.playerId === playerId) {
+                                const isSelected = m.selectedUnits.some(u => u.unitName === unitName);
+                                const newSelectedUnits = isSelected
+                                    ? m.selectedUnits.filter(u => u.unitName !== unitName)
+                                    : [...m.selectedUnits, { unitName, rank: 0 }];
+                                return { ...m, selectedUnits: newSelectedUnits };
+                            }
+                            return m;
+                        });
+                        return { ...g, members: newMembers };
                     }
                     return g;
                 })
@@ -315,9 +315,9 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 if (!data.signUps) throw new Error("Invalid Raid Helper format");
 
                 const washName = (name: string) => (name || "")
-                    .normalize("NFD")                           
-                    .replace(/[\u0300-\u036f]/g, "")            
-                    .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '') 
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '')
                     .toLowerCase();
 
                 const attendance: TWAttendancePlayer[] = [];
@@ -330,9 +330,9 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
 
                 data.signUps.forEach((signup: any) => {
                     const washedDiscordName = washName(signup.name);
-                    const match = washedUMPlayers.find(p => 
-                        p.washedName === washedDiscordName || 
-                        washedDiscordName.includes(p.washedName) || 
+                    const match = washedUMPlayers.find(p =>
+                        p.washedName === washedDiscordName ||
+                        washedDiscordName.includes(p.washedName) ||
                         p.washedName.includes(washedDiscordName)
                     );
 
@@ -358,20 +358,20 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 const newGroups = state.groups.map(group => {
                     // Kasta ut alla som finns på declined-listan
                     const newMembers = group.members.filter(m => !declinedPlayerIds.has(m.playerId));
-                    
+
                     // Om gruppledaren råkade vara en av dem som försvann, välj nästa person som ny ledare
                     let newLeaderId = group.leaderId;
                     if (newLeaderId && !newMembers.some(m => m.playerId === newLeaderId)) {
                         newLeaderId = newMembers.length > 0 ? newMembers[0].playerId : null;
                     }
-                    
+
                     return { ...group, members: newMembers, leaderId: newLeaderId };
                 });
 
                 return { ...state, twAttendance: attendance, groups: newGroups };
             } catch (e) {
                 console.error("Could not parse Raid Helper data", e);
-                return state; 
+                return state;
             }
         }
         case 'CLEAR_TW_ATTENDANCE': {
@@ -384,7 +384,7 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
                 players: loadedData.players.map(validatePlayer),
                 unitConfig: validateUnitConfig(loadedData.unitConfig),
                 groups: (loadedData.groups || []).map(validateGroup),
-                twAttendance: loadedData.twAttendance || [] 
+                twAttendance: loadedData.twAttendance || []
             };
         }
         default:
@@ -398,7 +398,7 @@ export const withUnsavedChanges = (reducer: typeof appReducer) => {
         if (action.type === 'LOAD_STATE' || action.type === 'SAVE_SUCCESS') {
             return { ...newState, hasUnsavedChanges: false };
         }
-        if (JSON.stringify(newState) !== JSON.stringify(state)) {
+        if (newState !== state) {
             return { ...newState, hasUnsavedChanges: true };
         }
         return newState;
