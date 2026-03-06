@@ -1,4 +1,4 @@
-import type { AppState, AppAction, Player, Group, UnitConfig, Unit, TWAttendancePlayer } from './types';
+import type { AppState, AppAction, Player, Group, Unit, TWAttendancePlayer } from './types';
 
 import { AppStateSchema } from './schema';
 import { DEFAULT_UNIT_TIERS } from './units';
