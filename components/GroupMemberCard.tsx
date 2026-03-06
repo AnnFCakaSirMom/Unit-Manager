@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import type { Player, GroupMember } from '../types';
-import { Star, Trash2, ArrowRightLeft, Lock, Unlock, Plus, AlertTriangle } from './icons';
+import { Star, Trash2, ArrowRightLeft, Lock, Unlock, AlertTriangle } from './icons';
 import { Button } from './Button';
 import { cn } from '../utils';
-
-const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-400 border-yellow-400/50', Epic: 'text-purple-400 border-purple-400/50', Rare: 'text-blue-400 border-blue-400/50', Uncommon: 'text-green-400 border-green-400/50', Common: 'text-gray-400 border-gray-400/50', "Manually Added": 'text-gray-400 border-gray-500/50' };
+import { useAppState, useAppDispatch } from '../AppContext';
+import { useGroupMemberStats } from '../hooks/useGroupMemberStats';
+import { LockedMemberView } from './LockedMemberView';
+import { UnlockedMemberView } from './UnlockedMemberView';
 
 export interface GroupMemberCardProps {
     member: GroupMember;
@@ -14,40 +16,14 @@ export interface GroupMemberCardProps {
     unitCostMap: Map<string, number>;
 }
 
-import { useAppState, useAppDispatch } from '../AppContext';
-
 export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCostMap }: GroupMemberCardProps) => {
-    const { groups: otherGroupsInner, unitConfig } = useAppState();
+    const { groups: otherGroupsInner } = useAppState();
     const dispatch = useAppDispatch();
+    const [isMoving, setIsMoving] = useState(false);
 
     const otherGroups = useMemo(() => otherGroupsInner.filter(g => g.id !== groupId && g.members.length < 5), [otherGroupsInner, groupId]);
 
-    const [manualUnitName, setManualUnitName] = useState("");
-    const [isMoving, setIsMoving] = useState(false);
-
-    const unitToTierMap = useMemo(() => {
-        const map = new Map<string, string>();
-        Object.entries(unitConfig.tiers).forEach(([tier, units]) => units.forEach(unit => map.set(unit.name, tier)));
-        return map;
-    }, [unitConfig]);
-
-    const usedLeadership = useMemo(() => {
-        return member.selectedUnits.reduce((total, selectedUnit) => {
-            return total + (unitCostMap.get(selectedUnit.unitName) || 0);
-        }, 0);
-    }, [member.selectedUnits, unitCostMap]);
-
-    const totalLeadership = player.totalLeadership || 0;
-    const remainingLeadership = totalLeadership - usedLeadership;
-    const hasExceededLeadership = remainingLeadership < 0;
-
-    const handleAddManualUnit = () => {
-        const unitToAdd = manualUnitName.trim();
-        if (unitToAdd) {
-            dispatch({ type: 'TOGGLE_GROUP_MEMBER_UNIT', payload: { groupId, playerId: player.id, unitName: unitToAdd } });
-            setManualUnitName("");
-        }
-    };
+    const stats = useGroupMemberStats(member, player, unitCostMap);
 
     const handleMoveSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const targetGroupId = e.target.value;
@@ -57,40 +33,21 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
         setIsMoving(false);
     };
 
-    const playerOwnedUnitsSet = useMemo(() => new Set(player.units || []), [player.units]);
-    const playerPreparedUnitsSet = useMemo(() => new Set(player.preparedUnits || []), [player.preparedUnits]);
-    const playerMasteryUnitsSet = useMemo(() => new Set(player.masteryUnits || []), [player.masteryUnits]);
-    const playerFavoriteUnitsSet = useMemo(() => new Set(player.favoriteUnits || []), [player.favoriteUnits]);
-    const selectedUnitsMap = useMemo(() => new Map((member.selectedUnits || []).map(u => [u.unitName, u])), [member.selectedUnits]);
-    const allAvailableUnits = useMemo(() => new Set([...playerOwnedUnitsSet, ...Array.from(selectedUnitsMap.keys())]), [playerOwnedUnitsSet, selectedUnitsMap]);
-
-    const unitsToDisplayByTier = useMemo(() => {
-        const grouped: { [tier: string]: string[] } = {};
-        allAvailableUnits.forEach(unitName => {
-            const tier = unitToTierMap.get(unitName) || "Manually Added";
-            if (!grouped[tier]) grouped[tier] = [];
-            grouped[tier].push(unitName);
-        });
-        const sortedGrouped: { [key: string]: string[] } = {};
-        for (const tier in grouped) {
-            sortedGrouped[tier] = [...grouped[tier]].sort();
-        }
-        return sortedGrouped;
-
-    }, [allAvailableUnits, unitToTierMap]);
-
-    const tierOrder = ["Legendary", "Epic", "Rare", "Uncommon", "Common", "Manually Added"];
-    const sortedTiers = Object.keys(unitsToDisplayByTier).sort((a, b) => tierOrder.indexOf(a) - tierOrder.indexOf(b));
-
-    const setRank = (unitName: string, rank: string) => {
-        dispatch({ type: 'SET_GROUP_MEMBER_UNIT_RANK', payload: { groupId, playerId: player.id, unitName, rank: parseInt(rank, 10) || 0 } });
+    const handleAddManualUnit = (unitName: string) => {
+        dispatch({ type: 'TOGGLE_GROUP_MEMBER_UNIT', payload: { groupId, playerId: player.id, unitName } });
     };
+
     const toggleUnit = (unitName: string) => {
         dispatch({ type: 'TOGGLE_GROUP_MEMBER_UNIT', payload: { groupId, playerId: player.id, unitName } });
     };
 
+    const setRank = (unitName: string, rank: string) => {
+        dispatch({ type: 'SET_GROUP_MEMBER_UNIT_RANK', payload: { groupId, playerId: player.id, unitName, rank: parseInt(rank, 10) || 0 } });
+    };
+
     return (
         <div className="bg-gray-800/30 p-4 rounded-lg">
+            {/* Header / Stats */}
             <div className="flex justify-between items-start mb-2">
                 <div>
                     <h4 className={cn("text-xl font-bold flex items-center gap-2", isLeader ? 'text-yellow-300' : 'text-blue-300')}>
@@ -105,78 +62,61 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                             </div>
                         )}
                     </h4>
-                    <p className={cn("text-sm font-semibold mt-1", hasExceededLeadership ? 'text-red-400' : 'text-gray-400')}>
-                        Leadership: {usedLeadership} / {totalLeadership} ({remainingLeadership} remaining)
+                    <p className={cn("text-sm font-semibold mt-1", stats.hasExceededLeadership ? 'text-red-400' : 'text-gray-400')}>
+                        Leadership: {stats.usedLeadership} / {stats.totalLeadership} ({stats.remainingLeadership} remaining)
                     </p>
                 </div>
+
+                {/* Actions */}
                 <div className="flex items-center gap-2">
                     <div className="relative">
                         <Button onClick={() => setIsMoving(!isMoving)} variant="ghost" size="icon" className="text-gray-400 hover:text-white" title="Move Player" aria-label="Move Player"><ArrowRightLeft size={18} /></Button>
-                        {isMoving && <select onChange={handleMoveSelect} onBlur={() => setIsMoving(false)} className="absolute right-0 top-full mt-1 bg-gray-700 border border-gray-600 rounded-md text-white z-20" defaultValue="" autoFocus><option value="" disabled>Move to...</option>{otherGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select>}
+                        {isMoving && (
+                            <select
+                                onChange={handleMoveSelect}
+                                onBlur={() => setIsMoving(false)}
+                                className="absolute right-0 top-full mt-1 bg-gray-700 border border-gray-600 rounded-md text-white z-20"
+                                defaultValue=""
+                                autoFocus
+                            >
+                                <option value="" disabled>Move to...</option>
+                                {otherGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                            </select>
+                        )}
                     </div>
-                    {!isLeader && <Button onClick={() => dispatch({ type: 'SET_GROUP_LEADER', payload: { groupId, playerId: player.id } })} variant="ghost" size="icon" className="text-gray-400 hover:text-yellow-400 hover:bg-transparent" title="Set as Group Lead" aria-label="Set as Group Lead"><Star size={18} /></Button>}
-                    <Button onClick={() => dispatch({ type: 'TOGGLE_GROUP_MEMBER_LOCK', payload: { groupId, playerId: player.id } })} variant="ghost" size="icon" className={cn("rounded-full", member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700")} title={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"} aria-label={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"}>{member.isLocked ? <Lock size={18} /> : <Unlock size={18} />}</Button>
-                    <Button onClick={() => dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId, playerId: player.id } })} variant="ghost" size="icon" className="text-red-500 hover:bg-gray-700 rounded-full hover:text-red-400" title="Remove Player from Group" aria-label="Remove Player from Group"><Trash2 size={18} /></Button>
+                    {!isLeader && (
+                        <Button onClick={() => dispatch({ type: 'SET_GROUP_LEADER', payload: { groupId, playerId: player.id } })} variant="ghost" size="icon" className="text-gray-400 hover:text-yellow-400 hover:bg-transparent" title="Set as Group Lead" aria-label="Set as Group Lead">
+                            <Star size={18} />
+                        </Button>
+                    )}
+                    <Button onClick={() => dispatch({ type: 'TOGGLE_GROUP_MEMBER_LOCK', payload: { groupId, playerId: player.id } })} variant="ghost" size="icon" className={cn("rounded-full", member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700")} title={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"} aria-label={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"}>
+                        {member.isLocked ? <Lock size={18} /> : <Unlock size={18} />}
+                    </Button>
+                    <Button onClick={() => dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId, playerId: player.id } })} variant="ghost" size="icon" className="text-red-500 hover:bg-gray-700 rounded-full hover:text-red-400" title="Remove Player from Group" aria-label="Remove Player from Group">
+                        <Trash2 size={18} />
+                    </Button>
                 </div>
             </div>
-            {member.isLocked ? (
-                <div>
-                    <h5 className="font-semibold text-sm mb-2 pb-1 border-b border-cyan-400/50 text-cyan-400">Prioritized Units</h5>
-                    <div className="space-y-2 pt-2">
-                        {[...selectedUnitsMap.values()]
-                            .sort((a, b) => {
-                                const rankA = a.rank > 0 ? a.rank : 99;
-                                const rankB = b.rank > 0 ? b.rank : 99;
-                                if (rankA !== rankB) return rankA - rankB;
-                                return a.unitName.localeCompare(b.unitName);
-                            })
-                            .map(unitObj => (
-                                <div key={unitObj.unitName} className="flex items-center gap-2">
-                                    <span className="font-bold text-lg w-6 text-center">{unitObj.rank > 0 ? unitObj.rank : '-'}</span>
-                                    <span>{unitObj.unitName}</span>
-                                    <span className="text-xs text-gray-400">({unitCostMap.get(unitObj.unitName) || 0} LS)</span>
-                                </div>
-                            ))
-                        }
-                    </div>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {sortedTiers.map(tier => (
-                        <div key={tier}>
-                            <h5 className={cn("font-semibold text-sm mb-2 pb-1 border-b", tierColorClasses[tier])}>{tier}</h5>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 pt-2">
-                                {unitsToDisplayByTier[tier].map(unit => {
-                                    const cost = unitCostMap.get(unit);
-                                    return (
-                                        <div key={unit} className="flex items-center justify-between p-1 rounded hover:bg-gray-700/50">
-                                            <label className="flex items-center space-x-2 flex-grow cursor-pointer min-w-0">
-                                                <div className={cn("flex-shrink-0", playerFavoriteUnitsSet.has(unit) ? 'text-yellow-400 fill-yellow-400' : 'text-transparent')} title="Favorite">
-                                                    <Star size={14} />
-                                                </div>
 
-                                                <div className={cn("w-4 h-4 rounded-sm border-2 flex-shrink-0", playerMasteryUnitsSet.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500')} title="Mastery"></div>
-                                                <div className={cn("w-4 h-4 rounded-full border-2 flex-shrink-0", playerPreparedUnitsSet.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-500')} title="Maxed"></div>
-                                                <input type="checkbox" checked={selectedUnitsMap.has(unit)} onChange={() => toggleUnit(unit)} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500/50" />
-                                                <div className="flex items-baseline min-w-0">
-                                                    <span className="truncate" title={unit}>{unit}</span>
-                                                    {cost && <span className="text-xs text-gray-400 ml-1 flex-shrink-0">({cost} LS)</span>}
-                                                </div>
-                                            </label>
-                                            {selectedUnitsMap.has(unit) && <select value={selectedUnitsMap.get(unit)?.rank || 0} onChange={(e) => setRank(unit, e.target.value)} className="bg-gray-700 border border-gray-600 rounded-md text-xs py-0.5 px-1 ml-2" onClick={e => e.stopPropagation()}><option value="0">Rank</option>{[1, 2, 3, 4, 5].map(r => <option key={r} value={r}>{r}</option>)}</select>}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ))}
-                    <div className="mt-4 pt-4 border-t border-gray-700/50">
-                        <div className="relative flex items-center gap-2">
-                            <input type="text" value={manualUnitName} onChange={e => setManualUnitName(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleAddManualUnit()} placeholder="Add unit manually..." className="flex-grow bg-gray-700 border border-gray-600 rounded-md px-3 py-1.5 text-white placeholder-gray-400" />
-                            <Button onClick={handleAddManualUnit} variant="primary" className="py-1.5 px-3" aria-label="Add Unit Manually" title="Add Unit Manually"><Plus size={18} /></Button>
-                        </div>
-                    </div>
-                </div>
+            {/* Views */}
+            {member.isLocked ? (
+                <LockedMemberView
+                    selectedUnitsMap={stats.selectedUnitsMap}
+                    unitCostMap={unitCostMap}
+                />
+            ) : (
+                <UnlockedMemberView
+                    sortedTiers={stats.sortedTiers}
+                    unitsToDisplayByTier={stats.unitsToDisplayByTier}
+                    unitCostMap={unitCostMap}
+                    playerFavoriteUnitsSet={stats.playerFavoriteUnitsSet}
+                    playerMasteryUnitsSet={stats.playerMasteryUnitsSet}
+                    playerPreparedUnitsSet={stats.playerPreparedUnitsSet}
+                    selectedUnitsMap={stats.selectedUnitsMap}
+                    toggleUnit={toggleUnit}
+                    setRank={setRank}
+                    handleAddManualUnit={handleAddManualUnit}
+                />
             )}
         </div>
     );
