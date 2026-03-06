@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { AppState } from '../types';
 import { UserPlus, AlertTriangle, CheckSquare, Users, ImportIcon, Trash2, Shield, Plus } from './icons';
 import { ImportRaidHelperModal } from './ImportRaidHelperModal';
+import { Button } from './Button';
 import { cn } from '../utils';
 
 const GripIcon = ({ className = "", size = 16 }) => (
@@ -142,13 +143,14 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                                 )}
 
                                 {person.matchedPlayerId ? (
-                                    <button
+                                    <Button
                                         onClick={() => onSelectPlayer(person.matchedPlayerId)}
-                                        className="font-medium text-blue-400 hover:text-blue-300 hover:underline text-left truncate"
+                                        variant="ghost"
+                                        className="p-0 h-auto font-medium text-blue-400 hover:bg-transparent hover:text-blue-300 hover:underline text-left truncate"
                                         title="View player units"
                                     >
                                         {person.discordName}
-                                    </button>
+                                    </Button>
                                 ) : (
                                     <span className="font-medium text-gray-200 truncate">{person.discordName}</span>
                                 )}
@@ -162,12 +164,14 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
 
                             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                                 {!person.matchedPlayerId ? (
-                                    <button
+                                    <Button
                                         onClick={() => handleCreatePlayer(person.discordName)}
-                                        className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded flex items-center gap-1"
+                                        variant="success"
+                                        size="sm"
+                                        className="py-1 px-2 text-xs font-bold"
                                     >
                                         <UserPlus size={14} /> Create
-                                    </button>
+                                    </Button>
                                 ) : (
                                     <select
                                         value={existingGroup ? existingGroup.id : ""}
@@ -251,13 +255,15 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                                             <GripIcon size={14} className="text-gray-500" />
                                             <span className="text-sm text-gray-200 truncate">{player.name}</span>
                                         </div>
-                                        <button
+                                        <Button
                                             onClick={() => handleAssignGroup(player.id, "REMOVE")}
-                                            className="text-gray-400 hover:text-red-400 p-0.5 rounded"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-gray-400 hover:text-red-400 h-6 w-6 p-0.5 rounded"
                                             title="Remove from group"
                                         >
                                             <Trash2 size={14} />
-                                        </button>
+                                        </Button>
                                     </div>
                                 );
                             })}
@@ -291,23 +297,23 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                     <p className="text-gray-400 text-sm">Drag and drop players, or use the dropdown menus</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button
+                    <Button
                         onClick={() => setIsModalOpen(true)}
-                        className="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-2"
+                        variant="primary"
                     >
                         <ImportIcon size={16} /> Import Raid Helper
-                    </button>
+                    </Button>
                     {attendance.length > 0 && (
-                        <button
+                        <Button
                             onClick={() => {
                                 if (window.confirm('Are you sure you want to clear the attendance list?')) {
                                     dispatch({ type: 'CLEAR_TW_ATTENDANCE' });
                                 }
                             }}
-                            className="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 px-3 rounded-md transition-colors flex items-center gap-2"
+                            variant="danger"
                         >
                             <Trash2 size={16} /> Clear List
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div>

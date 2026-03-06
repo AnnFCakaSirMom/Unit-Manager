@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Unit } from '../types';
 import { ChevronUp, ChevronDown, Star } from './icons';
+import { Button } from './Button';
 import { cn } from '../utils';
 
 const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-400 border-yellow-400/50', Epic: 'text-purple-400 border-purple-400/50', Rare: 'text-blue-400 border-blue-400/50', Uncommon: 'text-green-400 border-green-400/50', Common: 'text-gray-400 border-gray-400/50' };
@@ -22,10 +23,10 @@ export const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, sele
 
     return (
         <section>
-            <button onClick={() => setIsOpen(!isOpen)} className={cn("w-full flex justify-between items-center p-2 rounded-t-md border-b-2", tierColorClasses[tier])}>
+            <Button variant="ghost" onClick={() => setIsOpen(!isOpen)} className={cn("w-full flex justify-between items-center p-2 rounded-t-md border-b-2 h-auto hover:bg-gray-800", tierColorClasses[tier])}>
                 <h3 className="text-xl font-semibold">{tier}</h3>
                 {isOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-            </button>
+            </Button>
             {isOpen && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-2 p-4 bg-gray-800/30 rounded-b-md">
                     {units.map(unit => (

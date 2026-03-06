@@ -2,9 +2,10 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import type { Player, Unit } from '../types';
 import { CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star } from './icons';
 import { ParseFormModal } from './ParseFormModal';
+import { Button } from './Button';
 import { UnitTierSection } from './UnitTierSection';
 import { OwnedUnitsView } from './OwnedUnitsView';
-import { cn } from '../utils';
+
 
 
 interface PlayerUnitViewProps {
@@ -106,14 +107,14 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setIsParseModalOpen(true)} className="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-2">
+                        <Button onClick={() => setIsParseModalOpen(true)} variant="primary">
                             <ImportIcon size={16} />
                             <span>Import Form</span>
-                        </button>
-                        <button onClick={handleCopyForm} className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-2">
+                        </Button>
+                        <Button onClick={handleCopyForm} variant="secondary">
                             <Copy size={16} />
                             <span>Copy Form</span>
-                        </button>
+                        </Button>
                     </div>
                 </div>
 
@@ -148,8 +149,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                 <div className="mb-4">
                     <div className="flex items-center gap-4">
                         <div className="bg-gray-800/60 rounded-md p-1 flex items-center gap-1 self-start">
-                            <button onClick={() => setUnitViewMode('all')} className={cn("px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors", unitViewMode === 'all' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700/50')}><CheckSquare size={16} /> Show All</button>
-                            <button onClick={() => setUnitViewMode('owned')} className={cn("px-3 py-1 text-sm font-medium rounded-md flex items-center gap-2 transition-colors", unitViewMode === 'owned' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700/50')}><List size={16} /> Show Owned</button>
+                            <Button onClick={() => setUnitViewMode('all')} variant={unitViewMode === 'all' ? 'primary' : 'ghost'} size="sm"><CheckSquare size={16} /> Show All</Button>
+                            <Button onClick={() => setUnitViewMode('owned')} variant={unitViewMode === 'owned' ? 'primary' : 'ghost'} size="sm"><List size={16} /> Show Owned</Button>
                         </div>
                         <div className="relative flex-grow">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />

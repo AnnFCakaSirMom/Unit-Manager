@@ -101,8 +101,8 @@ export const GroupsList = React.memo(({
                                             {group.name}
                                         </span>
                                         <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={() => setEditingGroup({ id: group.id, name: group.name })} className="p-1 text-blue-400 hover:bg-gray-600 rounded" title="Edit Group Name" aria-label="Edit Group Name"><Pencil size={18} /></button>
-                                            <button onClick={() => handleDeleteGroup(group.id, group.name)} className="p-1 text-red-500 hover:bg-gray-600 rounded" title="Delete Group" aria-label="Delete Group"><Trash2 size={18} /></button>
+                                            <Button variant="ghost" size="icon" onClick={() => setEditingGroup({ id: group.id, name: group.name })} className="text-blue-400" title="Edit Group Name" aria-label="Edit Group Name"><Pencil size={18} /></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteGroup(group.id, group.name)} className="text-red-500" title="Delete Group" aria-label="Delete Group"><Trash2 size={18} /></Button>
                                         </div>
                                     </>
                                 )}

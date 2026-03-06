@@ -85,15 +85,16 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             </div>
 
             <div className="border-t border-gray-700 pt-2">
-                <button
+                <Button
+                    variant="ghost"
                     onClick={onTogglePlayerList}
-                    className="w-full flex justify-between items-center py-2"
+                    className="w-full justify-between py-2 h-auto hover:bg-gray-800"
                     title={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
                     aria-label={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
                 >
                     <h2 className="text-lg font-semibold text-gray-300 flex items-center gap-2"><Users size={20} /> Players ({players.filter(p => !p.notInHouse).length})</h2>
                     {isPlayerListOpen ? <ChevronUp /> : <ChevronDown />}
-                </button>
+                </Button>
                 {isPlayerListOpen && (
                     <PlayerList
                         selectedPlayerId={selectedPlayerId}

@@ -3,6 +3,7 @@ import type { Group } from '../types';
 import { Search, Clipboard, UserPlus } from './icons';
 
 import { GroupMemberCard } from './GroupMemberCard';
+import { Button } from './Button';
 
 interface GroupViewProps {
     group: Group;
@@ -78,7 +79,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
         <div className="h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-white">Group: <span className="text-green-400">{group.name}</span></h2>
-                <button onClick={handleCopyGroup} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-md transition-colors flex items-center justify-center text-sm gap-2" title="Copy This Group"><Clipboard size={16} /> Copy Group</button>
+                <Button variant="primary" onClick={handleCopyGroup} title="Copy This Group"><Clipboard size={16} /> Copy Group</Button>
             </div>
 
             <div className="mb-6 bg-gray-800/50 p-4 rounded-lg">

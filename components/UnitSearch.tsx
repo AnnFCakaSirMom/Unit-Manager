@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Player } from '../types';
 import { Search, X } from './icons';
+import { Button } from './Button';
 
 interface UnitSearchProps {
     players: Player[];
@@ -25,7 +26,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
             return [];
         }
         const lowerCaseTerm = searchTerm.toLowerCase();
-        
+
         // Filtrerar bort "not in house"-spelare innan enhetslistan skapas
         const activePlayers = players.filter(p => !p.notInHouse);
         const allUnits = activePlayers.flatMap(p => p.units || []);
@@ -40,7 +41,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
         if (!selectedUnit) {
             return [];
         }
-        
+
         // **NY, KORRIGERAD LOGIK HÄR**
         // 1. Filtrerar bort "not in house"-spelare
         // 2. Hittar de som har den valda enheten
@@ -88,9 +89,9 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                     className="w-full bg-gray-700 border border-gray-600 rounded-md pl-10 pr-10 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {searchTerm && (
-                    <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                    <Button onClick={clearSearch} variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white hover:bg-transparent h-auto w-auto p-1">
                         <X size={20} />
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -101,13 +102,14 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                         <>
                             <p className="text-xs text-gray-400 mb-1 px-1">Matching units:</p>
                             {suggestedUnits.map((unitName, index) => (
-                                <button
+                                <Button
                                     key={index}
                                     onClick={() => handleUnitSelect(unitName)}
-                                    className="w-full text-left p-1 rounded hover:bg-blue-500/20 font-medium"
+                                    variant="ghost"
+                                    className="w-full justify-start p-1 rounded hover:bg-blue-500/20 font-medium h-auto hover:text-white"
                                 >
                                     {unitName}
-                                </button>
+                                </Button>
                             ))}
                         </>
                     ) : <p className="text-sm text-gray-500 text-center py-2">No units found.</p>
@@ -120,7 +122,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                             <p className="text-xs text-gray-400 mb-1 px-1">Players with {selectedUnit}:</p>
                             {foundPlayers.map(({ player, isMaxed, isFullMastery }) => (
                                 <div key={player.id} className="p-1 rounded hover:bg-blue-500/20">
-                                    <button onClick={() => handlePlayerSelect(player.id)} className="w-full text-left font-medium flex items-center justify-between">
+                                    <Button onClick={() => handlePlayerSelect(player.id)} variant="ghost" className="w-full justify-between font-medium p-1 h-auto hover:bg-transparent">
                                         <span>{player.name}</span>
                                         <div className="flex items-center space-x-2">
                                             {/* Grön ring för Maxed Unit (preparedUnits) */}
@@ -132,7 +134,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                                                 <div className="w-4 h-4 rounded-sm bg-yellow-500 border-2 border-yellow-300" title="Full Mastery"></div>
                                             )}
                                         </div>
-                                    </button>
+                                    </Button>
                                 </div>
                             ))}
                         </>
