@@ -165,7 +165,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-gray-400 mt-2">
-                        {/* LEGEND FÖR STJÄRNA */}
+                        {/* LEGEND FOR STAR/ICONS */}
                         <div className="flex items-center gap-2"><Star size={12} className="text-yellow-400 fill-yellow-400" /><span>= Favorite</span></div>
                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500"></div><span>= Full Mastery</span></div>
                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500 border-2 border-green-400 flex-shrink-0"></div><span>= Maxed Unit</span></div>

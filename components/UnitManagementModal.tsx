@@ -60,8 +60,8 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
             return;
         }
 
-        // Först, uppdatera kostnaden genom att skapa en ny unitConfig.
-        // Detta säkerställer att kostnaden är korrekt innan ett eventuellt namnbyte.
+        // First, update the cost by creating a new unitConfig.
+        // This ensures the cost is accurate before any potential name change.
         const newTiers = { ...unitConfig.tiers };
         newTiers[tier] = newTiers[tier].map(u => {
             if (u.name === originalUnit.name) {
@@ -70,12 +70,12 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
             return u;
         });
 
-        // Sortera om ifall namnet ändrats
+        // Re-sort if the name changed
         newTiers[tier].sort((a, b) => a.name.localeCompare(b.name));
 
         dispatch({ type: 'UPDATE_UNIT_CONFIG', payload: { unitConfig: { tiers: newTiers } } });
 
-        // Om namnet ändrades, kör den globala namnbytesfunktionen som uppdaterar alla spelare.
+        // If name changed, run the global rename function to update all players.
         if (nameChanged) {
             dispatch({ type: 'RENAME_UNIT_GLOBALLY', payload: { oldName: originalUnit.name, newName: trimmedNewName } });
         }

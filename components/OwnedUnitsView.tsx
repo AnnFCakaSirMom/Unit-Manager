@@ -50,7 +50,7 @@ export const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, pre
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-3 p-4 bg-gray-800/30 rounded-b-md">
                         {unitNames.map(unitName => (
                             <div key={unitName} className="flex items-center space-x-3">
-                                {/* FAVORIT-KNAPP (STJÄRNA) */}
+                                {/* FAVORITE BUTTON (STAR) */}
                                 <div
                                     onClick={() => onUnitToggle(selectedPlayerId, unitName, 'favoriteUnits')}
                                     className={`cursor-pointer transition-colors flex-shrink-0 ${favoriteUnits.has(unitName) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-gray-400'}`}

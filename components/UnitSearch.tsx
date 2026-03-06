@@ -44,18 +44,18 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
         }
 
         // **NY, KORRIGERAD LOGIK HÄR**
-        // 1. Filtrerar bort "not in house"-spelare
-        // 2. Hittar de som har den valda enheten
+        // 1. Filters out "not in house" players
+        // 2. Finds those with the selected unit
         const playersWithUnit = players.filter(player =>
             !player.notInHouse && player.units?.includes(selectedUnit)
         );
 
-        // Mappar sedan dessa spelare till ett nytt objekt som inkluderar korrekt status
+        // Maps these players to a new object including correct max/mastery status
         return playersWithUnit.map(player => ({
             player,
-            // Använder korrekt egenskapsnamn: 'preparedUnits'
+            // Uses property: 'preparedUnits'
             isMaxed: player.preparedUnits?.includes(selectedUnit) ?? false,
-            // Använder korrekt egenskapsnamn: 'masteryUnits'
+            // Uses property: 'masteryUnits'
             isFullMastery: player.masteryUnits?.includes(selectedUnit) ?? false,
         }));
 
@@ -97,7 +97,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
             </div>
 
             <div className="mt-2 space-y-1 bg-gray-700/50 p-2 rounded-md max-h-48 overflow-y-auto">
-                {/* Steg 1: Visa förslag på enheter */}
+                {/* Step 1: Show unit suggestions */}
                 {!selectedUnit && searchTerm.trim() && (
                     suggestedUnits.length > 0 ? (
                         <>
@@ -116,7 +116,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                     ) : <p className="text-sm text-gray-500 text-center py-2">No units found.</p>
                 )}
 
-                {/* Steg 2: Visa spelare med den valda enheten och dess status */}
+                {/* Step 2: Show players with the selected unit and their status */}
                 {selectedUnit && (
                     foundPlayers.length > 0 ? (
                         <>
@@ -126,11 +126,11 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                                     <Button onClick={() => handlePlayerSelect(player.id)} variant="ghost" className="w-full justify-between font-medium p-1 h-auto hover:bg-transparent">
                                         <span>{player.name}</span>
                                         <div className="flex items-center space-x-2">
-                                            {/* Grön ring för Maxed Unit (preparedUnits) */}
+                                            {/* Green circle for Maxed Unit (preparedUnits) */}
                                             {isMaxed && (
                                                 <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-green-300" title="Maxed Unit"></div>
                                             )}
-                                            {/* Gul fyrkant för Full Mastery (masteryUnits) */}
+                                            {/* Yellow square for Full Mastery (masteryUnits) */}
                                             {isFullMastery && (
                                                 <div className="w-4 h-4 rounded-sm bg-yellow-500 border-2 border-yellow-300" title="Full Mastery"></div>
                                             )}
