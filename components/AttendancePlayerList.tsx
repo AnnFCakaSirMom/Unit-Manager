@@ -49,10 +49,11 @@ export const AttendancePlayerList: React.FC<AttendancePlayerListProps> = ({
                 {list.map((person, index) => {
                     const existingGroup = getPlayerGroup(person.matchedPlayerId);
                     const isDraggable = !!person.matchedPlayerId;
+                    const stableKey = person.matchedPlayerId || `${person.discordName}-${index}`;
 
                     return (
                         <div
-                            key={index}
+                            key={stableKey}
                             draggable={isDraggable}
                             onDragStart={(e) => isDraggable && handleDragStart(e, person.matchedPlayerId!)}
                             onDragEnd={handleDragEnd}

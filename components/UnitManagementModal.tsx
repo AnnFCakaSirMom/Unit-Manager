@@ -26,6 +26,19 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
     const handleAddUnit = () => {
         if (!newUnit.name.trim()) return;
 
+        const newUnitNameLower = newUnit.name.trim().toLowerCase();
+        let nameExists = false;
+        Object.values(unitConfig.tiers).forEach(units => {
+            if (units.some(u => u.name.toLowerCase() === newUnitNameLower)) {
+                nameExists = true;
+            }
+        });
+
+        if (nameExists) {
+            alert(`A unit named "${newUnit.name.trim()}" already exists.`);
+            return;
+        }
+
         const newUnitObject: Unit = { name: newUnit.name.trim() };
         const cost = parseInt(newUnit.cost, 10);
         if (tiersWithCost.includes(newUnit.tier) && !isNaN(cost) && cost > 0) {
