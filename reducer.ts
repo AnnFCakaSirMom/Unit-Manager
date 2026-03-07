@@ -1,13 +1,13 @@
 import type { AppState, AppAction, Player, Group } from './types';
 
-import { handleParsePlayerUnitsForm, handleTWAttendanceImport, handleLoadState } from './utils/reducerHelpers';
+import { handleParsePlayerUnitsForm, handleTWAttendanceImport, handleLoadState, handleTWStatisticsImport } from './utils/reducerHelpers';
 
 
 // --- Main Reducer ---
 export const appReducer = (state: AppState, action: AppAction): AppState => {
     switch (action.type) {
         case 'ADD_PLAYER': {
-            const newPlayer: Player = { id: crypto.randomUUID(), name: action.payload.name.trim(), units: [], preparedUnits: [], masteryUnits: [], favoriteUnits: [], notInHouse: false, totalLeadership: 0 };
+            const newPlayer: Player = { id: crypto.randomUUID(), name: action.payload.name.trim(), units: [], preparedUnits: [], masteryUnits: [], favoriteUnits: [], notInHouse: false, totalLeadership: 0, joinedDate: new Date().toISOString().split('T')[0], aliases: [] };
             return { ...state, players: [...state.players, newPlayer].sort((a, b) => a.name.localeCompare(b.name)) };
         }
         case 'DELETE_PLAYER': {
@@ -17,7 +17,20 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return { ...state, players: state.players.map(p => p.id === action.payload.playerId ? { ...p, name: action.payload.name.trim() } : p) };
         }
         case 'TOGGLE_NOT_IN_HOUSE': {
-            return { ...state, players: state.players.map(p => p.id === action.payload.playerId ? { ...p, notInHouse: !p.notInHouse } : p) };
+            return {
+                ...state,
+                players: state.players.map(p => {
+                    if (p.id === action.payload.playerId) {
+                        const newNotInHouse = !p.notInHouse;
+                        return {
+                            ...p,
+                            notInHouse: newNotInHouse,
+                            inactiveDate: newNotInHouse ? new Date().toISOString().split('T')[0] : null
+                        };
+                    }
+                    return p;
+                })
+            };
         }
         case 'UPDATE_PLAYER_INFO': {
             return {
@@ -243,6 +256,61 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         }
         case 'CLEAR_TW_ATTENDANCE': {
             return { ...state, twAttendance: [] };
+        }
+        case 'UPDATE_PLAYER_PROFILE': {
+            return {
+                ...state,
+                players: state.players.map(p =>
+                    p.id === action.payload.playerId
+                        ? { ...p, joinedDate: action.payload.joinedDate, inactiveDate: action.payload.inactiveDate, aliases: action.payload.aliases }
+                        : p
+                )
+            };
+        }
+        case 'CREATE_TW_SEASON': {
+            return { ...state, twSeasons: [...state.twSeasons, action.payload.season], twEvents: [...state.twEvents, ...action.payload.events] };
+        }
+        case 'UPDATE_TW_SEASON': {
+            const updatedTwEvents = state.twEvents.filter(e => e.seasonId !== action.payload.season.id).concat(action.payload.events);
+            return {
+                ...state,
+                twSeasons: state.twSeasons.map(s => s.id === action.payload.season.id ? action.payload.season : s),
+                twEvents: updatedTwEvents
+            };
+        }
+        case 'DELETE_TW_SEASON': {
+            return {
+                ...state,
+                twSeasons: state.twSeasons.filter(s => s.id !== action.payload.seasonId),
+                twEvents: state.twEvents.filter(e => e.seasonId !== action.payload.seasonId),
+                twRecords: state.twRecords.filter(r => {
+                    const event = state.twEvents.find(e => e.id === r.eventId);
+                    return event?.seasonId !== action.payload.seasonId;
+                })
+            };
+        }
+        case 'ADD_TW_EVENT': {
+            return { ...state, twEvents: [...state.twEvents, action.payload.event] };
+        }
+        case 'DELETE_TW_EVENT': {
+            return {
+                ...state,
+                twEvents: state.twEvents.filter(e => e.id !== action.payload.eventId),
+                twRecords: state.twRecords.filter(r => r.eventId !== action.payload.eventId)
+            }
+        }
+        case 'IMPORT_TW_STATISTICS_RAID_HELPER': {
+            return handleTWStatisticsImport(state, action.payload);
+        }
+        case 'UPDATE_TW_PLAYER_RECORD': {
+            const existingRecordIndex = state.twRecords.findIndex(r => r.eventId === action.payload.eventId && r.playerId === action.payload.playerId);
+            if (existingRecordIndex >= 0) {
+                const newRecords = [...state.twRecords];
+                newRecords[existingRecordIndex] = { ...newRecords[existingRecordIndex], status: action.payload.status };
+                return { ...state, twRecords: newRecords };
+            } else {
+                return { ...state, twRecords: [...state.twRecords, { eventId: action.payload.eventId, playerId: action.payload.playerId, status: action.payload.status }] };
+            }
         }
         case 'LOAD_STATE': {
             return handleLoadState(state, action.payload);

@@ -54,8 +54,8 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                             draggedPlayer ? (isFull ? 'border-red-500/30' : 'border-blue-500/50 border-dashed bg-gray-800') : 'border-gray-700'
                         )}
                     >
-                        <div className="bg-gray-900/50 p-2 rounded-t-lg border-b border-gray-700 flex justify-between items-center">
-                            <h4 className="font-bold text-gray-200 flex items-center gap-2 text-sm">
+                        <div className="bg-gray-900/50 p-1.5 rounded-t-lg border-b border-gray-700 flex justify-between items-center">
+                            <h4 className="font-bold text-gray-200 flex items-center gap-1.5 text-sm">
                                 <Shield size={14} className="text-blue-400" />
                                 {group.name}
                             </h4>
@@ -66,7 +66,7 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                                 {group.members.length} / 5
                             </span>
                         </div>
-                        <div className="p-2 flex-grow min-h-[100px] flex flex-col gap-1.5">
+                        <div className="p-1.5 flex-grow min-h-[80px] flex flex-col gap-1">
                             {group.members.map(member => {
                                 const player = players.find(p => p.id === member.playerId);
                                 if (!player) return null;
@@ -84,7 +84,7 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                                         onDragLeave={() => setDragOverPlayer(null)}
                                         onDrop={(e) => handleDropOnMember(e, group.id, member.playerId)}
                                         className={cn(
-                                            "p-1.5 rounded flex justify-between items-center cursor-grab active:cursor-grabbing border transition-colors",
+                                            "p-1 rounded flex justify-between items-center cursor-grab active:cursor-grabbing border transition-colors",
                                             dragOverPlayer === member.playerId
                                                 ? 'border-blue-500 bg-blue-500/20'
                                                 : 'border-transparent bg-gray-700/50 hover:border-gray-500 hover:bg-gray-600'

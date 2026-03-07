@@ -21,10 +21,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                         'bg-gray-600 hover:bg-gray-500 text-white': variant === 'secondary',
                         'bg-transparent hover:bg-gray-600': variant === 'ghost',
                     },
-                    // Sizes
                     {
-                        'py-2 px-4 gap-2': size === 'default',
-                        'py-1 px-2 text-sm gap-1': size === 'sm',
+                        'py-1.5 px-3 gap-1.5': size === 'default',
+                        'py-1 px-2 text-xs gap-1': size === 'sm',
                         'p-1': size === 'icon', // No extra padding and gap for icon only buttons
                     },
                     className

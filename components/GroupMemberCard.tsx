@@ -50,11 +50,11 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
     return (
         <Card className="bg-gray-800/30 overflow-visible border-none">
             {/* Header / Stats */}
-            <CardHeader className="flex-row justify-between items-start space-y-0 p-3 pb-2 border-none">
-                <div className="space-y-1">
-                    <CardTitle className={cn("text-xl flex items-center gap-2", isLeader ? 'text-yellow-300' : 'text-blue-300')}>
+            <CardHeader className="flex-row justify-between items-start space-y-0 p-2 pb-1 border-none">
+                <div className="space-y-0.5">
+                    <CardTitle className={cn("text-lg flex items-center gap-1.5", isLeader ? 'text-yellow-300' : 'text-blue-300')}>
                         {player.name}
-                        {isLeader && <Star size={16} className="fill-current" />}
+                        {isLeader && <Star size={14} className="fill-current" />}
                         {player.info && (
                             <div className="relative group/info">
                                 <AlertTriangle size={16} className="text-cyan-400 cursor-pointer" aria-label="Player Warning/Info" />
@@ -101,7 +101,7 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
             </CardHeader>
 
             {/* Views */}
-            <CardContent className="p-3 pt-0">
+            <CardContent className="p-2 pt-0">
                 {member.isLocked ? (
                     <LockedMemberView
                         selectedUnitsMap={stats.selectedUnitsMap}

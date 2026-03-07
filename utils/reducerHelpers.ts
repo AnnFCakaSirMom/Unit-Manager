@@ -1,4 +1,4 @@
-import type { AppState, TWAttendancePlayer, Unit } from '../types';
+import type { AppState, TWAttendancePlayer, Unit, TWPlayerRecord, TWRecordStatus } from '../types';
 import { AppStateSchema } from '../schema';
 import { DEFAULT_UNIT_TIERS } from '../units';
 
@@ -104,6 +104,74 @@ export const handleTWAttendanceImport = (
     }
 };
 
+export const handleTWStatisticsImport = (
+    state: AppState,
+    payload: { jsonString: string, eventId: string }
+): AppState => {
+    try {
+        const data = JSON.parse(payload.jsonString);
+        if (!data.signUps) throw new Error("Invalid Raid Helper format");
+
+        const washName = (name: string) => (name || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '')
+            .toLowerCase();
+
+        const newRecords: TWPlayerRecord[] = [];
+        const processedPlayerIds = new Set<string>();
+
+        const matchPlayer = (discordName: string) => {
+            const washedDiscordName = washName(discordName);
+            return state.players.find(p => {
+                const washedPName = washName(p.name);
+                if (washedPName === washedDiscordName || washedDiscordName.includes(washedPName) || washedPName.includes(washedDiscordName)) return true;
+                if (p.aliases) {
+                    return p.aliases.some(alias => {
+                        const washedAlias = washName(alias);
+                        return washedAlias === washedDiscordName || washedDiscordName.includes(washedAlias) || washedAlias.includes(washedDiscordName);
+                    });
+                }
+                return false;
+            });
+        };
+
+        data.signUps.forEach((signup: any) => {
+            const matchedPlayer = matchPlayer(signup.name);
+            if (matchedPlayer) {
+                let status: TWRecordStatus = 'AWOL';
+                if (signup.className === 'Accepted') status = 'Attended';
+                else if (signup.className === 'Declined') status = 'Declined';
+                else if (signup.className === 'Maybe') status = 'Not Attended';
+
+                newRecords.push({
+                    eventId: payload.eventId,
+                    playerId: matchedPlayer.id,
+                    status
+                });
+                processedPlayerIds.add(matchedPlayer.id);
+            }
+        });
+
+        state.players.forEach(p => {
+            if (!p.notInHouse && !processedPlayerIds.has(p.id)) {
+                newRecords.push({
+                    eventId: payload.eventId,
+                    playerId: p.id,
+                    status: 'AWOL'
+                });
+            }
+        });
+
+        const filteredOldRecords = state.twRecords.filter(r => r.eventId !== payload.eventId);
+
+        return { ...state, twRecords: [...filteredOldRecords, ...newRecords] };
+    } catch (e) {
+        console.error("Could not parse Raid Helper data for TW Stats", e);
+        return state;
+    }
+};
+
 export const handleLoadState = (
     state: AppState,
     payload: any
@@ -137,12 +205,20 @@ export const handleLoadState = (
             mergedTiers[tier].sort((a, b) => a.name.localeCompare(b.name));
         }
 
+        const migratedPlayers = loadedData.players.map(p => ({
+            ...p,
+            joinedDate: p.joinedDate || new Date().toISOString().split('T')[0]
+        }));
+
         return {
             ...state,
-            players: loadedData.players,
+            players: migratedPlayers,
             unitConfig: { tiers: mergedTiers },
             groups: loadedData.groups,
-            twAttendance: loadedData.twAttendance
+            twAttendance: loadedData.twAttendance,
+            twSeasons: loadedData.twSeasons,
+            twEvents: loadedData.twEvents,
+            twRecords: loadedData.twRecords
         };
     } catch (error) {
         console.error("Failed to parse and load save file. JSON schema mismatch:", error);

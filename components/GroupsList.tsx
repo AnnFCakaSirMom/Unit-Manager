@@ -73,9 +73,9 @@ export const GroupsList = React.memo(({
 
 
     return (
-        <div className="flex-grow flex flex-col mt-4">
-            <div className="flex justify-between items-center mb-3">
-                <h2 className="text-lg font-semibold text-gray-300 flex items-center gap-2"><Shield size={20} /> Groups ({groups.length})</h2>
+        <div className="flex-grow flex flex-col mt-3">
+            <div className="flex justify-between items-center mb-2">
+                <h2 className="text-base font-semibold text-gray-300 flex items-center gap-2"><Shield size={18} /> Groups ({groups.length})</h2>
                 <div className="flex items-center gap-2">
                     <Button variant="primary" size="sm" onClick={handleCopyAllGroups} title="Copy All Groups" aria-label="Copy All Groups">
                         <Clipboard size={16} /> Copy
@@ -87,9 +87,9 @@ export const GroupsList = React.memo(({
             </div>
             <div className="flex-grow overflow-y-auto pr-2 -mr-2">
                 {groups.length > 0 ? (
-                    <ul className="space-y-2">
+                    <ul className="space-y-1">
                         {groups.map((group) => (
-                            <li key={group.id} className={`p-3 rounded-md transition-all duration-200 flex justify-between items-center group ${selectedGroupId === group.id ? 'bg-green-500/20' : 'bg-gray-700/50'}`}>
+                            <li key={group.id} className={`p-2 rounded-md transition-all duration-200 flex justify-between items-center group ${selectedGroupId === group.id ? 'bg-green-500/20' : 'bg-gray-700/50'}`}>
                                 {editingGroup.id === group.id ? (
                                     <div className="flex-grow flex items-center gap-2">
                                         <Input type="text" value={editingGroup.name} onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })} onKeyPress={(e) => e.key === 'Enter' && handleSaveGroupName()} className="flex-grow bg-gray-600 border-gray-500 px-2 py-1" autoFocus aria-label="Group Name Input" />

@@ -79,7 +79,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
     };
 
     return (
-        <div className="border-t border-gray-700 mt-4 pt-4">
+        <div className="border-t border-gray-700 mt-2 pt-2">
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <Input
@@ -87,7 +87,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search by unit name..."
-                    className="w-full pl-10 pr-10 py-2"
+                    className="w-full pl-9 pr-9 py-1.5"
                 />
                 {searchTerm && (
                     <Button onClick={clearSearch} variant="ghost" size="icon" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white hover:bg-transparent h-auto w-auto p-1">

@@ -16,7 +16,7 @@ export interface GroupMember {
 
 export interface Group {
   id: string;
-  name:string;
+  name: string;
   leaderId: string | null;
   members: GroupMember[];
 }
@@ -31,6 +31,9 @@ export interface Player {
   notInHouse: boolean;
   info?: string;
   totalLeadership?: number;
+  joinedDate?: string;
+  inactiveDate?: string | null;
+  aliases?: string[];
 }
 
 export interface UnitTiers {
@@ -47,11 +50,36 @@ export interface TWAttendancePlayer {
   matchedPlayerId: string | null;
 }
 
+export interface TWSeason {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface TWEvent {
+  id: string;
+  seasonId: string;
+  date: string;
+  type: 'regular' | 'extra';
+}
+
+export type TWRecordStatus = 'Attended' | 'Not Attended' | 'Declined' | 'AWOL';
+
+export interface TWPlayerRecord {
+  eventId: string;
+  playerId: string;
+  status: TWRecordStatus;
+}
+
 export interface AppState {
   players: Player[];
   unitConfig: UnitConfig;
   groups: Group[];
   twAttendance: TWAttendancePlayer[];
+  twSeasons: TWSeason[];
+  twEvents: TWEvent[];
+  twRecords: TWPlayerRecord[];
   hasUnsavedChanges: boolean;
 }
 
@@ -80,6 +108,14 @@ export type AppAction =
   | { type: 'UPDATE_PLAYER_LEADERSHIP'; payload: { playerId: string; leadership: number } }
   | { type: 'IMPORT_TW_ATTENDANCE'; payload: { jsonString: string } }
   | { type: 'CLEAR_TW_ATTENDANCE' }
+  | { type: 'UPDATE_PLAYER_PROFILE'; payload: { playerId: string; joinedDate?: string; inactiveDate?: string | null; aliases?: string[] } }
+  | { type: 'CREATE_TW_SEASON'; payload: { season: TWSeason, events: TWEvent[] } }
+  | { type: 'UPDATE_TW_SEASON'; payload: { season: TWSeason, events: TWEvent[] } }
+  | { type: 'DELETE_TW_SEASON'; payload: { seasonId: string } }
+  | { type: 'ADD_TW_EVENT'; payload: { event: TWEvent } }
+  | { type: 'DELETE_TW_EVENT'; payload: { eventId: string } }
+  | { type: 'IMPORT_TW_STATISTICS_RAID_HELPER'; payload: { jsonString: string, eventId: string } }
+  | { type: 'UPDATE_TW_PLAYER_RECORD'; payload: { eventId: string, playerId: string, status: TWRecordStatus } }
   | { type: 'LOAD_STATE'; payload: Omit<AppState, 'hasUnsavedChanges'> }
   | { type: 'SAVE_SUCCESS' };
 

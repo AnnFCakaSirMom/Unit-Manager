@@ -55,10 +55,10 @@ export const PlayerList = React.memo(({
 
     return (
         <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-3">
                 <div className="relative flex-grow">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    <Input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search players..." className="w-full pl-10 pr-3 py-2" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search players..." className="w-full pl-9 pr-2 py-1.5" />
                 </div>
                 <label className="flex items-center space-x-2 text-sm text-gray-400 cursor-pointer" title="Show 'Not in House' players">
                     <input type="checkbox" checked={notInHouse} onChange={() => setNotInHouse(!notInHouse)} className="form-checkbox h-4 w-4 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500" />
@@ -67,9 +67,9 @@ export const PlayerList = React.memo(({
             </div>
             <div className="flex-grow overflow-y-auto pr-2 -mr-2 max-h-64">
                 {filteredPlayers.length > 0 ? (
-                    <ul className="space-y-2">
+                    <ul className="space-y-1">
                         {filteredPlayers.map((player) => (
-                            <li key={player.id} className={`p-2 rounded-md transition-all duration-200 flex justify-between items-center group ${selectedPlayerId === player.id ? 'bg-blue-500/20' : 'bg-gray-700/50'} ${player.notInHouse ? 'opacity-60' : ''}`}>
+                            <li key={player.id} className={`p-1.5 rounded-md transition-all duration-200 flex justify-between items-center group ${selectedPlayerId === player.id ? 'bg-blue-500/20' : 'bg-gray-700/50'} ${player.notInHouse ? 'opacity-60' : ''}`}>
                                 {editingPlayer.id === player.id ? (
                                     <div className="flex-grow flex items-center gap-2">
                                         <Input type="text" value={editingPlayer.name} onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })} onKeyPress={(e) => e.key === 'Enter' && handleSavePlayerName()} className="flex-grow bg-gray-600 border-gray-500 px-2 py-1" autoFocus aria-label="Player Name Input" />

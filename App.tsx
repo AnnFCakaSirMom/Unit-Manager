@@ -10,6 +10,7 @@ import { Sidebar } from './components/Sidebar';
 import { PlayerUnitView } from './components/PlayerUnitView';
 import { GroupView } from './components/GroupView';
 import { TWAttendanceView } from './components/TWAttendanceView';
+import { TWStatisticsView } from './components/TWStatisticsView';
 import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
@@ -27,6 +28,9 @@ const App: React.FC = () => {
         unitConfig: { tiers: DEFAULT_UNIT_TIERS },
         groups: [],
         twAttendance: [],
+        twSeasons: [],
+        twEvents: [],
+        twRecords: [],
         hasUnsavedChanges: false,
     };
 
@@ -36,6 +40,7 @@ const App: React.FC = () => {
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [showAttendanceView, setShowAttendanceView] = useState<boolean>(false);
+    const [showTWStatisticsView, setShowTWStatisticsView] = useState<boolean>(false);
 
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
@@ -47,6 +52,7 @@ const App: React.FC = () => {
         if (playerId) {
             setSelectedGroupId(null);
             setShowAttendanceView(false);
+            setShowTWStatisticsView(false);
             if (!isPlayerListOpen) setPlayerListOpen(true);
         }
     }, [isPlayerListOpen]);
@@ -56,11 +62,20 @@ const App: React.FC = () => {
         if (groupId) {
             setSelectedPlayerId(null);
             setShowAttendanceView(false);
+            setShowTWStatisticsView(false);
         }
     }, []);
 
     const handleOpenAttendance = useCallback(() => {
         setShowAttendanceView(true);
+        setShowTWStatisticsView(false);
+        setSelectedPlayerId(null);
+        setSelectedGroupId(null);
+    }, []);
+
+    const handleOpenTWStatistics = useCallback(() => {
+        setShowTWStatisticsView(true);
+        setShowAttendanceView(false);
         setSelectedPlayerId(null);
         setSelectedGroupId(null);
     }, []);
@@ -127,6 +142,7 @@ const App: React.FC = () => {
                             onLoad={handleModernOpenFile}
                             onOpenUnitManager={() => setIsMgmtModalOpen(true)}
                             onOpenAttendance={handleOpenAttendance}
+                            onOpenTWStatistics={handleOpenTWStatistics}
                             hasUnsavedChanges={hasUnsavedChanges}
                             statusMessage={statusMessage}
                             setConfirmModal={setConfirmModal}
@@ -135,7 +151,9 @@ const App: React.FC = () => {
                         />
 
                         <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
-                            {showAttendanceView ? (
+                            {showTWStatisticsView ? (
+                                <TWStatisticsView />
+                            ) : showAttendanceView ? (
                                 <div className="flex-1 overflow-hidden p-4 min-w-[300px]">
                                     <TWAttendanceView
                                         onSelectPlayer={handleSelectPlayer}

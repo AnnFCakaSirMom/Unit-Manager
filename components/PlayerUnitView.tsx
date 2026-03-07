@@ -32,6 +32,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     const [isParseModalOpen, setIsParseModalOpen] = useState(false);
     const [infoText, setInfoText] = useState(player?.info || "");
     const [leadership, setLeadership] = useState(String(player?.totalLeadership || ''));
+    const [joinedDate, setJoinedDate] = useState(player?.joinedDate || "");
+    const [inactiveDate, setInactiveDate] = useState(player?.inactiveDate || "");
+    const [aliasesText, setAliasesText] = useState((player?.aliases || []).join(', '));
 
     const allUnitsByTier = useMemo(() => {
         const sortedTiers: { [key: string]: Unit[] } = {};
@@ -44,6 +47,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     useEffect(() => {
         setInfoText(player.info || "");
         setLeadership(String(player.totalLeadership || ''));
+        setJoinedDate(player.joinedDate || "");
+        setInactiveDate(player.inactiveDate || "");
+        setAliasesText((player.aliases || []).join(', '));
     }, [player]);
 
     const selectedPlayerUnits = useMemo(() => new Set(player?.units || []), [player]);
@@ -71,6 +77,20 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
             setStatusMessage("Player leadership saved.");
         }
     }, [leadership, player, dispatch, setStatusMessage]);
+
+    const handleProfileSave = useCallback(() => {
+        const newAliases = aliasesText.split(',').map(s => s.trim()).filter(s => s);
+        dispatch({
+            type: 'UPDATE_PLAYER_PROFILE',
+            payload: {
+                playerId: player.id,
+                joinedDate: joinedDate || undefined,
+                inactiveDate: inactiveDate || null,
+                aliases: newAliases
+            }
+        });
+        setStatusMessage("Player profile updated.");
+    }, [joinedDate, inactiveDate, aliasesText, player.id, dispatch, setStatusMessage]);
 
     const padRight = (str: string, length: number) => {
         return str.padEnd(length, ' ');
@@ -119,7 +139,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                     </div>
                 </div>
 
-                <div className="my-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="my-3 grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div className="md:col-span-2">
                         <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info</label>
                         <textarea
@@ -129,25 +149,64 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                             onBlur={handleInfoSave}
                             placeholder={`Write information about ${player?.name}...`}
                             className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            rows={3}
+                            rows={2}
                         />
                     </div>
-                    <div>
-                        <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-1">Total Leadership</label>
-                        <Input
-                            id="playerLeadership"
-                            type="number"
-                            value={leadership}
-                            onChange={(e) => setLeadership(e.target.value)}
-                            onBlur={handleLeadershipSave}
-                            placeholder="e.g. 700"
-                            className="w-full p-2"
-                        />
+                    <div className="flex flex-col gap-3">
+                        <div>
+                            <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-1">Total Leadership</label>
+                            <Input
+                                id="playerLeadership"
+                                type="number"
+                                value={leadership}
+                                onChange={(e) => setLeadership(e.target.value)}
+                                onBlur={handleLeadershipSave}
+                                placeholder="e.g. 700"
+                                className="w-full p-2"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label htmlFor="joinedDate" className="block text-sm font-medium text-gray-300 mb-1">Joined Date</label>
+                                <Input
+                                    id="joinedDate"
+                                    type="date"
+                                    value={joinedDate}
+                                    onChange={(e) => setJoinedDate(e.target.value)}
+                                    onBlur={handleProfileSave}
+                                    className="w-full p-2"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="inactiveDate" className="block text-sm font-medium text-gray-300 mb-1">Inactive Date</label>
+                                <Input
+                                    id="inactiveDate"
+                                    type="date"
+                                    value={inactiveDate}
+                                    onChange={(e) => setInactiveDate(e.target.value)}
+                                    onBlur={handleProfileSave}
+                                    className="w-full p-2"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
+                <div className="mb-3">
+                    <label htmlFor="aliases" className="block text-sm font-medium text-gray-300 mb-1">Discord Aliases (comma separated)</label>
+                    <Input
+                        id="aliases"
+                        type="text"
+                        value={aliasesText}
+                        onChange={(e) => setAliasesText(e.target.value)}
+                        onBlur={handleProfileSave}
+                        placeholder="e.g. KalleRox, Kalle_99"
+                        className="w-full p-2"
+                    />
+                </div>
 
-                <div className="mb-4">
+
+                <div className="mb-3">
                     <div className="flex items-center gap-4">
                         <div className="bg-gray-800/60 rounded-md p-1 flex items-center gap-1 self-start">
                             <Button onClick={() => setUnitViewMode('all')} variant={unitViewMode === 'all' ? 'primary' : 'ghost'} size="sm"><CheckSquare size={16} /> Show All</Button>

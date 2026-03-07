@@ -57,7 +57,7 @@ export const AttendancePlayerList: React.FC<AttendancePlayerListProps> = ({
                             onDragStart={(e) => isDraggable && handleDragStart(e, person.matchedPlayerId!)}
                             onDragEnd={handleDragEnd}
                             className={cn(
-                                "flex items-center justify-between p-2 rounded-md border transition-all",
+                                "flex items-center justify-between p-1.5 rounded-md border transition-all",
                                 existingGroup ? 'bg-green-900/20 border-green-700/50' : 'bg-gray-800/50 border-gray-700',
                                 isDraggable && 'cursor-grab active:cursor-grabbing hover:bg-gray-700/60',
                                 draggedPlayer === person.matchedPlayerId && 'opacity-50'
