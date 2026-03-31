@@ -18,6 +18,7 @@ export const EditTWAttendanceModal: React.FC<EditTWAttendanceModalProps> = ({ is
 
     const [selectedEventId, setSelectedEventId] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [showInactive, setShowInactive] = useState(false);
 
     // Auto-select first event if none selected
     React.useEffect(() => {
@@ -29,10 +30,24 @@ export const EditTWAttendanceModal: React.FC<EditTWAttendanceModalProps> = ({ is
     const activeEvent = useMemo(() => events.find(e => e.id === selectedEventId), [events, selectedEventId]);
 
     const filteredPlayers = useMemo(() => {
-        if (!searchQuery.trim()) return players;
-        const query = searchQuery.toLowerCase();
-        return players.filter(p => p.name.toLowerCase().includes(query) || (p.aliases && p.aliases.some(a => a.toLowerCase().includes(query))));
-    }, [players, searchQuery]);
+        let result = players;
+
+        // Filter by inactive status
+        if (!showInactive) {
+            result = result.filter(p => !p.notInHouse);
+        }
+
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(p =>
+                p.name.toLowerCase().includes(query) ||
+                (p.aliases && p.aliases.some(a => a.toLowerCase().includes(query)))
+            );
+        }
+
+        return result;
+    }, [players, searchQuery, showInactive]);
 
     const getPlayerStatus = (playerId: string): TWRecordStatus | 'None' => {
         const record = twRecords.find(r => r.eventId === selectedEventId && r.playerId === playerId);
@@ -71,14 +86,41 @@ export const EditTWAttendanceModal: React.FC<EditTWAttendanceModalProps> = ({ is
                         </select>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Search Player</label>
-                        <Input
-                            placeholder="Type name or alias..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            className="w-full"
-                        />
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-300 mb-1">Search Player</label>
+                            <Input
+                                placeholder="Type name or alias..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="w-full"
+                            />
+                        </div>
+                        <div className="flex flex-col justify-end">
+                            <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white h-[38px] transition-colors">
+                                <input
+                                    type="checkbox"
+                                    className="hidden"
+                                    checked={showInactive}
+                                    onChange={() => setShowInactive(!showInactive)}
+                                />
+                                <div className="flex items-center gap-2 bg-gray-800 border border-gray-600 rounded px-3 py-1.5 h-full">
+                                    {showInactive ? (
+                                        <div className="flex items-center gap-2 text-blue-400">
+                                            <span className="w-4 h-4 rounded-sm border-2 border-blue-400 flex items-center justify-center bg-blue-400/20">
+                                                <div className="w-2 h-2 bg-blue-400 rounded-sm"></div>
+                                            </span>
+                                            <span className="font-medium whitespace-nowrap">Show Inactive</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 text-gray-400">
+                                            <span className="w-4 h-4 rounded-sm border-2 border-gray-600"></span>
+                                            <span className="font-medium whitespace-nowrap">Show Inactive</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
