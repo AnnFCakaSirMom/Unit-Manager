@@ -114,6 +114,7 @@ export type AppAction =
   | { type: 'DELETE_TW_SEASON'; payload: { seasonId: string } }
   | { type: 'ADD_TW_EVENT'; payload: { event: TWEvent } }
   | { type: 'DELETE_TW_EVENT'; payload: { eventId: string } }
+  | { type: 'CLEAR_TW_EVENT_RECORDS'; payload: { eventId: string } }
   | { type: 'IMPORT_TW_STATISTICS_RAID_HELPER'; payload: { jsonString: string, eventId: string } }
   | { type: 'UPDATE_TW_PLAYER_RECORD'; payload: { eventId: string, playerId: string, status: TWRecordStatus } }
   | { type: 'LOAD_STATE'; payload: Omit<AppState, 'hasUnsavedChanges'> }

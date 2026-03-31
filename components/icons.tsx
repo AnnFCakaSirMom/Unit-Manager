@@ -28,7 +28,7 @@ export const Save: React.FC<IconProps> = (props) => <Icon {...props}><path d="M1
 export const Pencil: React.FC<IconProps> = (props) => <Icon {...props}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></Icon>;
 export const FolderOpen: React.FC<IconProps> = (props) => <Icon {...props}><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v1" /></Icon>;
 export const AlertTriangle: React.FC<IconProps> = (props) => <Icon {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" /></Icon>;
-export const Clipboard: React.FC<IconProps> = (props) => <Icon {...props}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" ry="1" /></Icon>;
+export const Clipboard: React.FC<IconProps> = (props) => <Icon {...props}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" ry="1" /></Icon>;
 export const UploadCloud: React.FC<IconProps> = (props) => <Icon {...props}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /><path d="M12 12v9" /><path d="m16 16-4-4-4 4" /></Icon>;
 export const Shield: React.FC<IconProps> = (props) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></Icon>;
 export const Lock: React.FC<IconProps> = (props) => <Icon {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></Icon>;
@@ -45,3 +45,4 @@ export const Copy: React.FC<IconProps> = (props) => <Icon {...props}><rect width
 export const CopyIcon: React.FC<IconProps> = Copy;
 export const CheckIcon: React.FC<IconProps> = (props) => <Icon {...props}><path d="M20 6 9 17l-5-5" /></Icon>;
 export const Square: React.FC<IconProps> = (props) => <Icon {...props}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /></Icon>;
+export const Database: React.FC<IconProps> = (props) => <Icon {...props}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></Icon>;

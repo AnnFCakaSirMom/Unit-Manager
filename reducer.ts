@@ -271,11 +271,17 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return { ...state, twSeasons: [...state.twSeasons, action.payload.season], twEvents: [...state.twEvents, ...action.payload.events] };
         }
         case 'UPDATE_TW_SEASON': {
+            const currentEventIds = action.payload.events.map(e => e.id);
+            const obsoleteEvents = state.twEvents.filter(e => e.seasonId === action.payload.season.id && !currentEventIds.includes(e.id));
+            const obsoleteEventIds = obsoleteEvents.map(e => e.id);
+
             const updatedTwEvents = state.twEvents.filter(e => e.seasonId !== action.payload.season.id).concat(action.payload.events);
+
             return {
                 ...state,
                 twSeasons: state.twSeasons.map(s => s.id === action.payload.season.id ? action.payload.season : s),
-                twEvents: updatedTwEvents
+                twEvents: updatedTwEvents,
+                twRecords: state.twRecords.filter(r => !obsoleteEventIds.includes(r.eventId))
             };
         }
         case 'DELETE_TW_SEASON': {
@@ -296,6 +302,12 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
             return {
                 ...state,
                 twEvents: state.twEvents.filter(e => e.id !== action.payload.eventId),
+                twRecords: state.twRecords.filter(r => r.eventId !== action.payload.eventId)
+            }
+        }
+        case 'CLEAR_TW_EVENT_RECORDS': {
+            return {
+                ...state,
                 twRecords: state.twRecords.filter(r => r.eventId !== action.payload.eventId)
             }
         }
