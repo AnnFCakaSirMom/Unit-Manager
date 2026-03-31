@@ -13,7 +13,7 @@ export function useFileHandler({ state, dispatch, handleSelectPlayer, setStatusM
     const [aktivFilHandle, setAktivFilHandle] = useState<FileSystemFileHandle | null>(null);
     const [, setFileHandle] = useState<FileSystemFileHandle | null>(null);
 
-    const { players, unitConfig, groups, twAttendance } = state;
+    const { players, unitConfig, groups, twAttendance, twSeasons, twEvents, twRecords } = state;
 
     const processFile = useCallback((file: File, handle: FileSystemFileHandle | null) => {
         if (!file || !file.type.match('application/json')) {
@@ -49,7 +49,7 @@ export function useFileHandler({ state, dispatch, handleSelectPlayer, setStatusM
     }, [handleSelectPlayer, dispatch, setStatusMessage]);
 
     const handleSaveData = useCallback(async () => {
-        const dataToSave = JSON.stringify({ players, unitConfig, groups, twAttendance }, null, 2);
+        const dataToSave = JSON.stringify({ players, unitConfig, groups, twAttendance, twSeasons, twEvents, twRecords }, null, 2);
 
         if (aktivFilHandle) {
             try {
@@ -80,7 +80,7 @@ export function useFileHandler({ state, dispatch, handleSelectPlayer, setStatusM
                 setStatusMessage('Error: Could not save the file.');
             }
         }
-    }, [players, unitConfig, groups, twAttendance, aktivFilHandle, dispatch, setStatusMessage]);
+    }, [players, unitConfig, groups, twAttendance, twSeasons, twEvents, twRecords, aktivFilHandle, dispatch, setStatusMessage]);
 
     const handleLoadData = useCallback(() => {
         const input = document.createElement('input');
