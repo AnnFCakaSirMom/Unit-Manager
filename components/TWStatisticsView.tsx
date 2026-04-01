@@ -181,6 +181,93 @@ export const TWStatisticsView: React.FC = () => {
                     <Button variant="secondary" onClick={() => setIsImportModalOpen(true)} disabled={activeEvents.length === 0}>
                         <ImportIcon size={16} /> Import Raid Helper
                     </Button>
+                    <Button
+                        variant="secondary"
+                        onClick={() => {
+                            const today = new Date().toISOString().split('T')[0];
+                            const completedEvents = activeEvents.filter(e => e.date <= today);
+                            const possibleCount = completedEvents.length;
+
+                            if (possibleCount === 0) {
+                                alert("No TW events have been completed yet this season.");
+                                return;
+                            }
+
+                            // Calculate Leaderboard Stats (Special logic)
+                            const leaderboardStats = players
+                                .filter(p => !p.notInHouse) // Only active players
+                                .map(p => {
+                                    const records = twRecords.filter(r => completedEvents.some(e => e.id === r.eventId) && r.playerId === p.id);
+                                    const attended = records.filter(r => r.status === 'Attended').length;
+                                    const declined = records.filter(r => r.status === 'Declined').length;
+                                    const awol = records.filter(r => r.status === 'AWOL').length;
+                                    const percentage = Math.round((attended / possibleCount) * 100);
+
+                                    return {
+                                        name: p.name,
+                                        attended,
+                                        possibleCount,
+                                        percentage,
+                                        declined,
+                                        awol
+                                    };
+                                })
+                                .sort((a, b) => {
+                                    // 1. Percentage (Highest first)
+                                    if (b.percentage !== a.percentage) return b.percentage - a.percentage;
+                                    // 2. Attendance count (Highest first)
+                                    if (b.attended !== a.attended) return b.attended - a.attended;
+                                    // 3. AWOL count (Lowest first)
+                                    if (a.awol !== b.awol) return a.awol - b.awol;
+                                    // 4. Declined count (Lowest first)
+                                    if (a.declined !== b.declined) return a.declined - b.declined;
+                                    // 5. Name (Alphabetical)
+                                    return a.name.localeCompare(b.name);
+                                });
+
+                            let text = `🏆 --- TW LEADERBOARD: ${activeSeason?.name || 'Unknown'} --- 🏆\n`;
+                            text += `*Based on ${possibleCount} completed TW sessions*\n\n`;
+                            text += `\`\`\`\n`;
+
+                            leaderboardStats.forEach((s, idx) => {
+                                const rank = idx + 1;
+                                let emoji = '';
+
+                                // Placeholders/Tiers
+                                if (rank === 1) emoji = '🥇 ';
+                                else if (rank === 2) emoji = '🥈 ';
+                                else if (rank === 3) emoji = '🥉 ';
+                                else if (rank <= 10) emoji = '✨ ';
+                                else if (s.percentage >= 50) emoji = '🔹 ';
+                                else if (s.percentage > 0) emoji = '🔸 ';
+                                else emoji = '♦️ ';
+
+                                const rankStr = `${rank}.`.padEnd(4, ' ');
+                                const nameStr = s.name.padEnd(20, ' ');
+                                const countStr = `[${s.attended}/${s.possibleCount}]`.padEnd(10, ' ');
+                                const pctStr = `${s.percentage}%`.padStart(5, ' ');
+
+                                text += `${emoji}${rankStr}${nameStr}${countStr}${pctStr}\n`;
+
+                                // Auto-split into multiple code blocks if Nitro limit or standard limit is approached
+                                // Using 1800 to be safe and give room for the legend
+                                if (text.length % 1900 > 1700) {
+                                    text += `\`\`\`\n\`\`\`\n`;
+                                }
+                            });
+
+                            text += `\`\`\`\n`;
+                            text += `**Legend:** 🔹 50%+ | 🔸 <50% | ♦️ 0%\n`;
+                            text += `*⚠️ Attendance prioritizes informed absence (Declined) over no-shows (AWOL).*`;
+
+                            navigator.clipboard.writeText(text);
+                            alert("Leaderboard copied to clipboard! (Formatting optimized for Discord)");
+                        }}
+                        disabled={activeEvents.length === 0}
+                        className="border-blue-500/50 hover:border-blue-500 text-blue-300"
+                    >
+                        🏆 Copy Leaderboard
+                    </Button>
                     <Button variant="primary" onClick={handleCopy}>
                         <Copy size={16} /> Copy to Discord
                     </Button>
