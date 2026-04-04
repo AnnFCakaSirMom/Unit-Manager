@@ -173,6 +173,7 @@ const App: React.FC = () => {
                                     key={selectedPlayerId}
                                     player={selectedPlayer!}
                                     setStatusMessage={setStatusMessage}
+                                    setConfirmModal={setConfirmModal}
                                 />
                             ) : (
                                 <div className="flex items-center justify-center h-full text-center text-gray-500">

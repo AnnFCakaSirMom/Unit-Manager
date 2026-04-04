@@ -69,6 +69,16 @@ export const appReducer = (state: AppState, action: AppAction): AppState => {
         case 'PARSE_PLAYER_UNITS_FORM': {
             return handleParsePlayerUnitsForm(state, action.payload);
         }
+        case 'CLEAR_PLAYER_UNITS': {
+            return {
+                ...state,
+                players: state.players.map(p =>
+                    p.id === action.payload.playerId
+                        ? { ...p, units: [], preparedUnits: [], masteryUnits: [], favoriteUnits: [] }
+                        : p
+                )
+            };
+        }
         case 'UPDATE_UNIT_CONFIG':
             return { ...state, unitConfig: action.payload.unitConfig };
 

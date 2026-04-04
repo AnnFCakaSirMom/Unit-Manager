@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import type { Player, Unit } from '../types';
-import { CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star } from './icons';
+import type { Player, Unit, ConfirmModalInfo } from '../types';
+import { CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star, Trash2 } from './icons';
 import { ParseFormModal } from './ParseFormModal';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -12,11 +12,12 @@ import { OwnedUnitsView } from './OwnedUnitsView';
 interface PlayerUnitViewProps {
     player: Player;
     setStatusMessage: (message: string) => void;
+    setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
 }
 
 import { useAppState, useAppDispatch } from '../AppContext';
 
-export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatusMessage }) => {
+export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatusMessage, setConfirmModal }) => {
     const { unitConfig } = useAppState();
     const dispatch = useAppDispatch();
     const allUnits = useMemo(() => Object.values(unitConfig.tiers).flat().map(u => u.name), [unitConfig]);
@@ -119,6 +120,19 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
         setStatusMessage(`Parsed unit data for ${player.name}.`);
     };
 
+    const handleClearUnits = () => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Clear Unit Data',
+            message: `Are you sure you want to clear all unit data for ${player.name}? This action cannot be undone.`,
+            onConfirm: () => {
+                dispatch({ type: 'CLEAR_PLAYER_UNITS', payload: { playerId: player.id } });
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                setStatusMessage(`Cleared unit data for ${player.name}.`);
+            }
+        });
+    };
+
     return (
         <>
             <div className="h-full flex flex-col">
@@ -128,6 +142,10 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected.</p>
                     </div>
                     <div className="flex items-center gap-2">
+                        <Button onClick={handleClearUnits} variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-400/10" size="sm">
+                            <Trash2 size={16} />
+                            <span>Clear Units</span>
+                        </Button>
                         <Button onClick={() => setIsParseModalOpen(true)} variant="primary">
                             <ImportIcon size={16} />
                             <span>Import Form</span>

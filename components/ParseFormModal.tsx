@@ -33,7 +33,7 @@ export const ParseFormModal: React.FC<ParseFormModalProps> = ({ isOpen, onClose,
                     <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-gray-700" title="Close" aria-label="Close"><X size={24} /></Button>
                 </header>
                 <div className="p-4 flex-grow">
-                    <p className="text-gray-400 mb-4">Paste the filled-out form text below. The player's current unit data will be overwritten.</p>
+                    <p className="text-gray-400 mb-4">Paste the filled-out form text below. New data will be merged with existing unit data.</p>
                     <textarea
                         value={text}
                         onChange={(e) => setText(e.target.value)}

@@ -7,11 +7,14 @@ export const handleParsePlayerUnitsForm = (
     payload: { playerId: string; formData: string; allUnitNames: string[] }
 ): AppState => {
     const { playerId, formData, allUnitNames } = payload;
+    const player = state.players.find(p => p.id === playerId);
+    if (!player) return state;
+
     const allUnitNamesSet = new Set(allUnitNames);
-    const newUnits: string[] = [];
-    const newPreparedUnits: string[] = [];
-    const newMasteryUnits: string[] = [];
-    const newFavoriteUnits: string[] = [];
+    const parsedUnits: string[] = [];
+    const parsedPreparedUnits: string[] = [];
+    const parsedMasteryUnits: string[] = [];
+    const parsedFavoriteUnits: string[] = [];
 
     const lines = formData.split('\n');
     const regex = /(.*?)\s+-\s+✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\](?:.*❤️ Favorite: \[(.*?)\])?/;
@@ -23,19 +26,28 @@ export const handleParsePlayerUnitsForm = (
             const unitName = unitNameStr.trim();
 
             if (allUnitNamesSet.has(unitName)) {
-                if (ownedStr.trim().toLowerCase() === 'x') newUnits.push(unitName);
-                if (maxedStr.trim().toLowerCase() === 'x') newPreparedUnits.push(unitName);
-                if (masteryStr.trim().toLowerCase() === 'x') newMasteryUnits.push(unitName);
-                if (favoriteStr && favoriteStr.trim().toLowerCase() === 'x') newFavoriteUnits.push(unitName);
+                if (ownedStr.trim().toLowerCase() === 'x') parsedUnits.push(unitName);
+                if (maxedStr.trim().toLowerCase() === 'x') parsedPreparedUnits.push(unitName);
+                if (masteryStr.trim().toLowerCase() === 'x') parsedMasteryUnits.push(unitName);
+                if (favoriteStr && favoriteStr.trim().toLowerCase() === 'x') parsedFavoriteUnits.push(unitName);
             }
         }
     }
+
+    // Merge logic: Combine existing with parsed, preventing duplicates using Set
+    const merge = (existing: string[] = [], parsed: string[]) => Array.from(new Set([...existing, ...parsed]));
 
     return {
         ...state,
         players: state.players.map(p =>
             p.id === playerId
-                ? { ...p, units: newUnits, preparedUnits: newPreparedUnits, masteryUnits: newMasteryUnits, favoriteUnits: newFavoriteUnits }
+                ? {
+                    ...p,
+                    units: merge(p.units, parsedUnits),
+                    preparedUnits: merge(p.preparedUnits, parsedPreparedUnits),
+                    masteryUnits: merge(p.masteryUnits, parsedMasteryUnits),
+                    favoriteUnits: merge(p.favoriteUnits, parsedFavoriteUnits)
+                }
                 : p
         )
     };

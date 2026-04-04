@@ -90,6 +90,7 @@ export type AppAction =
   | { type: 'TOGGLE_NOT_IN_HOUSE'; payload: { playerId: string } }
   | { type: 'TOGGLE_PLAYER_UNIT'; payload: { playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits' } }
   | { type: 'PARSE_PLAYER_UNITS_FORM'; payload: { playerId: string; formData: string; allUnitNames: string[] } }
+  | { type: 'CLEAR_PLAYER_UNITS'; payload: { playerId: string } }
   | { type: 'UPDATE_UNIT_CONFIG'; payload: { unitConfig: UnitConfig } }
   | { type: 'RENAME_UNIT_GLOBALLY'; payload: { oldName: string; newName: string } }
   | { type: 'DELETE_UNIT_GLOBALLY'; payload: { unitNameToDelete: string } }
