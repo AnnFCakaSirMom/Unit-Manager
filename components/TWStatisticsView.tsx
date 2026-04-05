@@ -23,6 +23,7 @@ export const TWStatisticsView: React.FC = () => {
     const [showDeclined, setShowDeclined] = useState(true);
     const [showAwol, setShowAwol] = useState(true);
     const [showInactive, setShowInactive] = useState(false);
+    const [isNitroMode, setIsNitroMode] = useState(false);
 
     const [sortKey, setSortKey] = useState<SortKey>('percentage');
     const [sortAsc, setSortAsc] = useState(false);
@@ -226,8 +227,10 @@ export const TWStatisticsView: React.FC = () => {
                                 });
 
                             let text = `🏆 --- TW LEADERBOARD: ${activeSeason?.name || 'Unknown'} --- 🏆\n`;
-                            text += `*Based on ${possibleCount} completed TW sessions*\n\n`;
                             text += `\`\`\`\n`;
+                            
+                            const splitLimit = isNitroMode ? 3800 : 1800;
+                            let lastSplitIndex = 0;
 
                             leaderboardStats.forEach((s, idx) => {
                                 const rank = idx + 1;
@@ -249,16 +252,15 @@ export const TWStatisticsView: React.FC = () => {
 
                                 text += `${emoji}${rankStr}${nameStr}${countStr}${pctStr}\n`;
 
-                                // Auto-split into multiple code blocks if Nitro limit or standard limit is approached
-                                // Using 1800 to be safe and give room for the legend
-                                if (text.length % 1900 > 1700) {
+                                // Auto-split into multiple code blocks if the character limit is approached
+                                if (text.length - lastSplitIndex > splitLimit) {
                                     text += `\`\`\`\n\`\`\`\n`;
+                                    lastSplitIndex = text.length;
                                 }
                             });
 
                             text += `\`\`\`\n`;
                             text += `**Legend:** 🔹 50%+ | 🔸 <50% | ♦️ 0%\n`;
-                            text += `*⚠️ Attendance prioritizes informed absence (Declined) over no-shows (AWOL).*`;
 
                             navigator.clipboard.writeText(text);
                             alert("Leaderboard copied to clipboard! (Formatting optimized for Discord)");
@@ -297,6 +299,12 @@ export const TWStatisticsView: React.FC = () => {
                     <input type="checkbox" className="hidden" checked={showInactive} onChange={() => setShowInactive(!showInactive)} />
                     {showInactive ? <CheckSquare size={16} className="text-yellow-400" /> : <Square size={16} />}
                     Include Inactive & Zero-Event Players
+                </label>
+                <div className="w-px h-6 bg-gray-600 mx-2 hidden sm:block"></div>
+                <label className="flex items-center gap-2 text-sm text-blue-300 cursor-pointer hover:text-blue-200">
+                    <input type="checkbox" className="hidden" checked={isNitroMode} onChange={() => setIsNitroMode(!isNitroMode)} />
+                    {isNitroMode ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
+                    🚀 Discord Nitro Mode
                 </label>
             </div>
 
