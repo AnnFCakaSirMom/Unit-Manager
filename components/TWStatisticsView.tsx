@@ -232,20 +232,34 @@ export const TWStatisticsView: React.FC = () => {
                             const splitLimit = isNitroMode ? 3800 : 1800;
                             let lastSplitIndex = 0;
 
+                            let denseRank = 0;
+                            let lastPercentage = -1;
+
                             leaderboardStats.forEach((s, idx) => {
-                                const rank = idx + 1;
+                                const absolutePosition = idx + 1;
+                                let currentRankNum = absolutePosition;
                                 let emoji = '';
 
-                                // Placeholders/Tiers
-                                if (rank === 1) emoji = '🥇 ';
-                                else if (rank === 2) emoji = '🥈 ';
-                                else if (rank === 3) emoji = '🥉 ';
-                                else if (rank <= 10) emoji = '✨ ';
-                                else if (s.percentage >= 50) emoji = '🔹 ';
-                                else if (s.percentage > 0) emoji = '🔸 ';
-                                else emoji = '♦️ ';
+                                if (s.percentage > 0) {
+                                    if (s.percentage !== lastPercentage) {
+                                        denseRank++;
+                                        lastPercentage = s.percentage;
+                                    }
+                                    currentRankNum = denseRank;
 
-                                const rankStr = `${rank}.`.padEnd(4, ' ');
+                                    // Emoji prioritization
+                                    if (denseRank === 1) emoji = '🥇 ';
+                                    else if (denseRank === 2) emoji = '🥈 ';
+                                    else if (denseRank === 3) emoji = '🥉 ';
+                                    else if (s.percentage >= 50) emoji = '✨ ';
+                                    else emoji = '🔸 ';
+                                } else {
+                                    // 0% attendance = sequential ranking
+                                    currentRankNum = absolutePosition;
+                                    emoji = '♦️ ';
+                                }
+
+                                const rankStr = `${currentRankNum}.`.padEnd(4, ' ');
                                 const nameStr = s.name.padEnd(20, ' ');
                                 const pctStr = `${s.percentage}%`.padStart(5, ' ');
 
@@ -259,7 +273,7 @@ export const TWStatisticsView: React.FC = () => {
                             });
 
                             text += `\`\`\`\n`;
-                            text += `**Legend:** 🔹 50%+ | 🔸 <50% | ♦️ 0%\n`;
+                            text += `**Legend:** ✨ 50%+ | 🔸 <50% | ♦️ 0%\n`;
 
                             navigator.clipboard.writeText(text);
                             alert("Leaderboard copied to clipboard! (Formatting optimized for Discord)");
