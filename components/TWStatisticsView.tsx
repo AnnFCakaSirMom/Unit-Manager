@@ -247,10 +247,9 @@ export const TWStatisticsView: React.FC = () => {
 
                                 const rankStr = `${rank}.`.padEnd(4, ' ');
                                 const nameStr = s.name.padEnd(20, ' ');
-                                const countStr = `[${s.attended}/${s.possibleCount}]`.padEnd(10, ' ');
                                 const pctStr = `${s.percentage}%`.padStart(5, ' ');
 
-                                text += `${emoji}${rankStr}${nameStr}${countStr}${pctStr}\n`;
+                                text += `${emoji}${rankStr}${nameStr}${pctStr}\n`;
 
                                 // Auto-split into multiple code blocks if the character limit is approached
                                 if (text.length - lastSplitIndex > splitLimit) {
