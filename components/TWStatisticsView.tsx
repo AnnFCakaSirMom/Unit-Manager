@@ -232,34 +232,31 @@ export const TWStatisticsView: React.FC = () => {
                             const splitLimit = isNitroMode ? 3800 : 1800;
                             let lastSplitIndex = 0;
 
-                            let denseRank = 0;
+                            let currentDisplayRank = 0;
                             let lastPercentage = -1;
 
-                            leaderboardStats.forEach((s, idx) => {
-                                const absolutePosition = idx + 1;
-                                let currentRankNum = absolutePosition;
+                            leaderboardStats.forEach((s) => {
                                 let emoji = '';
 
                                 if (s.percentage > 0) {
                                     if (s.percentage !== lastPercentage) {
-                                        denseRank++;
+                                        currentDisplayRank++;
                                         lastPercentage = s.percentage;
                                     }
-                                    currentRankNum = denseRank;
-
+                                    
                                     // Emoji prioritization
-                                    if (denseRank === 1) emoji = '🥇 ';
-                                    else if (denseRank === 2) emoji = '🥈 ';
-                                    else if (denseRank === 3) emoji = '🥉 ';
+                                    if (currentDisplayRank === 1) emoji = '🥇 ';
+                                    else if (currentDisplayRank === 2) emoji = '🥈 ';
+                                    else if (currentDisplayRank === 3) emoji = '🥉 ';
                                     else if (s.percentage >= 50) emoji = '✨ ';
                                     else emoji = '🔸 ';
                                 } else {
                                     // 0% attendance = sequential ranking
-                                    currentRankNum = absolutePosition;
+                                    currentDisplayRank++;
                                     emoji = '♦️ ';
                                 }
 
-                                const rankStr = `${currentRankNum}.`.padEnd(4, ' ');
+                                const rankStr = `${currentDisplayRank}.`.padEnd(4, ' ');
                                 const nameStr = s.name.padEnd(20, ' ');
                                 const pctStr = `${s.percentage}%`.padStart(5, ' ');
 
