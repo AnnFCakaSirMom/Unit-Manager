@@ -2,9 +2,11 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Player } from '../types';
-import { Search, X } from './icons';
+import { Search, X, CheckIcon } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
+import { Select } from './Select';
+import { useAppState, useAppDispatch } from '../AppContext';
 
 interface UnitSearchProps {
     players: Player[];
@@ -15,6 +17,8 @@ interface UnitSearchProps {
 
 export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer, searchTerm, setSearchTerm }) => {
     const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
+    const { twAttendance, groups } = useAppState();
+    const dispatch = useAppDispatch();
 
     useEffect(() => {
         if (selectedUnit && searchTerm !== selectedUnit) {
@@ -96,7 +100,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                 )}
             </div>
 
-            <div className="mt-2 space-y-1 bg-gray-700/50 p-2 rounded-md max-h-48 overflow-y-auto">
+            <div className={`mt-2 space-y-1 bg-gray-700/50 rounded-md overflow-y-auto ${selectedUnit ? 'max-h-80' : 'max-h-48'} ${searchTerm.trim() ? 'p-2' : ''}`}>
                 {/* Step 1: Show unit suggestions */}
                 {!selectedUnit && searchTerm.trim() && (
                     suggestedUnits.length > 0 ? (
@@ -120,24 +124,71 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                 {selectedUnit && (
                     foundPlayers.length > 0 ? (
                         <>
-                            <p className="text-xs text-gray-400 mb-1 px-1">Players with {selectedUnit}:</p>
-                            {foundPlayers.map(({ player, isMaxed, isFullMastery }) => (
-                                <div key={player.id} className="p-1 rounded hover:bg-blue-500/20">
-                                    <Button onClick={() => handlePlayerSelect(player.id)} variant="ghost" className="w-full justify-between font-medium p-1 h-auto hover:bg-transparent">
-                                        <span>{player.name}</span>
-                                        <div className="flex items-center space-x-2">
-                                            {/* Green circle for Maxed Unit (preparedUnits) */}
-                                            {isMaxed && (
-                                                <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-green-300" title="Maxed Unit"></div>
-                                            )}
-                                            {/* Yellow square for Full Mastery (masteryUnits) */}
-                                            {isFullMastery && (
-                                                <div className="w-4 h-4 rounded-sm bg-yellow-500 border-2 border-yellow-300" title="Full Mastery"></div>
+                            <p className="text-xs text-gray-400 mb-2 px-1 border-b border-gray-600 pb-1">Players with {selectedUnit}:</p>
+                            <div className="space-y-1">
+                                {foundPlayers.map(({ player, isMaxed, isFullMastery }) => {
+                                    // Identify group
+                                    const assignedGroup = groups.find(g => g.members.some(m => m.playerId === player.id));
+                                    
+                                    // Identify attendance
+                                    const isAttending = twAttendance.some(a => a.matchedPlayerId === player.id && a.status === 'Accepted');
+
+                                    return (
+                                        <div key={player.id} className="p-1.5 rounded bg-gray-800/80 border border-gray-600 hover:border-gray-500 transition-colors">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <Button onClick={() => handlePlayerSelect(player.id)} variant="ghost" className="justify-start font-medium p-0 h-auto hover:bg-transparent px-1 text-left flex-grow">
+                                                    <span className="flex items-center gap-1.5 text-gray-200">
+                                                        {player.name}
+                                                        {isAttending && <CheckIcon size={14} className="text-green-400 font-bold" title="Accepted Attendance" />}
+                                                    </span>
+                                                </Button>
+                                                <div className="flex items-center space-x-1.5 shrink-0 pr-1">
+                                                    {/* Green circle for Maxed Unit (preparedUnits) */}
+                                                    {isMaxed && (
+                                                        <div className="w-3 h-3 rounded-full bg-green-500 border border-green-300 shadow-sm" title="Maxed Unit"></div>
+                                                    )}
+                                                    {/* Yellow square for Full Mastery (masteryUnits) */}
+                                                    {isFullMastery && (
+                                                        <div className="w-3 h-3 rounded-sm bg-yellow-500 border border-yellow-300 shadow-sm" title="Full Mastery"></div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Group Dropdown */}
+                                            {groups.length > 0 && (
+                                                <div className="px-1 pb-0.5">
+                                                    <Select
+                                                        value={assignedGroup ? assignedGroup.id : ""}
+                                                        onChange={(e) => {
+                                                            const targetGroupId = e.target.value;
+                                                            if (targetGroupId) {
+                                                                if (assignedGroup) {
+                                                                    dispatch({ type: 'MOVE_PLAYER_BETWEEN_GROUPS', payload: { playerId: player.id, sourceGroupId: assignedGroup.id, targetGroupId }});
+                                                                } else {
+                                                                    dispatch({ type: 'ADD_PLAYER_TO_GROUP', payload: { groupId: targetGroupId, playerId: player.id }});
+                                                                }
+                                                            } else if (assignedGroup) {
+                                                                dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId: assignedGroup.id, playerId: player.id }});
+                                                            }
+                                                        }}
+                                                        className={`w-full text-xs py-1 px-2 h-auto focus:ring-1 ${assignedGroup ? 'bg-indigo-900/40 text-indigo-200 border-indigo-700' : 'bg-gray-700 text-gray-300 border-gray-600'}`}
+                                                    >
+                                                        <option value="">No Group</option>
+                                                        {groups.map(g => {
+                                                            const isFull = g.members.length >= 5 && (!assignedGroup || assignedGroup.id !== g.id);
+                                                            return (
+                                                            <option key={g.id} value={g.id} disabled={isFull}>
+                                                                {g.name} {isFull ? '(Full)' : ''}
+                                                            </option>
+                                                            )
+                                                        })}
+                                                    </Select>
+                                                </div>
                                             )}
                                         </div>
-                                    </Button>
-                                </div>
-                            ))}
+                                    );
+                                })}
+                            </div>
                         </>
                     ) : <p className="text-sm text-gray-500 text-center py-2">No players found with that unit.</p>
                 )}
