@@ -37,9 +37,18 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
         const allUnits = activePlayers.flatMap(p => p.units || []);
         const uniqueUnits = [...new Set(allUnits)];
 
-        return uniqueUnits.filter(unitName =>
-            unitName.toLowerCase().includes(lowerCaseTerm)
-        );
+        return uniqueUnits
+            .filter(unitName => unitName.toLowerCase().includes(lowerCaseTerm))
+            .sort((a, b) => {
+                const aLower = a.toLowerCase();
+                const bLower = b.toLowerCase();
+                const aStarts = aLower.startsWith(lowerCaseTerm);
+                const bStarts = bLower.startsWith(lowerCaseTerm);
+
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+                return aLower.localeCompare(bLower);
+            });
     }, [searchTerm, players, selectedUnit]);
 
     const foundPlayers = useMemo(() => {
