@@ -1,6 +1,27 @@
-import type { AppState, TWAttendancePlayer, Unit, TWPlayerRecord, TWRecordStatus } from '../types';
+import type { AppState, TWAttendancePlayer, Unit, TWPlayerRecord, TWRecordStatus, Player } from '../types';
 import { AppStateSchema } from '../schema';
 import { DEFAULT_UNIT_TIERS } from '../units';
+
+const washName = (name: string) => (name || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '')
+    .toLowerCase();
+
+const findMatchedPlayer = (players: Player[], discordName: string) => {
+    const washedDiscordName = washName(discordName);
+    return players.find(p => {
+        const washedPName = washName(p.name);
+        if (washedPName === washedDiscordName || washedDiscordName.includes(washedPName) || washedPName.includes(washedDiscordName)) return true;
+        if (p.aliases) {
+            return p.aliases.some(alias => {
+                const washedAlias = washName(alias);
+                return washedAlias === washedDiscordName || washedDiscordName.includes(washedAlias) || washedAlias.includes(washedDiscordName);
+            });
+        }
+        return false;
+    });
+};
 
 export const handleParsePlayerUnitsForm = (
     state: AppState,
@@ -61,27 +82,11 @@ export const handleTWAttendanceImport = (
         const data = JSON.parse(payload.jsonString);
         if (!data.signUps) throw new Error("Invalid Raid Helper format");
 
-        const washName = (name: string) => (name || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '')
-            .toLowerCase();
-
         const attendance: TWAttendancePlayer[] = [];
         const declinedPlayerIds = new Set<string>();
 
-        const washedUMPlayers = state.players.map(p => ({
-            id: p.id,
-            washedName: washName(p.name)
-        }));
-
         data.signUps.forEach((signup: any) => {
-            const washedDiscordName = washName(signup.name);
-            const match = washedUMPlayers.find(p =>
-                p.washedName === washedDiscordName ||
-                washedDiscordName.includes(p.washedName) ||
-                p.washedName.includes(washedDiscordName)
-            );
+            const match = findMatchedPlayer(state.players, signup.name);
 
             if (signup.className === 'Accepted' || signup.className === 'Maybe') {
                 attendance.push({
@@ -124,32 +129,11 @@ export const handleTWStatisticsImport = (
         const data = JSON.parse(payload.jsonString);
         if (!data.signUps) throw new Error("Invalid Raid Helper format");
 
-        const washName = (name: string) => (name || "")
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '')
-            .toLowerCase();
-
         const newRecords: TWPlayerRecord[] = [];
         const processedPlayerIds = new Set<string>();
 
-        const matchPlayer = (discordName: string) => {
-            const washedDiscordName = washName(discordName);
-            return state.players.find(p => {
-                const washedPName = washName(p.name);
-                if (washedPName === washedDiscordName || washedDiscordName.includes(washedPName) || washedPName.includes(washedDiscordName)) return true;
-                if (p.aliases) {
-                    return p.aliases.some(alias => {
-                        const washedAlias = washName(alias);
-                        return washedAlias === washedDiscordName || washedDiscordName.includes(washedAlias) || washedAlias.includes(washedDiscordName);
-                    });
-                }
-                return false;
-            });
-        };
-
         data.signUps.forEach((signup: any) => {
-            const matchedPlayer = matchPlayer(signup.name);
+            const matchedPlayer = findMatchedPlayer(state.players, signup.name);
             if (matchedPlayer) {
                 let status: TWRecordStatus = 'AWOL';
                 if (signup.className === 'Accepted') status = 'Attended';
@@ -190,31 +174,21 @@ export const handleLoadState = (
 ): AppState => {
     try {
         const loadedData = AppStateSchema.parse(payload);
-        const mergedTiers: { [tier: string]: Unit[] } = {};
+        const loadedUnitConfigTiers = loadedData.unitConfig?.tiers || {};
+        const hasExistingConfig = Object.keys(loadedUnitConfigTiers).some(tier => loadedUnitConfigTiers[tier].length > 0);
 
-        if (loadedData.unitConfig && loadedData.unitConfig.tiers) {
-            for (const tier in loadedData.unitConfig.tiers) {
-                mergedTiers[tier] = [...loadedData.unitConfig.tiers[tier]];
+        let mergedTiers: { [tier: string]: Unit[] } = {};
+
+        if (hasExistingConfig) {
+            // Use existing config as-is, just ensure sorting
+            for (const tier in loadedUnitConfigTiers) {
+                mergedTiers[tier] = [...loadedUnitConfigTiers[tier]].sort((a, b) => a.name.localeCompare(b.name));
             }
-        }
-
-        const loadedUnitNames = new Set<string>();
-
-        for (const tier in mergedTiers) {
-            mergedTiers[tier].forEach(u => loadedUnitNames.add(u.name));
-        }
-
-        for (const tier in DEFAULT_UNIT_TIERS) {
-            if (!mergedTiers[tier]) {
-                mergedTiers[tier] = [];
+        } else {
+            // Fallback to defaults if no config exists (legacy or first-time load)
+            for (const tier in DEFAULT_UNIT_TIERS) {
+                mergedTiers[tier] = [...DEFAULT_UNIT_TIERS[tier]].sort((a, b) => a.name.localeCompare(b.name));
             }
-            DEFAULT_UNIT_TIERS[tier].forEach(defaultUnit => {
-                if (!loadedUnitNames.has(defaultUnit.name)) {
-                    mergedTiers[tier].push(defaultUnit);
-                    loadedUnitNames.add(defaultUnit.name);
-                }
-            });
-            mergedTiers[tier].sort((a, b) => a.name.localeCompare(b.name));
         }
 
         const migratedPlayers = loadedData.players.map(p => ({

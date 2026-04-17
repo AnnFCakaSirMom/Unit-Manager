@@ -1,6 +1,6 @@
 import React, { useState, useReducer, useEffect, useMemo, useCallback } from 'react';
 import type { AppState, ConfirmModalInfo } from './types';
-import { appReducer, withUnsavedChanges } from './reducer';
+import { rootReducer } from './src/state/rootReducer';
 import { DEFAULT_UNIT_TIERS } from './units';
 import { AppStateContext, AppDispatchContext } from './AppContext';
 
@@ -34,8 +34,35 @@ const App: React.FC = () => {
         hasUnsavedChanges: false,
     };
 
-    const [state, dispatch] = useReducer(withUnsavedChanges(appReducer), initialState);
-    const { players, groups, hasUnsavedChanges } = state;
+    const [state, dispatch] = useReducer(rootReducer, initialState);
+    const { players, groups } = state;
+    
+    // Autosave functionality
+    useEffect(() => {
+        const saved = localStorage.getItem('unit-manager-autosave');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                dispatch({ type: 'LOAD_STATE', payload: parsed });
+            } catch (e) {
+                console.error('Failed to load autosave', e);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (state !== initialState) {
+            localStorage.setItem('unit-manager-autosave', JSON.stringify({
+                players: state.players,
+                unitConfig: state.unitConfig,
+                groups: state.groups,
+                twAttendance: state.twAttendance,
+                twSeasons: state.twSeasons,
+                twEvents: state.twEvents,
+                twRecords: state.twRecords
+            }));
+        }
+    }, [state]);
 
     const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -95,16 +122,7 @@ const App: React.FC = () => {
         }
     }, [statusMessage]);
 
-    useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (hasUnsavedChanges) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [hasUnsavedChanges]);
+    // The App now autosaves to LocalStorage, so we don't block UNLOAD.
 
     const selectedPlayer = useMemo(() => players.find(p => p.id === selectedPlayerId), [players, selectedPlayerId]);
     const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
@@ -143,7 +161,7 @@ const App: React.FC = () => {
                             onOpenUnitManager={() => setIsMgmtModalOpen(true)}
                             onOpenAttendance={handleOpenAttendance}
                             onOpenTWStatistics={handleOpenTWStatistics}
-                            hasUnsavedChanges={hasUnsavedChanges}
+                            hasUnsavedChanges={false} // Feature removed in favor of Autosave
                             statusMessage={statusMessage}
                             setConfirmModal={setConfirmModal}
                             isPlayerListOpen={isPlayerListOpen}
