@@ -1,5 +1,5 @@
-import type { AppState, AppAction, Group } from '../../../types';
-import { handleTWAttendanceImport } from '../../../utils/reducerHelpers';
+import type { AppState, AppAction, Group } from '../../types';
+import { handleTWAttendanceImport } from '../../utils/reducerHelpers';
 
 export const groupReducer = (state: AppState, action: AppAction): Group[] => {
     switch (action.type) {

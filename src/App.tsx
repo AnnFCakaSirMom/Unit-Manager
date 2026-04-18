@@ -1,6 +1,6 @@
 import React, { useState, useReducer, useEffect, useMemo, useCallback } from 'react';
 import type { AppState, ConfirmModalInfo } from './types';
-import { rootReducer } from './src/state/rootReducer';
+import { rootReducer } from './state/rootReducer';
 import { DEFAULT_UNIT_TIERS } from './units';
 import { AppStateContext, AppDispatchContext } from './AppContext';
 
@@ -15,8 +15,7 @@ import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
 
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from './state/store';
+import { useDispatch } from 'react-redux';
 import { setAuthSession, clearAuthSession } from './state/slices/authSlice';
 import { supabase } from './services/supabase';
 import { AuthGuard } from './components/AuthGuard';
@@ -44,11 +43,10 @@ const App: React.FC = () => {
     const { players, groups } = state;
     
     const reduxDispatch = useDispatch();
-    const { isInitialized, userId } = useSelector((state: RootState) => state.auth);
 
     useEffect(() => {
         // Lyssna på inloggningsstatus
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
                 // Hämta profil för roll
                 const { data: profile } = await supabase
@@ -157,8 +155,8 @@ const App: React.FC = () => {
 
     // The App now autosaves to LocalStorage, so we don't block UNLOAD.
 
-    const selectedPlayer = useMemo(() => players.find(p => p.id === selectedPlayerId), [players, selectedPlayerId]);
-    const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
+    const selectedPlayer = useMemo(() => players.find((p: any) => p.id === selectedPlayerId), [players, selectedPlayerId]);
+    const selectedGroup = useMemo(() => groups.find((g: any) => g.id === selectedGroupId), [groups, selectedGroupId]);
 
     const { processFile, handleSaveData, handleModernOpenFile } = useFileHandler({
         state,

@@ -1,5 +1,5 @@
-import type { AppState, AppAction, Player } from '../../../types';
-import { handleParsePlayerUnitsForm } from '../../../utils/reducerHelpers';
+import type { AppState, AppAction, Player } from '../../types';
+import { handleParsePlayerUnitsForm } from '../../utils/reducerHelpers';
 
 export const playerReducer = (state: AppState, action: AppAction): Player[] => {
     switch (action.type) {

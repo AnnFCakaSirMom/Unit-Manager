@@ -1,4 +1,4 @@
-import type { AppState, AppAction, UnitConfig } from '../../../types';
+import type { AppState, AppAction, UnitConfig } from '../../types';
 
 export const unitReducer = (state: AppState, action: AppAction): UnitConfig => {
     switch (action.type) {
@@ -9,7 +9,7 @@ export const unitReducer = (state: AppState, action: AppAction): UnitConfig => {
             const { oldName, newName } = action.payload;
             const newTiers = { ...state.unitConfig.tiers };
             for (const tier in newTiers) {
-                newTiers[tier] = newTiers[tier].map(u => u.name === oldName ? { ...u, name: newName } : u);
+                newTiers[tier] = newTiers[tier].map((u: any) => u.name === oldName ? { ...u, name: newName } : u);
             }
             return { tiers: newTiers };
         }
@@ -18,7 +18,7 @@ export const unitReducer = (state: AppState, action: AppAction): UnitConfig => {
             const { unitNameToDelete } = action.payload;
             const newTiers = { ...state.unitConfig.tiers };
             for (const tier in newTiers) {
-                newTiers[tier] = newTiers[tier].filter(u => u.name !== unitNameToDelete);
+                newTiers[tier] = newTiers[tier].filter((u: any) => u.name !== unitNameToDelete);
             }
             return { tiers: newTiers };
         }

@@ -1,5 +1,5 @@
-import type { AppState, AppAction } from '../../types';
-import { handleLoadState } from '../../utils/reducerHelpers';
+import type { AppState, AppAction } from '../types';
+import { handleLoadState } from '../utils/reducerHelpers';
 
 import { playerReducer } from './slices/playerSlice';
 import { groupReducer } from './slices/groupSlice';
