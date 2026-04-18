@@ -6,6 +6,7 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { UnitTierSection } from './UnitTierSection';
 import { OwnedUnitsView } from './OwnedUnitsView';
+import { cn } from '../utils';
 
 
 
@@ -16,10 +17,17 @@ interface PlayerUnitViewProps {
 }
 
 import { useAppState, useAppDispatch } from '../AppContext';
+import { usePermission } from '../hooks/usePermission';
 
 export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatusMessage, setConfirmModal }) => {
     const { unitConfig } = useAppState();
     const dispatch = useAppDispatch();
+    const { 
+        canEditOthersUnits, 
+        canEditInternalNotes, 
+        isOfficerPlus 
+    } = usePermission();
+    
     const allUnits = useMemo(() => Object.values(unitConfig.tiers).flat().map(u => u.name), [unitConfig]);
     if (!player) {
         return (
@@ -142,14 +150,18 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={handleClearUnits} variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-400/10" size="sm">
-                            <Trash2 size={16} />
-                            <span>Clear Units</span>
-                        </Button>
-                        <Button onClick={() => setIsParseModalOpen(true)} variant="primary">
-                            <ImportIcon size={16} />
-                            <span>Import Form</span>
-                        </Button>
+                        {isOfficerPlus && (
+                            <>
+                                <Button onClick={handleClearUnits} variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-400/10" size="sm">
+                                    <Trash2 size={16} />
+                                    <span>Clear Units</span>
+                                </Button>
+                                <Button onClick={() => setIsParseModalOpen(true)} variant="primary">
+                                    <ImportIcon size={16} />
+                                    <span>Import Form</span>
+                                </Button>
+                            </>
+                        )}
                         <Button onClick={handleCopyForm} variant="secondary">
                             <Copy size={16} />
                             <span>Copy Form</span>
@@ -158,18 +170,20 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                 </div>
 
                 <div className="my-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="md:col-span-2">
-                        <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info</label>
-                        <textarea
-                            id="playerInfo"
-                            value={infoText}
-                            onChange={(e) => setInfoText(e.target.value)}
-                            onBlur={handleInfoSave}
-                            placeholder={`Write information about ${player?.name}...`}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            rows={2}
-                        />
-                    </div>
+                    {canEditInternalNotes && (
+                        <div className="md:col-span-2">
+                            <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info (Internal)</label>
+                            <textarea
+                                id="playerInfo"
+                                value={infoText}
+                                onChange={(e) => setInfoText(e.target.value)}
+                                onBlur={handleInfoSave}
+                                placeholder={`Write information about ${player?.name}...`}
+                                className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows={2}
+                            />
+                        </div>
+                    )}
                     <div className="flex flex-col gap-3">
                         <div>
                             <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-1">Total Leadership</label>
@@ -179,8 +193,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                 value={leadership}
                                 onChange={(e) => setLeadership(e.target.value)}
                                 onBlur={handleLeadershipSave}
+                                readOnly={!canEditOthersUnits}
                                 placeholder="e.g. 700"
-                                className="w-full p-2"
+                                className={cn("w-full p-2", !canEditOthersUnits && "opacity-75 cursor-not-allowed bg-gray-800")}
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -192,7 +207,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                     value={joinedDate}
                                     onChange={(e) => setJoinedDate(e.target.value)}
                                     onBlur={handleProfileSave}
-                                    className="w-full p-2"
+                                    readOnly={!isOfficerPlus}
+                                    className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
                                 />
                             </div>
                             <div>
@@ -203,7 +219,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                     value={inactiveDate}
                                     onChange={(e) => setInactiveDate(e.target.value)}
                                     onBlur={handleProfileSave}
-                                    className="w-full p-2"
+                                    readOnly={!isOfficerPlus}
+                                    className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
                                 />
                             </div>
                         </div>
@@ -218,8 +235,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         value={aliasesText}
                         onChange={(e) => setAliasesText(e.target.value)}
                         onBlur={handleProfileSave}
+                        readOnly={!isOfficerPlus}
                         placeholder="e.g. KalleRox, Kalle_99"
-                        className="w-full p-2"
+                        className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
                     />
                 </div>
 

@@ -7,6 +7,7 @@ import { UnitSearch } from './UnitSearch';
 import { PlayerList } from './PlayerList';
 import { GroupsList } from './GroupsList';
 import { cn } from '../utils';
+import { usePermission } from '../hooks/usePermission';
 
 interface SidebarProps {
     selectedPlayerId: string | null;
@@ -30,6 +31,14 @@ import { useAppState, useAppDispatch } from '../AppContext';
 export const Sidebar: React.FC<SidebarProps> = (props) => {
     const { players } = useAppState();
     const dispatch = useAppDispatch();
+    const { 
+        canViewPlayerList, 
+        canViewGroups, 
+        canViewUnitManager, 
+        canViewAttendance, 
+        canViewStats,
+        isOfficerPlus
+    } = usePermission();
 
     const {
         selectedPlayerId, selectedGroupId,
@@ -58,73 +67,94 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 <h1 className="text-xl font-bold text-blue-400">Unit Manager</h1>
                 <p className="text-sm text-gray-400">Manage players, units, and groups.</p>
                 <div className="grid grid-cols-2 gap-1.5 mt-3">
-                    <Button variant="primary" onClick={onSave} className="relative">
-                        {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span></span>}
-                        <Save size={16} />
-                        <span>Save</span>
-                    </Button>
-                    <Button variant="success" onClick={onLoad}>
-                        <FolderOpen size={16} />
-                        <span>Load</span>
-                    </Button>
-                    <Button variant="secondary" onClick={onOpenUnitManager}>
-                        <Settings size={16} />
-                        <span>Units</span>
-                    </Button>
-                    <Button variant="primary" className="bg-purple-600 hover:bg-purple-700" onClick={onOpenAttendance}>
-                        <Users size={16} />
-                        <span>Attendance</span>
-                    </Button>
-                    <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700 col-span-2" onClick={onOpenTWStatistics}>
-                        <Users size={16} />
-                        <span>TW Statistics</span>
-                    </Button>
+                    {isOfficerPlus && (
+                        <>
+                            <Button variant="primary" onClick={onSave} className="relative">
+                                {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span></span>}
+                                <Save size={16} />
+                                <span>Save</span>
+                            </Button>
+                            <Button variant="success" onClick={onLoad}>
+                                <FolderOpen size={16} />
+                                <span>Load</span>
+                            </Button>
+                        </>
+                    )}
+                    
+                    {canViewUnitManager && (
+                        <Button variant="secondary" onClick={onOpenUnitManager}>
+                            <Settings size={16} />
+                            <span>Units</span>
+                        </Button>
+                    )}
+                    
+                    {canViewAttendance && (
+                        <Button variant="primary" className="bg-purple-600 hover:bg-purple-700" onClick={onOpenAttendance}>
+                            <Users size={16} />
+                            <span>Attendance</span>
+                        </Button>
+                    )}
+                    
+                    {canViewStats && (
+                        <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700 col-span-2" onClick={onOpenTWStatistics}>
+                            <Users size={16} />
+                            <span>TW Statistics</span>
+                        </Button>
+                    )}
                 </div>
                 <div className="h-5 mt-2 text-center">
                     {statusMessage && <p className={cn("text-sm", statusMessage.startsWith('Error') ? 'text-red-400' : 'text-green-400')}>{statusMessage}</p>}
                 </div>
             </header>
 
-            <div className="flex items-center gap-2 mb-3">
-                <Input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()} placeholder="New player name..." className="flex-grow px-2 py-1.5 text-sm" aria-label="New Player Name Input" />
-                <Button variant="primary" size="icon" className="p-1.5" onClick={handleAddPlayer} disabled={!newPlayerName.trim()} title="Add Player" aria-label="Add Player"><UserPlus size={18} /></Button>
-            </div>
+            {isOfficerPlus && (
+                <div className="flex items-center gap-2 mb-3">
+                    <Input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()} placeholder="New player name..." className="flex-grow px-2 py-1.5 text-sm" aria-label="New Player Name Input" />
+                    <Button variant="primary" size="icon" className="p-1.5" onClick={handleAddPlayer} disabled={!newPlayerName.trim()} title="Add Player" aria-label="Add Player"><UserPlus size={18} /></Button>
+                </div>
+            )}
 
-            <div className="border-t border-gray-700 pt-2">
-                <Button
-                    variant="ghost"
-                    onClick={onTogglePlayerList}
-                    className="w-full justify-between py-2 h-auto hover:bg-gray-800"
-                    title={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
-                    aria-label={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
-                >
-                    <h2 className="text-base font-semibold text-gray-300 flex items-center gap-2"><Users size={18} /> Players ({players.filter(p => !p.notInHouse).length})</h2>
-                    {isPlayerListOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </Button>
-                {isPlayerListOpen && (
-                    <PlayerList
-                        selectedPlayerId={selectedPlayerId}
-                        onSelectPlayer={onSelectPlayer}
-                        setConfirmModal={setConfirmModal}
-                        notInHouse={notInHouse}
-                        setNotInHouse={setNotInHouse}
-                    />
-                )}
-            </div>
+            {canViewPlayerList && (
+                <div className="border-t border-gray-700 pt-2">
+                    <Button
+                        variant="ghost"
+                        onClick={onTogglePlayerList}
+                        className="w-full justify-between py-2 h-auto hover:bg-gray-800"
+                        title={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
+                        aria-label={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
+                    >
+                        <h2 className="text-base font-semibold text-gray-300 flex items-center gap-2"><Users size={18} /> Players ({players.filter(p => !p.notInHouse).length})</h2>
+                        {isPlayerListOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                    </Button>
+                    {isPlayerListOpen && (
+                        <PlayerList
+                            selectedPlayerId={selectedPlayerId}
+                            onSelectPlayer={onSelectPlayer}
+                            setConfirmModal={setConfirmModal}
+                            notInHouse={notInHouse}
+                            setNotInHouse={setNotInHouse}
+                        />
+                    )}
+                </div>
+            )}
 
-            <UnitSearch
-                players={players}
-                onSelectPlayer={onSelectPlayer}
-                searchTerm={unitSearchTerm}
-                setSearchTerm={setUnitSearchTerm}
-            />
+            {isOfficerPlus && (
+                <UnitSearch
+                    players={players}
+                    onSelectPlayer={onSelectPlayer}
+                    searchTerm={unitSearchTerm}
+                    setSearchTerm={setUnitSearchTerm}
+                />
+            )}
 
-            <GroupsList
-                selectedGroupId={selectedGroupId}
-                onSelectGroup={onSelectGroup}
-                setConfirmModal={setConfirmModal}
-                onCopy={handleCopy}
-            />
+            {canViewGroups && (
+                <GroupsList
+                    selectedGroupId={selectedGroupId}
+                    onSelectGroup={onSelectGroup}
+                    setConfirmModal={setConfirmModal}
+                    onCopy={handleCopy}
+                />
+            )}
         </aside>
     );
 };
