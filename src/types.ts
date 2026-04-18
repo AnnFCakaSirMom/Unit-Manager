@@ -1,3 +1,5 @@
+export type UserRole = 'Guest' | 'Pending' | 'Member' | 'Officer' | 'Gatekeeper' | 'Admin' | 'Owner';
+
 export interface Unit {
   name: string;
   leadershipCost?: number;
