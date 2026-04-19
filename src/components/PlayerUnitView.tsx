@@ -222,8 +222,24 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                 </div>
 
                 <div className="my-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Column 1: Metadata (Leadership & Dates) */}
-                    <div className="flex flex-col gap-3 order-1">
+                    {/* Column 1-2: Info (Internal Notes) */}
+                    {isOfficerPlus && (
+                        <div className="md:col-span-2 order-1">
+                            <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info (Internal)</label>
+                            <textarea
+                                id="playerInfo"
+                                value={infoText}
+                                onChange={(e) => setInfoText(e.target.value)}
+                                onBlur={handleInfoSave}
+                                placeholder={`Write internal notes about ${player?.name}...`}
+                                className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows={2}
+                            />
+                        </div>
+                    )}
+
+                    {/* Column 3: Metadata (Leadership & Dates) */}
+                    <div className="flex flex-col gap-3 order-2">
                         <div>
                             <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-1">Total Leadership</label>
                             <Input
@@ -266,22 +282,6 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                             )}
                         </div>
                     </div>
-
-                    {/* Column 2-3: Info (Internal Notes) */}
-                    {isOfficerPlus && (
-                        <div className="md:col-span-2 order-2">
-                            <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info (Internal)</label>
-                            <textarea
-                                id="playerInfo"
-                                value={infoText}
-                                onChange={(e) => setInfoText(e.target.value)}
-                                onBlur={handleInfoSave}
-                                placeholder={`Write internal notes about ${player?.name}...`}
-                                className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                rows={2}
-                            />
-                        </div>
-                    )}
                 </div>
 
                 <div className="mb-3">
