@@ -1,20 +1,25 @@
 import React, { useState } from 'react';
-import { ImportIcon, Trash2, CheckSquare, Users, Shield } from './icons';
+import { ImportIcon, Trash2, CheckSquare, Users, Shield, LoadingSpinnerIcon } from './icons';
 import { ImportRaidHelperModal } from './ImportRaidHelperModal';
 import { Button } from './Button';
 import { useAppState, useAppDispatch } from '../AppContext';
 import { useGroupDragAndDrop } from '../hooks/useGroupDragAndDrop';
 import { AttendancePlayerList } from './AttendancePlayerList';
 import { AttendanceGroupGrid } from './AttendanceGroupGrid';
+import { ConfirmModalInfo } from '../types';
+import { supabase } from '../services/supabase';
 
 interface TWAttendanceViewProps {
     onSelectPlayer: (id: string | null) => void;
+    setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
+    setStatusMessage: (message: string) => void;
 }
 
-export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlayer }) => {
+export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlayer, setConfirmModal, setStatusMessage }) => {
     const { twAttendance: attendance, players, groups } = useAppState();
     const dispatch = useAppDispatch();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isClearing, setIsClearing] = useState(false);
 
     const {
         draggedPlayer,
@@ -40,9 +45,42 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
     };
 
     const handleClearAttendance = () => {
-        if (window.confirm('Are you sure you want to clear the attendance list?')) {
-            dispatch({ type: 'CLEAR_TW_ATTENDANCE' });
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Clear TW Attendance & Groups',
+            message: 'This will permanently delete all attendance data AND empty all groups in the cloud database. This action cannot be undone. Are you sure?',
+            onConfirm: async () => {
+                setIsClearing(true);
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+
+                try {
+                    // Wipe group_members first (safest filter for some DB configs)
+                    const { error: membersError } = await supabase
+                        .from('group_members')
+                        .delete()
+                        .neq('player_id', '00000000-0000-0000-0000-000000000000');
+                    
+                    if (membersError) throw membersError;
+
+                    // Wipe groups
+                    const { error: groupsError } = await supabase
+                        .from('groups')
+                        .delete()
+                        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+                    if (groupsError) throw groupsError;
+
+                    // Local clear
+                    dispatch({ type: 'CLEAR_TW_ATTENDANCE' });
+                    setStatusMessage('TW data successfully cleared.');
+                } catch (err: any) {
+                    console.error('Failed to wipe TW data:', err);
+                    setStatusMessage(`Error: ${err.message || 'Failed to wipe database'}`);
+                } finally {
+                    setIsClearing(false);
+                }
+            }
+        });
     };
 
     const handleImportAttendance = (json: string) => {
@@ -70,8 +108,10 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                         <Button
                             onClick={handleClearAttendance}
                             variant="danger"
+                            disabled={isClearing}
                         >
-                            <Trash2 size={16} /> Clear List
+                            {isClearing ? <LoadingSpinnerIcon size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                            <span>{isClearing ? 'Clearing...' : 'Clear List'}</span>
                         </Button>
                     )}
                 </div>

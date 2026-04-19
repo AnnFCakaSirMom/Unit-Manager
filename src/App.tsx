@@ -23,6 +23,7 @@ import { AuthGuard } from './components/AuthGuard';
 import { fetchUnitsFromSupabase } from './state/slices/unitSlice';
 import { RootState, AppDispatch } from './state/store';
 import { fetchPlayersFromSupabase } from './services/playerService';
+import { fetchGroupsFromSupabase } from './services/groupService';
 
 declare global {
     interface Window {
@@ -87,6 +88,48 @@ const App: React.FC = () => {
 
         return () => subscription.unsubscribe();
     }, [reduxDispatch]);
+
+    // Role-based Security Lock ("The Shield")
+    // Ensures restricted data is cleared if the user's role is not authorized.
+    const { role } = useSelector((state: RootState) => state.auth);
+    const isOfficerPlus = useMemo(() => ['Officer', 'Gatekeeper', 'Admin', 'Owner'].includes(role), [role]);
+
+    useEffect(() => {
+        if (role === 'Member' || role === 'Pending') {
+            if (selectedPlayerId) setSelectedPlayerId(null);
+            if (selectedGroupId) setSelectedGroupId(null);
+            if (showAttendanceView) setShowAttendanceView(false);
+            if (showTWStatisticsView) setShowTWStatisticsView(false);
+            if (showProfileMatcher) setShowProfileMatcher(false);
+        }
+    }, [role, selectedPlayerId, selectedGroupId, showAttendanceView, showTWStatisticsView, showProfileMatcher]);
+
+    // Hydrate Groups from Supabase & Real-time Listeners
+    useEffect(() => {
+        if (!isOfficerPlus) return;
+
+        const loadGroups = () => {
+            fetchGroupsFromSupabase()
+                .then(groups => {
+                    dispatch({ type: 'HYDRATE_GROUPS', payload: groups });
+                })
+                .catch(err => console.warn('[App] Group hydration failed:', err));
+        };
+
+        // Initial load
+        loadGroups();
+
+        // Real-time listener for groups and group_members
+        const channel = supabase
+            .channel('group-sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, loadGroups)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, loadGroups)
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [isOfficerPlus]);
 
     // Autosave functionality
     useEffect(() => {
@@ -249,6 +292,8 @@ const App: React.FC = () => {
                                     <div className="flex-1 overflow-hidden p-4 min-w-[300px]">
                                         <TWAttendanceView
                                             onSelectPlayer={handleSelectPlayer}
+                                            setConfirmModal={setConfirmModal}
+                                            setStatusMessage={setStatusMessage}
                                         />
                                     </div>
                                 ) : selectedGroup ? (

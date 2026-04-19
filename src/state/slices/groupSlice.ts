@@ -3,6 +3,10 @@ import { handleTWAttendanceImport } from '../../utils/reducerHelpers';
 
 export const groupReducer = (state: AppState, action: AppAction): Group[] => {
     switch (action.type) {
+        case 'HYDRATE_GROUPS':
+            return [...action.payload];
+        case 'CLEAR_TW_ATTENDANCE':
+            return [];
         case 'ADD_GROUP': {
             const newGroup: Group = { id: crypto.randomUUID(), name: `Group ${state.groups.length + 1}`, leaderId: null, members: [] };
             return [...state.groups, newGroup];

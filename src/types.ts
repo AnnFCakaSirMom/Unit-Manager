@@ -112,6 +112,7 @@ export interface AppState {
 
 export type AppAction =
   | { type: 'HYDRATE_PLAYERS'; payload: Player[] }
+  | { type: 'HYDRATE_GROUPS'; payload: Group[] }
   | { type: 'ADD_PLAYER'; payload: { name: string } }
   | { type: 'DELETE_PLAYER'; payload: { playerId: string } }
   | { type: 'UPDATE_PLAYER_NAME'; payload: { playerId: string; name: string } }
