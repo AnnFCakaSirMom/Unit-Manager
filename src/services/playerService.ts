@@ -25,6 +25,7 @@ type ProfileRow = {
   internal_notes: string | null;
   discord_aliases: string[] | null;
   profile_units: ProfileUnitRow[];
+  player_info: { internal_notes: string }[];
 };
 
 /**
@@ -47,7 +48,8 @@ function transformProfileToPlayer(row: ProfileRow): Player {
     masteryUnits:  unitRows.filter(u => u.is_mastery).map(u => u.unit_name),
     favoriteUnits: unitRows.filter(u => u.is_favorite).map(u => u.unit_name),
     notInHouse:    row.not_in_house,
-    info:          row.internal_notes ?? undefined,
+    info:          row.player_info?.[0]?.internal_notes ?? undefined,
+    player_info:   row.player_info,
     totalLeadership: row.total_leadership ?? 0,
     joinedDate:    row.joined_date    ?? undefined,
     inactiveDate:  row.inactive_date  ?? null,
@@ -73,6 +75,9 @@ export async function fetchPlayersFromSupabase(): Promise<Player[]> {
       not_in_house,
       internal_notes,
       discord_aliases,
+      player_info (
+        internal_notes
+      ),
       profile_units (
         unit_name,
         is_owned,

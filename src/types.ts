@@ -10,7 +10,8 @@ export interface Profile {
   joined_date?: string;          // ISO date string 'YYYY-MM-DD'
   inactive_date?: string | null;
   not_in_house: boolean;
-  internal_notes?: string;       // Officer+ only — never exposed to Members
+  internal_notes?: string;       // [DEPRECATED] Use player_info instead
+  player_info?: { internal_notes: string }[];
   discord_aliases?: string[];
 }
 
@@ -54,7 +55,8 @@ export interface Player {
   masteryUnits: string[];
   favoriteUnits: string[];
   notInHouse: boolean;
-  info?: string;
+  info?: string;                 // [DEPRECATED] Use player_info instead
+  player_info?: { internal_notes: string }[];
   totalLeadership?: number;
   joinedDate?: string;
   inactiveDate?: string | null;

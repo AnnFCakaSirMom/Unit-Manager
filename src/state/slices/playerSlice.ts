@@ -41,7 +41,11 @@ export const playerReducer = (state: AppState, action: AppAction): Player[] => {
             });
         case 'UPDATE_PLAYER_INFO':
             return state.players.map(p =>
-                p.id === action.payload.playerId ? { ...p, info: action.payload.info } : p
+                p.id === action.payload.playerId ? { 
+                    ...p, 
+                    info: action.payload.info,
+                    player_info: [{ internal_notes: action.payload.info }]
+                } : p
             );
         case 'UPDATE_PLAYER_LEADERSHIP':
             return state.players.map(p =>

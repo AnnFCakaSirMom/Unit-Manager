@@ -7,6 +7,9 @@ import { Input } from './Input';
 import { UnitTierSection } from './UnitTierSection';
 import { OwnedUnitsView } from './OwnedUnitsView';
 import { cn } from '../utils';
+import { useSelector } from 'react-redux';
+import { RootState } from '../state/store';
+import { supabase } from '../services/supabase';
 
 
 
@@ -24,7 +27,6 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     const dispatch = useAppDispatch();
     const { 
         canEditOthersUnits, 
-        canEditInternalNotes, 
         isOfficerPlus,
         canEditDisplayName 
     } = usePermission();
@@ -41,7 +43,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     const [unitViewMode, setUnitViewMode] = useState<'all' | 'owned'>('all');
     const [mainUnitSearchQuery, setMainUnitSearchQuery] = useState("");
     const [isParseModalOpen, setIsParseModalOpen] = useState(false);
-    const [infoText, setInfoText] = useState(player?.info || "");
+    const [infoText, setInfoText] = useState(player?.player_info?.[0]?.internal_notes || "");
     const [leadership, setLeadership] = useState(String(player?.totalLeadership || ''));
     const [joinedDate, setJoinedDate] = useState(player?.joinedDate || "");
     const [inactiveDate, setInactiveDate] = useState(player?.inactiveDate || "");
@@ -57,7 +59,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     }, [unitConfig]);
 
     useEffect(() => {
-        setInfoText(player.info || "");
+        setInfoText(player.player_info?.[0]?.internal_notes || "");
         setLeadership(String(player.totalLeadership || ''));
         setJoinedDate(player.joinedDate || "");
         setInactiveDate(player.inactiveDate || "");
@@ -74,10 +76,26 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
         dispatch({ type: 'TOGGLE_PLAYER_UNIT', payload: { playerId, unitName, unitType } });
     }, [dispatch]);
 
-    const handleInfoSave = useCallback(() => {
-        if (player && infoText !== (player.info || "")) {
+    const handleInfoSave = useCallback(async () => {
+        const currentNote = player.player_info?.[0]?.internal_notes || "";
+        if (player && infoText !== currentNote) {
+            // Direct Supabase Upsert - using player_id as PK to prevent duplicates
+            const { error } = await supabase
+                .from('player_info')
+                .upsert({ 
+                    player_id: player.id, 
+                    internal_notes: infoText 
+                });
+
+            if (error) {
+                console.error("Failed to save player info:", error);
+                setStatusMessage("Error saving internal notes.");
+                return;
+            }
+
+            // Sync with local state (Redux/Context)
             dispatch({ type: 'UPDATE_PLAYER_INFO', payload: { playerId: player.id, info: infoText } });
-            setStatusMessage("Player info saved.");
+            setStatusMessage("Internal notes saved.");
         }
     }, [infoText, player, dispatch, setStatusMessage]);
 
@@ -204,7 +222,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                 </div>
 
                 <div className="my-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {canEditInternalNotes && (
+                    {/* Rendered only if player_info exists in the object (Officer+ via RLS) */}
+                    {player.player_info && (
                         <div className="md:col-span-2">
                             <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info (Internal)</label>
                             <textarea
@@ -212,7 +231,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                 value={infoText}
                                 onChange={(e) => setInfoText(e.target.value)}
                                 onBlur={handleInfoSave}
-                                placeholder={`Write information about ${player?.name}...`}
+                                placeholder={`Write internal notes about ${player?.name}...`}
                                 className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 rows={2}
                             />
