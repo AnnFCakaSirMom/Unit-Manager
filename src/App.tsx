@@ -24,6 +24,7 @@ import { fetchUnitsFromSupabase } from './state/slices/unitSlice';
 import { RootState, AppDispatch } from './state/store';
 import { fetchPlayersFromSupabase } from './services/playerService';
 import { fetchGroupsFromSupabase } from './services/groupService';
+import { fetchTWAttendanceData } from './services/twAttendanceService';
 
 declare global {
     interface Window {
@@ -146,6 +147,18 @@ const App: React.FC = () => {
         };
     }, [isOfficerPlus]);
 
+    // Hydrate TW Attendance Data from Supabase
+    useEffect(() => {
+        if (!isOfficerPlus) return;
+
+        fetchTWAttendanceData()
+            .then(data => {
+                dispatch({ type: 'HYDRATE_TW_DATA', payload: data });
+            })
+            .catch(err => {
+                console.warn('[App] Could not hydrate TW attendance data:', err);
+            });
+    }, [isOfficerPlus, dispatch]);
     // Autosave functionality
     useEffect(() => {
         const saved = localStorage.getItem('unit-manager-autosave');

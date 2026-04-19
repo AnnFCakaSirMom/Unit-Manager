@@ -117,6 +117,14 @@ export const twReducer = (state: AppState, action: AppAction): TWState => {
             }
         }
 
+        case 'HYDRATE_TW_DATA':
+            return {
+                twAttendance: state.twAttendance,
+                twSeasons: action.payload.seasons,
+                twEvents: action.payload.events,
+                twRecords: action.payload.records
+            };
+
         case 'MERGE_PLAYER_ID': {
             const { oldId, newId } = action.payload;
             return {

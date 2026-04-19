@@ -5,6 +5,7 @@ import { Input } from './Input';
 import { X, CheckIcon as Check } from './icons';
 import { useAppDispatch, useAppState } from '../AppContext';
 import { cn } from '../utils';
+import { saveTWAttendanceRecords } from '../services/twAttendanceService';
 
 interface EditTWAttendanceModalProps {
     isOpen: boolean;
@@ -54,9 +55,20 @@ export const EditTWAttendanceModal: React.FC<EditTWAttendanceModalProps> = ({ is
         return record ? record.status : 'None';
     };
 
-    const handleSetStatus = (playerId: string, status: TWRecordStatus) => {
+    const handleSetStatus = async (playerId: string, status: TWRecordStatus) => {
         if (!selectedEventId) return;
-        dispatch({ type: 'UPDATE_TW_PLAYER_RECORD', payload: { eventId: selectedEventId, playerId, status } });
+        
+        try {
+            // Save to Supabase
+            // We use an array for bulk insert even though it's one record
+            await saveTWAttendanceRecords([{ eventId: selectedEventId, playerId, status }]);
+            
+            // Sync local state
+            dispatch({ type: 'UPDATE_TW_PLAYER_RECORD', payload: { eventId: selectedEventId, playerId, status } });
+        } catch (err) {
+            console.error('Failed to update attendance record:', err);
+            alert('Fel vid uppdatering av närvaro i databasen.');
+        }
     };
 
     if (!isOpen) return null;

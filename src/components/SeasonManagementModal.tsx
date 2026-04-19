@@ -5,6 +5,7 @@ import { Input } from './Input';
 import { X, Trash2, Plus, Database } from './icons';
 import { useAppDispatch, useAppState } from '../AppContext';
 import { ConfirmationModal } from './ConfirmationModal';
+import { saveTWSeason, clearEventRecords } from '../services/twAttendanceService';
 
 interface SeasonManagementModalProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
 
     // Confirmation Modal state
     const [eventToClear, setEventToClear] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (existingSeason) {
@@ -84,32 +86,50 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
         setLocalEvents(localEvents.map(e => e.id === eventId ? { ...e, date: newDate } : e));
     };
 
-    const handleClearStats = () => {
+    const handleClearStats = async () => {
         if (eventToClear) {
-            dispatch({ type: 'CLEAR_TW_EVENT_RECORDS', payload: { eventId: eventToClear } });
-            setEventToClear(null);
+            try {
+                await clearEventRecords(eventToClear);
+                dispatch({ type: 'CLEAR_TW_EVENT_RECORDS', payload: { eventId: eventToClear } });
+                setEventToClear(null);
+            } catch (err) {
+                console.error('Failed to clear stats:', err);
+                alert('Fel vid rensning av statistik.');
+            }
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!name.trim() || !startDate || !endDate) return;
 
-        const seasonId = existingSeason?.id || crypto.randomUUID();
-        const season: TWSeason = {
-            id: seasonId,
-            name: name.trim(),
-            startDate,
-            endDate
-        };
+        setIsSaving(true);
+        try {
+            const seasonId = existingSeason?.id || crypto.randomUUID();
+            const season: TWSeason = {
+                id: seasonId,
+                name: name.trim(),
+                startDate,
+                endDate
+            };
 
-        const finalEvents = localEvents.map(e => ({ ...e, seasonId }));
+            const finalEvents = localEvents.map(e => ({ ...e, seasonId }));
 
-        if (existingSeason) {
-            dispatch({ type: 'UPDATE_TW_SEASON', payload: { season, events: finalEvents } });
-        } else {
-            dispatch({ type: 'CREATE_TW_SEASON', payload: { season, events: finalEvents } });
+            // Save to Supabase
+            await saveTWSeason(season, finalEvents);
+
+            // Update local state
+            if (existingSeason) {
+                dispatch({ type: 'UPDATE_TW_SEASON', payload: { season, events: finalEvents } });
+            } else {
+                dispatch({ type: 'CREATE_TW_SEASON', payload: { season, events: finalEvents } });
+            }
+            onClose();
+        } catch (err) {
+            console.error('Failed to save season:', err);
+            alert('Fel vid sparande av säsong till databasen.');
+        } finally {
+            setIsSaving(false);
         }
-        onClose();
     };
 
     const eventsWithStats = useMemo(() => {
@@ -200,9 +220,9 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
                     </div>
 
                     <div className="p-4 border-t border-gray-700 flex justify-end gap-3 bg-gray-800/80 rounded-b-lg">
-                        <Button onClick={onClose} variant="ghost">Cancel</Button>
-                        <Button onClick={handleSave} variant="success" disabled={!name || !startDate || !endDate}>
-                            Save Season
+                        <Button onClick={onClose} variant="ghost" disabled={isSaving}>Cancel</Button>
+                        <Button onClick={handleSave} variant="success" disabled={isSaving || !name || !startDate || !endDate}>
+                            {isSaving ? 'Sparar...' : 'Save Season'}
                         </Button>
                     </div>
                 </div>
