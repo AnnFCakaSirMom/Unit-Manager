@@ -50,12 +50,25 @@ const App: React.FC = () => {
     const reduxDispatch = useDispatch<AppDispatch>();
     const reduxUnitConfig = useSelector((state: RootState) => state.unit.unitConfig);
 
+    const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+    const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+    const [showAttendanceView, setShowAttendanceView] = useState<boolean>(false);
+    const [showTWStatisticsView, setShowTWStatisticsView] = useState<boolean>(false);
+    const [showProfileMatcher, setShowProfileMatcher] = useState<boolean>(false);
+
+    const [statusMessage, setStatusMessage] = useState<string>("");
+    const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
+    const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+    const [isPlayerListOpen, setPlayerListOpen] = useState(true);
+
     useEffect(() => {
         // Hämta enheter från Supabase vid start
         reduxDispatch(fetchUnitsFromSupabase());
+    }, [reduxDispatch]);
 
-        // Hydrera spelarlistan från Supabase (en gång vid mount).
-        // Supabase är sanningskällan; lokal useReducer tar ägandeskap efteråt.
+    // Hydrate the player list from Supabase (once at mount).
+    // Supabase is the source of truth; local useReducer takes ownership after.
+    useEffect(() => {
         fetchPlayersFromSupabase()
             .then(players => {
                 if (players.length > 0) {
@@ -65,7 +78,9 @@ const App: React.FC = () => {
             .catch(err => {
                 console.warn('[App] Could not hydrate players from Supabase:', err);
             });
-        
+    }, [dispatch]);
+
+    useEffect(() => {
         // Lyssna på inloggningsstatus
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
@@ -157,17 +172,6 @@ const App: React.FC = () => {
             }));
         }
     }, [state]);
-
-    const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-    const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-    const [showAttendanceView, setShowAttendanceView] = useState<boolean>(false);
-    const [showTWStatisticsView, setShowTWStatisticsView] = useState<boolean>(false);
-    const [showProfileMatcher, setShowProfileMatcher] = useState<boolean>(false);
-
-    const [statusMessage, setStatusMessage] = useState<string>("");
-    const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
-    const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
-    const [isPlayerListOpen, setPlayerListOpen] = useState(true);
 
     const handleSelectPlayer = useCallback((playerId: string | null) => {
         setSelectedPlayerId(playerId);

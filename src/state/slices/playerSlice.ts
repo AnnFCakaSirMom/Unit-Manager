@@ -19,6 +19,7 @@ export const playerReducer = (state: AppState, action: AppAction): Player[] => {
                 notInHouse: false, 
                 totalLeadership: 0, 
                 joinedDate: new Date().toISOString().split('T')[0], 
+                player_info: [],
                 aliases: [] 
             };
             return [...state.players, newPlayer].sort((a, b) => a.name.localeCompare(b.name));
