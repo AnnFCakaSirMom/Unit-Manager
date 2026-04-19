@@ -3,6 +3,11 @@ import { handleParsePlayerUnitsForm } from '../../utils/reducerHelpers';
 
 export const playerReducer = (state: AppState, action: AppAction): Player[] => {
     switch (action.type) {
+        case 'HYDRATE_PLAYERS':
+            // Replace the full player list with sorted data fetched from Supabase.
+            // After this, the local useReducer takes ownership — all mutations work normally.
+            return [...action.payload].sort((a, b) => a.name.localeCompare(b.name));
+
         case 'ADD_PLAYER': {
             const newPlayer: Player = { 
                 id: crypto.randomUUID(), 

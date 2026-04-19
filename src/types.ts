@@ -1,5 +1,28 @@
 export type UserRole = 'Guest' | 'Pending' | 'Member' | 'Officer' | 'Gatekeeper' | 'Admin' | 'Owner';
 
+// Supabase `profiles` row — extended with player data fields
+export interface Profile {
+  id: string;                    // UUID — mirrors auth.users.id when linked
+  discord_nickname: string;
+  role: UserRole;
+  display_name?: string;
+  total_leadership?: number;
+  joined_date?: string;          // ISO date string 'YYYY-MM-DD'
+  inactive_date?: string | null;
+  not_in_house: boolean;
+  internal_notes?: string;       // Officer+ only — never exposed to Members
+  discord_aliases?: string[];
+}
+
+// Row in `profile_units` junction table
+export interface ProfileUnit {
+  unit_name: string;
+  is_owned: boolean;
+  is_prepared: boolean;
+  is_mastery: boolean;
+  is_favorite: boolean;
+}
+
 export interface Unit {
   name: string;
   leadershipCost?: number | null;
@@ -86,6 +109,7 @@ export interface AppState {
 }
 
 export type AppAction =
+  | { type: 'HYDRATE_PLAYERS'; payload: Player[] }
   | { type: 'ADD_PLAYER'; payload: { name: string } }
   | { type: 'DELETE_PLAYER'; payload: { playerId: string } }
   | { type: 'UPDATE_PLAYER_NAME'; payload: { playerId: string; name: string } }

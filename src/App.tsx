@@ -21,6 +21,7 @@ import { supabase } from './services/supabase';
 import { AuthGuard } from './components/AuthGuard';
 import { fetchUnitsFromSupabase } from './state/slices/unitSlice';
 import { RootState, AppDispatch } from './state/store';
+import { fetchPlayersFromSupabase } from './services/playerService';
 
 declare global {
     interface Window {
@@ -50,6 +51,18 @@ const App: React.FC = () => {
     useEffect(() => {
         // Hämta enheter från Supabase vid start
         reduxDispatch(fetchUnitsFromSupabase());
+
+        // Hydrera spelarlistan från Supabase (en gång vid mount).
+        // Supabase är sanningskällan; lokal useReducer tar ägandeskap efteråt.
+        fetchPlayersFromSupabase()
+            .then(players => {
+                if (players.length > 0) {
+                    dispatch({ type: 'HYDRATE_PLAYERS', payload: players });
+                }
+            })
+            .catch(err => {
+                console.warn('[App] Could not hydrate players from Supabase:', err);
+            });
         
         // Lyssna på inloggningsstatus
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
