@@ -92,6 +92,12 @@ export const playerReducer = (state: AppState, action: AppAction): Player[] => {
                     ? { ...p, joinedDate: action.payload.joinedDate, inactiveDate: action.payload.inactiveDate, aliases: action.payload.aliases }
                     : p
             );
+        case 'MERGE_PLAYER_ID':
+            return state.players.map(p =>
+                p.id === action.payload.oldId
+                    ? { ...p, id: action.payload.newId }
+                    : p
+            );
         default:
             return state.players;
     }

@@ -116,6 +116,16 @@ export const twReducer = (state: AppState, action: AppAction): TWState => {
                 };
             }
         }
+
+        case 'MERGE_PLAYER_ID': {
+            const { oldId, newId } = action.payload;
+            return {
+                twAttendance: state.twAttendance.map(a => a.matchedPlayerId === oldId ? { ...a, matchedPlayerId: newId } : a),
+                twSeasons: state.twSeasons,
+                twEvents: state.twEvents,
+                twRecords: state.twRecords.map(r => r.playerId === oldId ? { ...r, playerId: newId } : r)
+            };
+        }
         
         default:
             return {

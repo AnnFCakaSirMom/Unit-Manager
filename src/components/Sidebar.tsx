@@ -19,6 +19,7 @@ interface SidebarProps {
     onOpenUnitManager: () => void;
     onOpenAttendance: () => void;
     onOpenTWStatistics: () => void;
+    onOpenProfileMatcher: () => void;
     hasUnsavedChanges: boolean;
     statusMessage: string;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
@@ -42,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
     const {
         selectedPlayerId, selectedGroupId,
-        onSelectPlayer, onSelectGroup, onSave, onLoad, onOpenUnitManager, onOpenAttendance, onOpenTWStatistics,
+        onSelectPlayer, onSelectGroup, onSave, onLoad, onOpenUnitManager, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher,
         hasUnsavedChanges, statusMessage, setConfirmModal, isPlayerListOpen,
         onTogglePlayerList
     } = props;
@@ -95,10 +96,18 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                         </Button>
                     )}
                     
+                    
                     {canViewStats && (
-                        <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700 col-span-2" onClick={onOpenTWStatistics}>
+                        <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700" onClick={onOpenTWStatistics}>
                             <Users size={16} />
                             <span>TW Statistics</span>
+                        </Button>
+                    )}
+
+                    {canViewUnitManager && ( // Re-using canViewUnitManager or just checking isOfficerPlus, wait let's use the hook for auth if needed. It's Admin+ right now.
+                        <Button variant="primary" className="bg-red-600 hover:bg-red-700 col-span-2" onClick={onOpenProfileMatcher}>
+                            <UserPlus size={16} />
+                            <span>Pending Approvals</span>
                         </Button>
                     )}
                 </div>

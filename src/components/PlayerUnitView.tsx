@@ -194,10 +194,12 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                 </Button>
                             </>
                         )}
-                        <Button onClick={handleCopyForm} variant="secondary">
-                            <Copy size={16} />
-                            <span>Copy Form</span>
-                        </Button>
+                        {isOfficerPlus && (
+                            <Button onClick={handleCopyForm} variant="secondary">
+                                <Copy size={16} />
+                                <span>Copy Form</span>
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -225,9 +227,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                 value={leadership}
                                 onChange={(e) => setLeadership(e.target.value)}
                                 onBlur={handleLeadershipSave}
-                                readOnly={!canEditOthersUnits}
+                                readOnly={!canEditOthersUnits && userId !== player.id}
                                 placeholder="e.g. 700"
-                                className={cn("w-full p-2", !canEditOthersUnits && "opacity-75 cursor-not-allowed bg-gray-800")}
+                                className={cn("w-full p-2", (!canEditOthersUnits && userId !== player.id) && "opacity-75 cursor-not-allowed bg-gray-800")}
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -243,18 +245,20 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                     className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
                                 />
                             </div>
-                            <div>
-                                <label htmlFor="inactiveDate" className="block text-sm font-medium text-gray-300 mb-1">Inactive Date</label>
-                                <Input
-                                    id="inactiveDate"
-                                    type="date"
-                                    value={inactiveDate}
-                                    onChange={(e) => setInactiveDate(e.target.value)}
-                                    onBlur={handleProfileSave}
-                                    readOnly={!isOfficerPlus}
-                                    className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
-                                />
-                            </div>
+                            {isOfficerPlus && (
+                                <div>
+                                    <label htmlFor="inactiveDate" className="block text-sm font-medium text-gray-300 mb-1">Inactive Date</label>
+                                    <Input
+                                        id="inactiveDate"
+                                        type="date"
+                                        value={inactiveDate}
+                                        onChange={(e) => setInactiveDate(e.target.value)}
+                                        onBlur={handleProfileSave}
+                                        readOnly={!isOfficerPlus}
+                                        className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

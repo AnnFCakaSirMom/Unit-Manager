@@ -127,6 +127,7 @@ export type AppAction =
   | { type: 'REMOVE_PLAYER_FROM_GROUP'; payload: { groupId: string; playerId: string } }
   | { type: 'MOVE_PLAYER_BETWEEN_GROUPS'; payload: { playerId: string; sourceGroupId: string; targetGroupId: string } }
   | { type: 'REORDER_GROUP_MEMBER'; payload: { groupId: string; playerId: string; targetPlayerId: string } } // <-- NYTT
+  | { type: 'MERGE_PLAYER_ID'; payload: { oldId: string; newId: string } }
   | { type: 'TOGGLE_GROUP_MEMBER_UNIT'; payload: { groupId: string; playerId: string; unitName: string } }
   | { type: 'SET_GROUP_MEMBER_UNIT_RANK'; payload: { groupId: string; playerId: string; unitName: string; rank: number } }
   | { type: 'TOGGLE_GROUP_MEMBER_LOCK'; payload: { groupId: string; playerId: string } }

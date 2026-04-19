@@ -128,6 +128,14 @@ export const groupReducer = (state: AppState, action: AppAction): Group[] => {
         case 'IMPORT_TW_ATTENDANCE': {
             return handleTWAttendanceImport(state, action.payload).groups;
         }
+        case 'MERGE_PLAYER_ID': {
+            const { oldId, newId } = action.payload;
+            return state.groups.map(g => ({
+                ...g,
+                leaderId: g.leaderId === oldId ? newId : g.leaderId,
+                members: g.members.map(m => m.playerId === oldId ? { ...m, playerId: newId } : m)
+            }));
+        }
         default:
             return state.groups;
     }

@@ -11,6 +11,7 @@ import { PlayerUnitView } from './components/PlayerUnitView';
 import { GroupView } from './components/GroupView';
 import { TWAttendanceView } from './components/TWAttendanceView';
 import { TWStatisticsView } from './components/TWStatisticsView';
+import { ProfileMatcher } from './components/ProfileMatcher';
 import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
@@ -118,6 +119,7 @@ const App: React.FC = () => {
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [showAttendanceView, setShowAttendanceView] = useState<boolean>(false);
     const [showTWStatisticsView, setShowTWStatisticsView] = useState<boolean>(false);
+    const [showProfileMatcher, setShowProfileMatcher] = useState<boolean>(false);
 
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
@@ -130,6 +132,7 @@ const App: React.FC = () => {
             setSelectedGroupId(null);
             setShowAttendanceView(false);
             setShowTWStatisticsView(false);
+            setShowProfileMatcher(false);
             if (!isPlayerListOpen) setPlayerListOpen(true);
         }
     }, [isPlayerListOpen]);
@@ -140,18 +143,29 @@ const App: React.FC = () => {
             setSelectedPlayerId(null);
             setShowAttendanceView(false);
             setShowTWStatisticsView(false);
+            setShowProfileMatcher(false);
         }
     }, []);
 
     const handleOpenAttendance = useCallback(() => {
         setShowAttendanceView(true);
         setShowTWStatisticsView(false);
+        setShowProfileMatcher(false);
         setSelectedPlayerId(null);
         setSelectedGroupId(null);
     }, []);
 
     const handleOpenTWStatistics = useCallback(() => {
         setShowTWStatisticsView(true);
+        setShowAttendanceView(false);
+        setShowProfileMatcher(false);
+        setSelectedPlayerId(null);
+        setSelectedGroupId(null);
+    }, []);
+
+    const handleOpenProfileMatcher = useCallback(() => {
+        setShowProfileMatcher(true);
+        setShowTWStatisticsView(false);
         setShowAttendanceView(false);
         setSelectedPlayerId(null);
         setSelectedGroupId(null);
@@ -216,6 +230,7 @@ const App: React.FC = () => {
                                 onOpenUnitManager={() => setIsMgmtModalOpen(true)}
                                 onOpenAttendance={handleOpenAttendance}
                                 onOpenTWStatistics={handleOpenTWStatistics}
+                                onOpenProfileMatcher={handleOpenProfileMatcher}
                                 hasUnsavedChanges={false} // Feature removed in favor of Autosave
                                 statusMessage={statusMessage}
                                 setConfirmModal={setConfirmModal}
@@ -224,7 +239,11 @@ const App: React.FC = () => {
                             />
 
                             <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
-                                {showTWStatisticsView ? (
+                                {showProfileMatcher ? (
+                                    <div className="flex-1 overflow-auto p-4 min-w-[300px]">
+                                        <ProfileMatcher />
+                                    </div>
+                                ) : showTWStatisticsView ? (
                                     <TWStatisticsView />
                                 ) : showAttendanceView ? (
                                     <div className="flex-1 overflow-hidden p-4 min-w-[300px]">
