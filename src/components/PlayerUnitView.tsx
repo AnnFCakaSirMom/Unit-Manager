@@ -222,7 +222,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                 </div>
 
                 <div className="my-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex flex-col gap-3">
+                    {/* Column 1: Metadata (Leadership & Dates) */}
+                    <div className="flex flex-col gap-3 order-1">
                         <div>
                             <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-1">Total Leadership</label>
                             <Input
@@ -266,8 +267,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         </div>
                     </div>
 
+                    {/* Column 2-3: Info (Internal Notes) */}
                     {isOfficerPlus && (
-                        <div className="md:col-span-2">
+                        <div className="md:col-span-2 order-2">
                             <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info (Internal)</label>
                             <textarea
                                 id="playerInfo"
