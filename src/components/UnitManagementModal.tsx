@@ -161,7 +161,9 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
                                                         <>
                                                             <div className="flex items-center gap-2">
                                                                 <span className="truncate">{unit.name}</span>
-                                                                {unit.leadershipCost && <span className="text-xs text-gray-400">({unit.leadershipCost} LD)</span>}
+                                                                <span className="text-xs text-gray-400">
+                                                                    ({unit.leadershipCost !== null && unit.leadershipCost !== undefined ? `${unit.leadershipCost} LD` : '-'})
+                                                                </span>
                                                             </div>
                                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setEditingUnit({ tier, originalUnit: unit, newName: unit.name, newCost: String(unit.leadershipCost || '') })} title="Edit Unit" aria-label="Edit Unit">

@@ -15,10 +15,12 @@ import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
 
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setAuthSession, clearAuthSession } from './state/slices/authSlice';
 import { supabase } from './services/supabase';
 import { AuthGuard } from './components/AuthGuard';
+import { fetchUnitsFromSupabase } from './state/slices/unitSlice';
+import { RootState, AppDispatch } from './state/store';
 
 declare global {
     interface Window {
@@ -42,9 +44,13 @@ const App: React.FC = () => {
     const [state, dispatch] = useReducer(rootReducer, initialState);
     const { players, groups } = state;
     
-    const reduxDispatch = useDispatch();
+    const reduxDispatch = useDispatch<AppDispatch>();
+    const reduxUnitConfig = useSelector((state: RootState) => state.unit.unitConfig);
 
     useEffect(() => {
+        // Hämta enheter från Supabase vid start
+        reduxDispatch(fetchUnitsFromSupabase());
+        
         // Lyssna på inloggningsstatus
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
@@ -153,7 +159,11 @@ const App: React.FC = () => {
         }
     }, [statusMessage]);
 
-    // The App now autosaves to LocalStorage, so we don't block UNLOAD.
+    // Merge manual state with Redux unitConfig for the Context Provider
+    const mergedState = useMemo(() => ({
+        ...state,
+        unitConfig: reduxUnitConfig
+    }), [state, reduxUnitConfig]);
 
     const selectedPlayer = useMemo(() => players.find((p: any) => p.id === selectedPlayerId), [players, selectedPlayerId]);
     const selectedGroup = useMemo(() => groups.find((g: any) => g.id === selectedGroupId), [groups, selectedGroupId]);
@@ -171,7 +181,7 @@ const App: React.FC = () => {
 
     return (
         <AuthGuard>
-            <AppStateContext.Provider value={state}>
+            <AppStateContext.Provider value={mergedState}>
                 <AppDispatchContext.Provider value={dispatch}>
                     <div className="bg-gray-900 text-gray-200 min-h-screen font-sans" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                         {isDragging && (

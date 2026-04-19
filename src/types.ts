@@ -2,7 +2,7 @@ export type UserRole = 'Guest' | 'Pending' | 'Member' | 'Officer' | 'Gatekeeper'
 
 export interface Unit {
   name: string;
-  leadershipCost?: number;
+  leadershipCost?: number | null;
 }
 
 export interface UnitSelection {
