@@ -13,12 +13,14 @@ export interface PlayerListProps {
 }
 
 import { useAppState, useAppDispatch } from '../AppContext';
+import { usePermission } from '../hooks/usePermission';
 
 export const PlayerList = React.memo(({
     selectedPlayerId, onSelectPlayer, setConfirmModal, notInHouse, setNotInHouse
 }: PlayerListProps) => {
     const { players } = useAppState();
     const dispatch = useAppDispatch();
+    const { canEditDisplayName } = usePermission();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [editingPlayer, setEditingPlayer] = useState<{ id: string | null; name: string }>({ id: null, name: '' });
@@ -88,7 +90,7 @@ export const PlayerList = React.memo(({
                                             <label className="flex items-center mr-2 cursor-pointer text-xs text-gray-400" title="Not in House">
                                                 <input type="checkbox" checked={player.notInHouse || false} onChange={() => handleNotInHouseToggle(player.id)} className="form-checkbox h-4 w-4 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500" aria-label="Mark as Not in House" />
                                             </label>
-                                            <Button variant="ghost" size="icon" className="text-blue-400" onClick={() => setEditingPlayer({ id: player.id, name: player.name })} title="Edit Player Name" aria-label="Edit Player Name"><Pencil size={18} /></Button>
+                                            <Button variant="ghost" size="icon" className="text-blue-400 disabled:opacity-30" onClick={() => setEditingPlayer({ id: player.id, name: player.name })} title="Edit Player Name" aria-label="Edit Player Name" disabled={!canEditDisplayName}><Pencil size={18} /></Button>
                                             <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDeletePlayer(player.id, player.name)} title="Delete Player" aria-label="Delete Player"><Trash2 size={18} /></Button>
                                         </div>
                                     </>

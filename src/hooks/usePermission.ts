@@ -27,6 +27,7 @@ export const usePermission = () => {
         // Admin specific
         canEditDates: check(['Admin', 'Owner']),
         canEditSystemConfig: check(['Admin', 'Owner']),
+        canEditDisplayName: check(['Gatekeeper', 'Admin', 'Owner']),
         
         // Helpers
         isOfficerPlus: check(['Officer', 'Gatekeeper', 'Admin', 'Owner']),

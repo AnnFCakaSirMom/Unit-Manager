@@ -25,8 +25,10 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     const { 
         canEditOthersUnits, 
         canEditInternalNotes, 
-        isOfficerPlus 
+        isOfficerPlus,
+        canEditDisplayName 
     } = usePermission();
+    const { userId } = useSelector((state: RootState) => state.auth);
     
     const allUnits = useMemo(() => Object.values(unitConfig.tiers).flat().map(u => u.name), [unitConfig]);
     if (!player) {
@@ -44,6 +46,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     const [joinedDate, setJoinedDate] = useState(player?.joinedDate || "");
     const [inactiveDate, setInactiveDate] = useState(player?.inactiveDate || "");
     const [aliasesText, setAliasesText] = useState((player?.aliases || []).join(', '));
+    const [playerNameText, setPlayerNameText] = useState(player?.name || "");
 
     const allUnitsByTier = useMemo(() => {
         const sortedTiers: { [key: string]: Unit[] } = {};
@@ -59,6 +62,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
         setJoinedDate(player.joinedDate || "");
         setInactiveDate(player.inactiveDate || "");
         setAliasesText((player.aliases || []).join(', '));
+        setPlayerNameText(player.name || "");
     }, [player]);
 
     const selectedPlayerUnits = useMemo(() => new Set(player?.units || []), [player]);
@@ -86,6 +90,13 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
             setStatusMessage("Player leadership saved.");
         }
     }, [leadership, player, dispatch, setStatusMessage]);
+
+    const handlePlayerNameSave = useCallback(() => {
+        if (player && playerNameText.trim() && playerNameText.trim() !== player.name) {
+            dispatch({ type: 'UPDATE_PLAYER_NAME', payload: { playerId: player.id, name: playerNameText.trim() } });
+            setStatusMessage("In-game name updated.");
+        }
+    }, [playerNameText, player, dispatch, setStatusMessage]);
 
     const handleProfileSave = useCallback(() => {
         const newAliases = aliasesText.split(',').map(s => s.trim()).filter(s => s);
@@ -145,8 +156,29 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
         <>
             <div className="h-full flex flex-col">
                 <div className="flex justify-between items-start">
-                    <div>
-                        <h2 className="text-2xl font-bold text-white mb-1">Units for <span className="text-blue-400">{player?.name}</span></h2>
+                    <div className="flex-grow">
+                        <div className="flex items-center gap-4 mb-1">
+                            {!canEditDisplayName ? (
+                                <h2 className="text-2xl font-bold text-white">Units for <span className="text-blue-400">{player?.name}</span></h2>
+                            ) : (
+                                <div className="flex-grow max-w-md">
+                                    <label htmlFor="playerNameEdit" className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">In-game Name</label>
+                                    <Input
+                                        id="playerNameEdit"
+                                        type="text"
+                                        value={playerNameText}
+                                        onChange={(e) => setPlayerNameText(e.target.value)}
+                                        onBlur={handlePlayerNameSave}
+                                        className="text-xl font-bold text-blue-400 bg-gray-800/40 border-gray-700/50 hover:bg-gray-800/60 focus:bg-gray-800"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        {(!canEditDisplayName && (userId === player.id || isOfficerPlus)) && (
+                            <p className="text-xs text-yellow-500/80 mb-2 italic">
+                                Your name is locked to your in-game name. Contact a Gatekeeper if you need to change it.
+                            </p>
+                        )}
                         <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected.</p>
                     </div>
                     <div className="flex items-center gap-2">
