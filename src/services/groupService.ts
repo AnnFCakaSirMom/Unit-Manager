@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 import type { Group, GroupMember } from '../types';
 
 type GroupMemberRow = {
-  player_id: string;
+  profile_id: string;
   selected_units: any[];
   is_locked: boolean;
 };
@@ -29,7 +29,7 @@ function transformGroupRow(row: GroupRow): Group {
     name: row.name,
     leaderId: row.leader_id,
     members: (row.group_members || []).map(m => ({
-      playerId: m.player_id,
+      playerId: m.profile_id,
       selectedUnits: m.selected_units || [],
       isLocked: m.is_locked
     } as GroupMember))
@@ -49,7 +49,7 @@ export async function fetchGroupsFromSupabase(): Promise<Group[]> {
       leader_id,
       order_index,
       group_members (
-        player_id,
+        profile_id,
         selected_units,
         is_locked
       )

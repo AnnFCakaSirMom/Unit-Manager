@@ -58,7 +58,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                     const { error: membersError } = await supabase
                         .from('group_members')
                         .delete()
-                        .neq('player_id', '00000000-0000-0000-0000-000000000000');
+                        .neq('profile_id', '00000000-0000-0000-0000-000000000000');
                     
                     if (membersError) throw membersError;
 

@@ -83,7 +83,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
             const { error } = await supabase
                 .from('player_info')
                 .upsert({ 
-                    player_id: player.id, 
+                    profile_id: player.id, 
                     internal_notes: infoText 
                 });
 
@@ -177,7 +177,14 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                     <div className="flex-grow">
                         <div className="flex items-center gap-4 mb-1">
                             {!canEditDisplayName ? (
-                                <h2 className="text-2xl font-bold text-white">Units for <span className="text-blue-400">{player?.name}</span></h2>
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-2xl font-bold text-white">Units for <span className="text-blue-400">{player?.name}</span></h2>
+                                    {player?.role === 'Owner' && (
+                                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 text-xs font-semibold">
+                                            👑 House Owner
+                                        </span>
+                                    )}
+                                </div>
                             ) : (
                                 <div className="flex-grow max-w-md">
                                     <label htmlFor="playerNameEdit" className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">In-game Name</label>

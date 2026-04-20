@@ -82,6 +82,7 @@ export const PlayerList = React.memo(({
                                     <>
                                         <div onClick={() => onSelectPlayer(player.id)} className="flex items-center gap-2 flex-grow min-w-0 cursor-pointer">
                                             <span className={`font-medium flex-grow truncate ${player.notInHouse ? 'line-through' : ''}`} title={player.name}>
+                                                {player.role === 'Owner' && <span title="House Owner" className="mr-1">👑</span>}
                                                 {player.name}
                                                 {(!player.units || player.units.length === 0) && <AlertTriangle className="inline-block ml-2 text-yellow-400" size={16} title="This player has no units assigned." />}
                                             </span>

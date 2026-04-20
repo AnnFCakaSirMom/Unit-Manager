@@ -61,6 +61,7 @@ export interface Player {
   joinedDate?: string;
   inactiveDate?: string | null;
   aliases?: string[];
+  role?: UserRole;
 }
 
 export interface UnitTiers {

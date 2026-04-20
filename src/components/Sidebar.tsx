@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import type { ConfirmModalInfo } from '../types';
-import { Save, FolderOpen, Settings, UserPlus, Users, ChevronUp, ChevronDown } from './icons';
+import { Settings, UserPlus, Users, ChevronUp, ChevronDown, Shield } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import { UnitSearch } from './UnitSearch';
@@ -20,6 +20,8 @@ interface SidebarProps {
     onOpenAttendance: () => void;
     onOpenTWStatistics: () => void;
     onOpenProfileMatcher: () => void;
+    onOpenAdminPanel: () => void;
+    pendingApprovalsCount: number;
     hasUnsavedChanges: boolean;
     statusMessage: string;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
@@ -38,13 +40,14 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
         canViewUnitManager, 
         canViewAttendance, 
         canViewStats,
+        canViewAdminPanel,
         isOfficerPlus
     } = usePermission();
 
     const {
         selectedPlayerId, selectedGroupId,
-        onSelectPlayer, onSelectGroup, onSave, onLoad, onOpenUnitManager, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher,
-        hasUnsavedChanges, statusMessage, setConfirmModal, isPlayerListOpen,
+        onSelectPlayer, onSelectGroup, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher, onOpenAdminPanel,
+        pendingApprovalsCount, statusMessage, setConfirmModal, isPlayerListOpen,
         onTogglePlayerList
     } = props;
 
@@ -67,27 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             <header className="mb-3">
                 <h1 className="text-xl font-bold text-blue-400">Unit Manager</h1>
                 <p className="text-sm text-gray-400">Manage players, units, and groups.</p>
-                <div className="grid grid-cols-2 gap-1.5 mt-3">
-                    {isOfficerPlus && (
-                        <>
-                            <Button variant="primary" onClick={onSave} className="relative">
-                                {hasUnsavedChanges && <span className="absolute -top-1 -right-1 flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span></span>}
-                                <Save size={16} />
-                                <span>Save</span>
-                            </Button>
-                            <Button variant="success" onClick={onLoad}>
-                                <FolderOpen size={16} />
-                                <span>Load</span>
-                            </Button>
-                        </>
-                    )}
-                    
-                    {canViewUnitManager && (
-                        <Button variant="secondary" onClick={onOpenUnitManager}>
-                            <Settings size={16} />
-                            <span>Units</span>
-                        </Button>
-                    )}
+                <div className="flex flex-col gap-1.5 mt-3">
                     
                     {canViewAttendance && (
                         <Button variant="primary" className="bg-purple-600 hover:bg-purple-700" onClick={onOpenAttendance}>
@@ -95,8 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                             <span>Attendance</span>
                         </Button>
                     )}
-                    
-                    
+
                     {canViewStats && (
                         <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700" onClick={onOpenTWStatistics}>
                             <Users size={16} />
@@ -104,11 +86,32 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                         </Button>
                     )}
 
-                    {canViewUnitManager && ( // Re-using canViewUnitManager or just checking isOfficerPlus, wait let's use the hook for auth if needed. It's Admin+ right now.
-                        <Button variant="primary" className="bg-red-600 hover:bg-red-700 col-span-2" onClick={onOpenProfileMatcher}>
-                            <UserPlus size={16} />
-                            <span>Pending Approvals</span>
-                        </Button>
+                    {canViewAdminPanel && (
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10"
+                                onClick={onOpenAdminPanel}
+                            >
+                                <Shield size={16} />
+                                <span>Admin Panel</span>
+                            </Button>
+
+                            {/* Pending Approvals badge button */}
+                            <button
+                                onClick={onOpenProfileMatcher}
+                                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+                                title="Pending Approvals"
+                            >
+                                <UserPlus size={15} />
+                                <span>Approvals</span>
+                                {pendingApprovalsCount > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                                        {pendingApprovalsCount > 9 ? '9+' : pendingApprovalsCount}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
                     )}
                 </div>
                 <div className="h-5 mt-2 text-center">

@@ -12,6 +12,7 @@ import { GroupView } from './components/GroupView';
 import { TWAttendanceView } from './components/TWAttendanceView';
 import { TWStatisticsView } from './components/TWStatisticsView';
 import { ProfileMatcher } from './components/ProfileMatcher';
+import { AdminPanel } from './components/AdminPanel';
 import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
@@ -56,6 +57,8 @@ const App: React.FC = () => {
     const [showAttendanceView, setShowAttendanceView] = useState<boolean>(false);
     const [showTWStatisticsView, setShowTWStatisticsView] = useState<boolean>(false);
     const [showProfileMatcher, setShowProfileMatcher] = useState<boolean>(false);
+    const [showAdminPanel, setShowAdminPanel] = useState<boolean>(false);
+    const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
 
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
@@ -85,17 +88,36 @@ const App: React.FC = () => {
         // Lyssna på inloggningsstatus
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session) {
-                // Hämta profil för roll
-                const { data: profile } = await supabase
+                // profiles.user_id = Discord auth ID (kopplingen skapas via link_auth_to_profile.sql)
+                // profiles.id      = appens interna PK (används för units, groups, mm)
+                const { data: profile, error } = await supabase
                     .from('profiles')
-                    .select('role, discord_nickname')
-                    .eq('id', session.user.id)
-                    .single();
+                    .select('id, role, discord_nickname')
+                    .eq('user_id', session.user.id)
+                    .maybeSingle();
 
+                if (error) {
+                    console.error('[App] Failed to fetch profile:', error.message);
+                    reduxDispatch(clearAuthSession());
+                    return;
+                }
+
+                if (!profile) {
+                    console.warn('[App] No profile linked to auth id:', session.user.id);
+                    reduxDispatch(setAuthSession({
+                        userId: session.user.id,
+                        role: 'NoProfile' as any,
+                        discordNickname: session.user.user_metadata?.full_name || ''
+                    }));
+                    return;
+                }
+
+                // Viktigt: skicka profile.id (inte auth-ID) som userId
+                // så att alla queries mot profile_units, groups mm matchar rätt
                 reduxDispatch(setAuthSession({ 
-                    userId: session.user.id, 
-                    role: profile?.role || 'Pending',
-                    discordNickname: profile?.discord_nickname || ''
+                    userId: profile.id,
+                    role: profile.role || 'Pending',
+                    discordNickname: profile.discord_nickname || ''
                 }));
             } else {
                 reduxDispatch(clearAuthSession());
@@ -117,8 +139,20 @@ const App: React.FC = () => {
             if (showAttendanceView) setShowAttendanceView(false);
             if (showTWStatisticsView) setShowTWStatisticsView(false);
             if (showProfileMatcher) setShowProfileMatcher(false);
+            if (showAdminPanel) setShowAdminPanel(false);
         }
-    }, [role, selectedPlayerId, selectedGroupId, showAttendanceView, showTWStatisticsView, showProfileMatcher]);
+    }, [role, selectedPlayerId, selectedGroupId, showAttendanceView, showTWStatisticsView, showProfileMatcher, showAdminPanel]);
+
+    // Fetch pending approvals count for Sidebar badge
+    useEffect(() => {
+        const isGatekeeperPlus = ['Gatekeeper', 'Admin', 'Owner'].includes(role);
+        if (!isGatekeeperPlus) return;
+        supabase
+            .from('profiles')
+            .select('id', { count: 'exact', head: true })
+            .eq('role', 'Pending')
+            .then(({ count }) => setPendingApprovalsCount(count ?? 0));
+    }, [role]);
 
     // Hydrate Groups from Supabase & Real-time Listeners
     useEffect(() => {
@@ -227,6 +261,16 @@ const App: React.FC = () => {
         setShowProfileMatcher(true);
         setShowTWStatisticsView(false);
         setShowAttendanceView(false);
+        setShowAdminPanel(false);
+        setSelectedPlayerId(null);
+        setSelectedGroupId(null);
+    }, []);
+
+    const handleOpenAdminPanel = useCallback(() => {
+        setShowAdminPanel(true);
+        setShowProfileMatcher(false);
+        setShowTWStatisticsView(false);
+        setShowAttendanceView(false);
         setSelectedPlayerId(null);
         setSelectedGroupId(null);
     }, []);
@@ -291,7 +335,9 @@ const App: React.FC = () => {
                                 onOpenAttendance={handleOpenAttendance}
                                 onOpenTWStatistics={handleOpenTWStatistics}
                                 onOpenProfileMatcher={handleOpenProfileMatcher}
-                                hasUnsavedChanges={false} // Feature removed in favor of Autosave
+                                onOpenAdminPanel={handleOpenAdminPanel}
+                                pendingApprovalsCount={pendingApprovalsCount}
+                                hasUnsavedChanges={false}
                                 statusMessage={statusMessage}
                                 setConfirmModal={setConfirmModal}
                                 isPlayerListOpen={isPlayerListOpen}
@@ -299,7 +345,15 @@ const App: React.FC = () => {
                             />
 
                             <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
-                                {showProfileMatcher ? (
+                                {showAdminPanel ? (
+                                    <div className="flex-1 overflow-auto p-4 min-w-[300px]">
+                                        <AdminPanel
+                                            onSave={handleSaveData}
+                                            onLoad={handleModernOpenFile}
+                                            onClose={() => setShowAdminPanel(false)}
+                                        />
+                                    </div>
+                                ) : showProfileMatcher ? (
                                     <div className="flex-1 overflow-auto p-4 min-w-[300px]">
                                         <ProfileMatcher />
                                     </div>

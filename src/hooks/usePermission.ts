@@ -23,6 +23,7 @@ export const usePermission = () => {
         
         // Gatekeeper/Admin specific
         canApproveUsers: check(['Gatekeeper', 'Admin', 'Owner']),
+        canViewAdminPanel: check(['Gatekeeper', 'Admin', 'Owner']),
         
         // Admin specific
         canEditDates: check(['Admin', 'Owner']),

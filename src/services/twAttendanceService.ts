@@ -45,7 +45,7 @@ export async function fetchTWAttendanceData() {
 
   const mappedRecords: TWPlayerRecord[] = (records || []).map(r => ({
     eventId: r.event_id,
-    playerId: r.player_id,
+    playerId: r.profile_id,
     status: r.status
   }));
 
@@ -108,7 +108,7 @@ export async function saveTWAttendanceRecords(records: TWPlayerRecord[]) {
 
   const mappedRecords = records.map(r => ({
     event_id: r.eventId,
-    player_id: r.playerId,
+    profile_id: r.playerId,
     status: r.status
   }));
 
@@ -116,7 +116,7 @@ export async function saveTWAttendanceRecords(records: TWPlayerRecord[]) {
   // We assume a UNIQUE constraint on (event_id, player_id) is set in SQL.
   const { error } = await supabase
     .from('tw_attendance_records')
-    .upsert(mappedRecords, { onConflict: 'event_id,player_id' });
+    .upsert(mappedRecords, { onConflict: 'event_id,profile_id' });
 
   if (error) throw error;
 }

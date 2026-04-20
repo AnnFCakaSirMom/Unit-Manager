@@ -22,6 +22,7 @@ type ProfileRow = {
   joined_date: string | null;
   inactive_date: string | null;
   not_in_house: boolean;
+  role: string | null;
   internal_notes: string | null;
   discord_aliases: string[] | null;
   profile_units: ProfileUnitRow[];
@@ -54,6 +55,7 @@ function transformProfileToPlayer(row: ProfileRow): Player {
     joinedDate:    row.joined_date    ?? undefined,
     inactiveDate:  row.inactive_date  ?? null,
     aliases:       row.discord_aliases ?? [],
+    role:          (row.role as any) ?? 'Member',
   };
 }
 
@@ -73,6 +75,7 @@ export async function fetchPlayersFromSupabase(): Promise<Player[]> {
       joined_date,
       inactive_date,
       not_in_house,
+      role,
       internal_notes,
       discord_aliases,
       player_info (
