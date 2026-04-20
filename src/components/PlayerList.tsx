@@ -15,6 +15,7 @@ export interface PlayerListProps {
 
 import { useAppState, useAppDispatch } from '../AppContext';
 import { usePermission } from '../hooks/usePermission';
+import { washName } from '../utils';
 
 export const PlayerList = React.memo(({
     selectedPlayerId, onSelectPlayer, setConfirmModal, notInHouse, setNotInHouse
@@ -27,10 +28,10 @@ export const PlayerList = React.memo(({
     const [editingPlayer, setEditingPlayer] = useState<{ id: string | null; name: string }>({ id: null, name: '' });
 
     const filteredPlayers = useMemo(() => {
-        const lowerCaseQuery = searchQuery.toLowerCase();
+        const washedQuery = washName(searchQuery);
         const basePlayers = players.filter((p: Player) => notInHouse ? p.notInHouse : !p.notInHouse);
-        if (!lowerCaseQuery) return basePlayers;
-        return basePlayers.filter((p: Player) => p.name.toLowerCase().startsWith(lowerCaseQuery));
+        if (!searchQuery) return basePlayers;
+        return basePlayers.filter((p: Player) => washName(p.name).includes(washedQuery));
     }, [players, searchQuery, notInHouse]);
 
     const handleSavePlayerName = useCallback(() => {

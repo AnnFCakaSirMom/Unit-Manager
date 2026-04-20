@@ -1,12 +1,7 @@
 import type { AppState, TWAttendancePlayer, Unit, TWPlayerRecord, TWRecordStatus, Player } from '../types';
 import { AppStateSchema } from '../schema';
 import { DEFAULT_UNIT_TIERS } from '../units';
-
-const washName = (name: string) => (name || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '')
-    .toLowerCase();
+import { washName } from '../utils';
 
 export const findMatchedPlayer = (players: Player[], discordName: string) => {
     const washedDiscordName = washName(discordName);
