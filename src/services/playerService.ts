@@ -4,7 +4,7 @@
  * into the Player interface used by the existing app state.
  */
 import { supabase } from './supabase';
-import type { Player } from '../types';
+import type { Player, UserRole } from '../types';
 
 type ProfileUnitRow = {
   unit_name: string;
@@ -22,7 +22,7 @@ type ProfileRow = {
   joined_date: string | null;
   inactive_date: string | null;
   not_in_house: boolean;
-  role: string | null;
+  role: UserRole | null;
   internal_notes: string | null;
   discord_aliases: string[] | null;
   profile_units: ProfileUnitRow[];
@@ -55,7 +55,7 @@ function transformProfileToPlayer(row: ProfileRow): Player {
     joinedDate:    row.joined_date    ?? undefined,
     inactiveDate:  row.inactive_date  ?? null,
     aliases:       row.discord_aliases ?? [],
-    role:          (row.role as any) ?? 'Member',
+    role:          row.role ?? 'Member',
   };
 }
 
@@ -65,22 +65,12 @@ function transformProfileToPlayer(row: ProfileRow): Player {
  * so the app remains functional even when offline.
  */
 export async function fetchPlayersFromSupabase(): Promise<Player[]> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select(`
-      id,
-      discord_nickname,
-      display_name,
-      total_leadership,
-      joined_date,
-      inactive_date,
-      not_in_house,
-      role,
-      internal_notes,
-      discord_aliases,
-      player_info (
-        internal_notes
-      ),
+  console.log('[playerService] Fetching players from Supabase...');
+
+  // Fetch profiles with units and player_info separately in parallel
+  const [profilesResult, infoResult] = await Promise.all([
+    supabase.from('profiles').select(`
+      *,
       profile_units (
         unit_name,
         is_owned,
@@ -88,16 +78,36 @@ export async function fetchPlayersFromSupabase(): Promise<Player[]> {
         is_mastery,
         is_favorite
       )
-    `);
+    `),
+    supabase.from('player_info').select('*')
+  ]);
 
-  if (error) {
-    console.warn('[playerService] Supabase fetch failed, using silent fallback:', error.message);
+  if (profilesResult.error) {
+    console.error('[playerService] Profiles fetch failed:', profilesResult.error.message);
     return [];
   }
 
-  if (!data || data.length === 0) {
+  const joinData = profilesResult.data || [];
+  const playerInfos = infoResult.data || [];
+
+  if (joinData.length === 0) {
+    console.warn('[playerService] No profiles found.');
     return [];
   }
 
-  return (data as ProfileRow[]).map(transformProfileToPlayer);
+  console.log(`[playerService] Fetched ${joinData.length} profiles and ${playerInfos.length} info rows.`);
+
+  // Create a map for quick lookup of info by player_id
+  const infoMap = new Map(playerInfos.map(info => [info.player_id, info.internal_notes]));
+
+  return (joinData as ProfileRow[]).map(row => {
+    // Find info from our separate fetch (more reliable due to naming inconsistencies in Supabase)
+    const manualInfo = infoMap.get(row.id);
+    
+    return transformProfileToPlayer({
+      ...row,
+      player_info: manualInfo ? [{ internal_notes: manualInfo }] : (row.player_info || [])
+    });
+  });
 }
+

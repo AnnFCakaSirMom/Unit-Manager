@@ -83,7 +83,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
             const { error } = await supabase
                 .from('player_info')
                 .upsert({ 
-                    profile_id: player.id, 
+                    player_id: player.id, 
                     internal_notes: infoText 
                 });
 

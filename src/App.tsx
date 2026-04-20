@@ -85,43 +85,52 @@ const App: React.FC = () => {
     }, [dispatch]);
 
     useEffect(() => {
-        // Lyssna på inloggningsstatus
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        // Hjälpfunktion för att hantera session och ladda profil
+        const handleSession = async (session: any) => {
             if (session) {
-                // profiles.user_id = Discord auth ID (kopplingen skapas via link_auth_to_profile.sql)
-                // profiles.id      = appens interna PK (används för units, groups, mm)
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('id, role, discord_nickname')
-                    .eq('user_id', session.user.id)
-                    .maybeSingle();
+                try {
+                    const { data: profile, error } = await supabase
+                        .from('profiles')
+                        .select('id, role, discord_nickname')
+                        .eq('user_id', session.user.id)
+                        .maybeSingle();
 
-                if (error) {
-                    console.error('[App] Failed to fetch profile:', error.message);
+                    if (error) throw error;
+
+                    if (!profile) {
+                        console.warn('[App] No profile linked to auth id:', session.user.id);
+                        reduxDispatch(setAuthSession({
+                            userId: session.user.id,
+                            role: 'NoProfile' as any,
+                            discordNickname: session.user.user_metadata?.full_name || ''
+                        }));
+                    } else {
+                        reduxDispatch(setAuthSession({ 
+                            userId: profile.id,
+                            role: profile.role || 'Pending',
+                            discordNickname: profile.discord_nickname || ''
+                        }));
+                    }
+                } catch (err: any) {
+                    console.error('[App] Failed to fetch profile:', err.message);
                     reduxDispatch(clearAuthSession());
-                    return;
                 }
-
-                if (!profile) {
-                    console.warn('[App] No profile linked to auth id:', session.user.id);
-                    reduxDispatch(setAuthSession({
-                        userId: session.user.id,
-                        role: 'NoProfile' as any,
-                        discordNickname: session.user.user_metadata?.full_name || ''
-                    }));
-                    return;
-                }
-
-                // Viktigt: skicka profile.id (inte auth-ID) som userId
-                // så att alla queries mot profile_units, groups mm matchar rätt
-                reduxDispatch(setAuthSession({ 
-                    userId: profile.id,
-                    role: profile.role || 'Pending',
-                    discordNickname: profile.discord_nickname || ''
-                }));
             } else {
                 reduxDispatch(clearAuthSession());
             }
+        };
+
+        // 1. Hämta sessionen direkt (viktigt vid F5-refresh)
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            handleSession(session);
+        }).catch(err => {
+            console.error('[App] Initial getSession failed:', err);
+            reduxDispatch(clearAuthSession()); // Fallback så vi inte fastnar
+        });
+
+        // 2. Lyssna på framtida ändringar
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            handleSession(session);
         });
 
         return () => subscription.unsubscribe();
@@ -129,19 +138,26 @@ const App: React.FC = () => {
 
     // Role-based Security Lock ("The Shield")
     // Ensures restricted data is cleared if the user's role is not authorized.
-    const { role } = useSelector((state: RootState) => state.auth);
+    const { role, userId } = useSelector((state: RootState) => state.auth);
     const isOfficerPlus = useMemo(() => ['Officer', 'Gatekeeper', 'Admin', 'Owner'].includes(role), [role]);
 
     useEffect(() => {
         if (role === 'Member' || role === 'Pending') {
-            if (selectedPlayerId) setSelectedPlayerId(null);
+            if (selectedPlayerId && selectedPlayerId !== userId) setSelectedPlayerId(null);
             if (selectedGroupId) setSelectedGroupId(null);
             if (showAttendanceView) setShowAttendanceView(false);
             if (showTWStatisticsView) setShowTWStatisticsView(false);
             if (showProfileMatcher) setShowProfileMatcher(false);
             if (showAdminPanel) setShowAdminPanel(false);
         }
-    }, [role, selectedPlayerId, selectedGroupId, showAttendanceView, showTWStatisticsView, showProfileMatcher, showAdminPanel]);
+    }, [role, userId, selectedPlayerId, selectedGroupId, showAttendanceView, showTWStatisticsView, showProfileMatcher, showAdminPanel]);
+
+    // Auto-select own profile for Members on load
+    useEffect(() => {
+        if (role === 'Member' && userId && !selectedPlayerId && !selectedGroupId) {
+            setSelectedPlayerId(userId);
+        }
+    }, [role, userId, selectedPlayerId, selectedGroupId]);
 
     // Fetch pending approvals count for Sidebar badge
     useEffect(() => {
@@ -193,32 +209,6 @@ const App: React.FC = () => {
                 console.warn('[App] Could not hydrate TW attendance data:', err);
             });
     }, [isOfficerPlus, dispatch]);
-    // Autosave functionality
-    useEffect(() => {
-        const saved = localStorage.getItem('unit-manager-autosave');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                dispatch({ type: 'LOAD_STATE', payload: parsed });
-            } catch (e) {
-                console.error('Failed to load autosave', e);
-            }
-        }
-    }, []);
-
-    useEffect(() => {
-        if (state !== initialState) {
-            localStorage.setItem('unit-manager-autosave', JSON.stringify({
-                players: state.players,
-                unitConfig: state.unitConfig,
-                groups: state.groups,
-                twAttendance: state.twAttendance,
-                twSeasons: state.twSeasons,
-                twEvents: state.twEvents,
-                twRecords: state.twRecords
-            }));
-        }
-    }, [state]);
 
     const handleSelectPlayer = useCallback((playerId: string | null) => {
         setSelectedPlayerId(playerId);
@@ -227,6 +217,7 @@ const App: React.FC = () => {
             setShowAttendanceView(false);
             setShowTWStatisticsView(false);
             setShowProfileMatcher(false);
+            setShowAdminPanel(false);
             if (!isPlayerListOpen) setPlayerListOpen(true);
         }
     }, [isPlayerListOpen]);
@@ -238,6 +229,7 @@ const App: React.FC = () => {
             setShowAttendanceView(false);
             setShowTWStatisticsView(false);
             setShowProfileMatcher(false);
+            setShowAdminPanel(false);
         }
     }, []);
 
@@ -245,6 +237,7 @@ const App: React.FC = () => {
         setShowAttendanceView(true);
         setShowTWStatisticsView(false);
         setShowProfileMatcher(false);
+        setShowAdminPanel(false);
         setSelectedPlayerId(null);
         setSelectedGroupId(null);
     }, []);
@@ -253,6 +246,7 @@ const App: React.FC = () => {
         setShowTWStatisticsView(true);
         setShowAttendanceView(false);
         setShowProfileMatcher(false);
+        setShowAdminPanel(false);
         setSelectedPlayerId(null);
         setSelectedGroupId(null);
     }, []);
