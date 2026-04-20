@@ -4,6 +4,8 @@ import { Button } from './Button';
 import { UnitManagementModal } from './UnitManagementModal';
 import { useAppState, useAppDispatch } from '../AppContext';
 import { saveTWSeason, saveTWAttendanceRecords, fetchTWAttendanceData } from '../services/twAttendanceService';
+import { upsertPlayer } from '../services/playerService';
+import { upsertGroup } from '../services/groupService';
 
 interface AdminPanelProps {
     onSave: () => void;
@@ -12,7 +14,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose }) => {
-    const { twSeasons, twEvents, twRecords } = useAppState();
+    const { players, groups, twSeasons, twEvents, twRecords } = useAppState();
     const dispatch = useAppDispatch();
 
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState(false);
@@ -24,12 +26,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose 
         setIsMigrating(true);
         setMigrationStatus('idle');
         try {
-            // 1. Seasons & Events (order matters for FK constraints)
+            // 1. Players & Units
+            for (const player of players) {
+                await upsertPlayer(player);
+            }
+            // 2. Groups
+            for (let i = 0; i < groups.length; i++) {
+                await upsertGroup(groups[i], i);
+            }
+            // 3. Seasons & Events (order matters for FK constraints)
             for (const season of twSeasons) {
                 const seasonEvents = twEvents.filter(e => e.seasonId === season.id);
                 await saveTWSeason(season, seasonEvents);
             }
-            // 2. Attendance Records
+            // 4. Attendance Records
             if (twRecords.length > 0) {
                 await saveTWAttendanceRecords(twRecords);
             }

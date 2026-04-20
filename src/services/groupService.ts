@@ -65,3 +65,77 @@ export async function fetchGroupsFromSupabase(): Promise<Group[]> {
 
   return (data as GroupRow[]).map(transformGroupRow);
 }
+
+/**
+ * Upserts a group and its members into Supabase.
+ */
+export async function upsertGroup(group: Group, orderIndex: number): Promise<boolean> {
+  console.log(`[groupService] Upserting group ${group.id} to Supabase...`);
+
+  // 1. Upsert Group
+  const groupData = {
+    id: group.id,
+    name: group.name,
+    leader_id: group.leaderId || null,
+    order_index: orderIndex,
+  };
+
+  const { error: groupError } = await supabase
+    .from('groups')
+    .upsert(groupData);
+
+  if (groupError) {
+    console.error(`[groupService] Group upsert failed for ${group.id}:`, groupError.message);
+    return false;
+  }
+
+  // 2. Clear old members to handle removals correctly
+  const { error: deleteMembersError } = await supabase
+    .from('group_members')
+    .delete()
+    .eq('group_id', group.id);
+
+  if (deleteMembersError) {
+    console.error(`[groupService] Failed to clear members for group ${group.id}:`, deleteMembersError.message);
+    return false;
+  }
+
+  // 3. Insert new members
+  const membersToInsert = group.members.map((m) => ({
+    group_id: group.id,
+    profile_id: m.playerId,
+    selected_units: m.selectedUnits,
+    is_locked: m.isLocked,
+  }));
+
+  if (membersToInsert.length > 0) {
+    const { error: insertMembersError } = await supabase
+      .from('group_members')
+      .insert(membersToInsert);
+
+    if (insertMembersError) {
+      console.error(`[groupService] Group members insert failed for ${group.id}:`, insertMembersError.message);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Deletes a group from Supabase.
+ */
+export async function deleteGroup(groupId: string): Promise<boolean> {
+  console.log(`[groupService] Deleting group ${groupId} from Supabase...`);
+  
+  const { error } = await supabase
+    .from('groups')
+    .delete()
+    .eq('id', groupId);
+
+  if (error) {
+    console.error(`[groupService] Group delete failed:`, error.message);
+    return false;
+  }
+  return true;
+}

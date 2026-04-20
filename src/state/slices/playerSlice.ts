@@ -94,7 +94,13 @@ export const playerReducer = (state: AppState, action: AppAction): Player[] => {
         case 'UPDATE_PLAYER_PROFILE':
             return state.players.map(p =>
                 p.id === action.payload.playerId
-                    ? { ...p, joinedDate: action.payload.joinedDate, inactiveDate: action.payload.inactiveDate, aliases: action.payload.aliases }
+                    ? { 
+                        ...p, 
+                        joinedDate: action.payload.joinedDate, 
+                        inactiveDate: action.payload.inactiveDate, 
+                        aliases: action.payload.aliases,
+                        role: action.payload.role || p.role
+                    }
                     : p
             );
         case 'MERGE_PLAYER_ID':

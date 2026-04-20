@@ -8,6 +8,7 @@ import { AttendancePlayerList } from './AttendancePlayerList';
 import { AttendanceGroupGrid } from './AttendanceGroupGrid';
 import { ConfirmModalInfo } from '../types';
 import { supabase } from '../services/supabase';
+import { clearTWImport } from '../services/twImportService';
 
 interface TWAttendanceViewProps {
     onSelectPlayer: (id: string | null) => void;
@@ -69,6 +70,9 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                         .neq('id', '00000000-0000-0000-0000-000000000000');
 
                     if (groupsError) throw groupsError;
+
+                    // Wipe temporary import list
+                    await clearTWImport();
 
                     // Local clear
                     dispatch({ type: 'CLEAR_TW_ATTENDANCE' });

@@ -111,3 +111,106 @@ export async function fetchPlayersFromSupabase(): Promise<Player[]> {
   });
 }
 
+/**
+ * Upserts a single player into Supabase.
+ * Atomically updates `profiles`, `player_info`, and `profile_units`.
+ */
+export async function upsertPlayer(player: Player): Promise<boolean> {
+  console.log(`[playerService] Upserting player ${player.id} to Supabase...`);
+
+  // 1. Upsert Profile
+  const profileData = {
+    id: player.id,
+    discord_nickname: player.name, // Local display name override mapped back
+    display_name: player.name,
+    total_leadership: player.totalLeadership ?? 0,
+    joined_date: player.joinedDate ?? null,
+    inactive_date: player.inactiveDate ?? null,
+    not_in_house: player.notInHouse,
+    role: player.role ?? 'Member',
+    discord_aliases: player.aliases ?? [],
+  };
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .upsert(profileData);
+
+  if (profileError) {
+    console.error(`[playerService] Profile upsert failed for ${player.id}:`, profileError.message);
+    return false;
+  }
+
+  // 2. Upsert Player Info (if any)
+  const info = player.player_info?.[0]?.internal_notes || player.info || '';
+  if (info !== undefined || player.player_info !== undefined) {
+    const { error: infoError } = await supabase
+      .from('player_info')
+      .upsert({ player_id: player.id, internal_notes: info });
+    
+    if (infoError) {
+      console.error(`[playerService] Player info upsert failed for ${player.id}:`, infoError.message);
+      // We don't fail the whole operation just for notes
+    }
+  }
+
+  // 3. Upsert Profile Units
+  const allUnits = new Set([
+    ...player.units,
+    ...player.preparedUnits,
+    ...player.masteryUnits,
+    ...player.favoriteUnits
+  ]);
+
+  const unitsToInsert = Array.from(allUnits).map(unit_name => ({
+    profile_id: player.id,
+    unit_name,
+    is_owned: player.units.includes(unit_name),
+    is_prepared: player.preparedUnits.includes(unit_name),
+    is_mastery: player.masteryUnits.includes(unit_name),
+    is_favorite: player.favoriteUnits.includes(unit_name),
+  }));
+
+  // Delete existing units first
+  const { error: deleteUnitsError } = await supabase
+    .from('profile_units')
+    .delete()
+    .eq('profile_id', player.id);
+
+  if (deleteUnitsError) {
+    console.error(`[playerService] Failed to clear old units for ${player.id}:`, deleteUnitsError.message);
+    return false;
+  }
+
+  if (unitsToInsert.length > 0) {
+    const { error: insertUnitsError } = await supabase
+      .from('profile_units')
+      .insert(unitsToInsert);
+
+    if (insertUnitsError) {
+      console.error(`[playerService] Units insert failed for ${player.id}:`, insertUnitsError.message);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Deletes a player from Supabase.
+ */
+export async function deletePlayer(playerId: string): Promise<boolean> {
+  console.log(`[playerService] Deleting player ${playerId} from Supabase...`);
+  
+  const { error } = await supabase
+    .from('profiles')
+    .delete()
+    .eq('id', playerId);
+
+  if (error) {
+    console.error(`[playerService] Profile delete failed for ${playerId}:`, error.message);
+    return false;
+  }
+  return true;
+}
+
+

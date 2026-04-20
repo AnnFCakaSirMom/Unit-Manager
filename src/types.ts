@@ -140,7 +140,7 @@ export type AppAction =
   | { type: 'UPDATE_PLAYER_LEADERSHIP'; payload: { playerId: string; leadership: number } }
   | { type: 'IMPORT_TW_ATTENDANCE'; payload: { jsonString: string } }
   | { type: 'CLEAR_TW_ATTENDANCE' }
-  | { type: 'UPDATE_PLAYER_PROFILE'; payload: { playerId: string; joinedDate?: string; inactiveDate?: string | null; aliases?: string[] } }
+  | { type: 'UPDATE_PLAYER_PROFILE'; payload: { playerId: string; joinedDate?: string; inactiveDate?: string | null; aliases?: string[]; role?: UserRole } }
   | { type: 'CREATE_TW_SEASON'; payload: { season: TWSeason, events: TWEvent[] } }
   | { type: 'UPDATE_TW_SEASON'; payload: { season: TWSeason, events: TWEvent[] } }
   | { type: 'DELETE_TW_SEASON'; payload: { seasonId: string } }
@@ -150,6 +150,7 @@ export type AppAction =
   | { type: 'IMPORT_TW_STATISTICS_RAID_HELPER'; payload: { jsonString: string, eventId: string } }
   | { type: 'UPDATE_TW_PLAYER_RECORD'; payload: { eventId: string, playerId: string, status: TWRecordStatus } }
   | { type: 'HYDRATE_TW_DATA'; payload: { seasons: TWSeason[], events: TWEvent[], records: TWPlayerRecord[] } }
+  | { type: 'HYDRATE_TW_ATTENDANCE'; payload: TWAttendancePlayer[] }
   | { type: 'LOAD_STATE'; payload: Omit<AppState, 'hasUnsavedChanges'> }
   | { type: 'SAVE_SUCCESS' };
 

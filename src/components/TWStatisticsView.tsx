@@ -8,6 +8,8 @@ import { EditTWAttendanceModal } from './EditTWAttendanceModal';
 import { cn } from '../utils';
 import { usePermission } from '../hooks/usePermission';
 import { saveTWSeason, saveTWAttendanceRecords, fetchTWAttendanceData } from '../services/twAttendanceService';
+import { findMatchedPlayer } from '../utils/reducerHelpers';
+import type { TWPlayerRecord, TWRecordStatus } from '../types';
 
 type SortKey = 'name' | 'attendance' | 'percentage' | 'declined' | 'awol';
 
@@ -138,22 +140,41 @@ export const TWStatisticsView: React.FC = () => {
     };
 
     const handleImportStats = async (eventId: string, jsonString: string) => {
-        // Reducer handles the parsing and temporary state update
-        dispatch({ type: 'IMPORT_TW_STATISTICS_RAID_HELPER', payload: { eventId, jsonString } });
-        
-        // Brief timeout to let the reducer update the state
-        setTimeout(async () => {
-            // Get the records for this event from the state after it's been updated
-            // This is safer than duplicating the complex parsing logic here
-            const recordsToSave = twRecords.filter(r => r.eventId === eventId);
-            if (recordsToSave.length > 0) {
-                try {
-                    await saveTWAttendanceRecords(recordsToSave);
-                } catch (err) {
-                    console.error('Failed to auto-save imported records to Supabase:', err);
+        try {
+            const data = JSON.parse(jsonString);
+            if (!data.signUps) throw new Error("Invalid Raid Helper format");
+
+            const newRecords: TWPlayerRecord[] = [];
+            const processedPlayerIds = new Set<string>();
+
+            data.signUps.forEach((signup: any) => {
+                const matchedPlayer = findMatchedPlayer(players, signup.name);
+                if (matchedPlayer) {
+                    let status: TWRecordStatus = 'AWOL';
+                    if (signup.className === 'Accepted') status = 'Attended';
+                    else if (signup.className === 'Declined') status = 'Declined';
+                    else if (signup.className === 'Maybe') status = 'Not Attended';
+
+                    newRecords.push({ eventId, playerId: matchedPlayer.id, status });
+                    processedPlayerIds.add(matchedPlayer.id);
                 }
+            });
+
+            players.forEach(p => {
+                if (!p.notInHouse && !processedPlayerIds.has(p.id)) {
+                    newRecords.push({ eventId, playerId: p.id, status: 'AWOL' });
+                }
+            });
+
+            if (newRecords.length > 0) {
+                await saveTWAttendanceRecords(newRecords);
+                // Thanks to our real-time listeners in App.tsx, the state will be automatically hydrated 
+                // instantly across all clients without needing hacky local timeouts or manual reducer dispatch.
             }
-        }, 500);
+        } catch (err) {
+            console.error('Failed to parse or auto-save imported records:', err);
+            alert("Kunde inte importera. Kontrollera JSON-formatet.");
+        }
     };
 
     const handleMigrateToCloud = async () => {

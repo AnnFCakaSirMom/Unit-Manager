@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAppState, useAppDispatch } from '../AppContext';
+import { usePermission } from '../hooks/usePermission';
 import { Button } from './Button';
 import { Select } from './Select';
 import { Check, UserPlus, Link as LinkIcon, AlertTriangle } from './icons';
@@ -14,6 +15,7 @@ interface PendingProfile {
 export const ProfileMatcher: React.FC = () => {
     const { players } = useAppState();
     const dispatch = useAppDispatch();
+    const { canManageRole } = usePermission();
     const [pendingProfiles, setPendingProfiles] = useState<PendingProfile[]>([]);
     const [linkedProfileIds, setLinkedProfileIds] = useState<Set<string>>(new Set());
     const [selectedMatches, setSelectedMatches] = useState<{ [pendingId: string]: string }>({});
@@ -95,6 +97,11 @@ export const ProfileMatcher: React.FC = () => {
         setMessage(null);
 
         try {
+            // Check hierarchy: Can we manage a Member role?
+            if (!canManageRole('Member')) {
+                throw new Error("Du har inte behörighet att tilldela rollen Member.");
+            }
+
             // Update the profile in Supabase
             const { error: profileError } = await supabase
                 .from('profiles')
@@ -164,6 +171,10 @@ export const ProfileMatcher: React.FC = () => {
         setMessage(null);
 
         try {
+            if (!canManageRole('Member')) {
+                throw new Error("Behörighet saknas.");
+            }
+
             const { error } = await supabase
                 .from('profiles')
                 .update({ role: 'Member' })

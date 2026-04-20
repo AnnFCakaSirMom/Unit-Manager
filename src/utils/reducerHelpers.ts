@@ -8,7 +8,7 @@ const washName = (name: string) => (name || "")
     .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '')
     .toLowerCase();
 
-const findMatchedPlayer = (players: Player[], discordName: string) => {
+export const findMatchedPlayer = (players: Player[], discordName: string) => {
     const washedDiscordName = washName(discordName);
     return players.find(p => {
         const washedPName = washName(p.name);

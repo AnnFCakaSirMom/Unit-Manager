@@ -3,6 +3,7 @@ import type { Player, ConfirmModalInfo } from '../types';
 import { Save, Search, X, Pencil, Trash2, AlertTriangle } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
+import { cn } from '../utils';
 
 export interface PlayerListProps {
     selectedPlayerId: string | null;
@@ -20,7 +21,7 @@ export const PlayerList = React.memo(({
 }: PlayerListProps) => {
     const { players } = useAppState();
     const dispatch = useAppDispatch();
-    const { canEditDisplayName } = usePermission();
+    const { canEditDisplayName, canDeletePlayers, canToggleNotInHouse } = usePermission();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [editingPlayer, setEditingPlayer] = useState<{ id: string | null; name: string }>({ id: null, name: '' });
@@ -38,7 +39,13 @@ export const PlayerList = React.memo(({
         setEditingPlayer({ id: null, name: '' });
     }, [editingPlayer, dispatch]);
 
-    const handleDeletePlayer = useCallback((playerId: string, playerName: string) => {
+    const handleDeletePlayer = useCallback((playerId: string, playerName: string, playerRole?: string) => {
+        if (!canDeletePlayers) return;
+        if (playerRole === 'Owner') {
+            alert("En Owner kan inte raderas.");
+            return;
+        }
+
         setConfirmModal({
             isOpen: true,
             title: 'Delete Player',
@@ -49,11 +56,13 @@ export const PlayerList = React.memo(({
                 setConfirmModal((prev) => ({ ...prev, isOpen: false }));
             }
         });
-    }, [dispatch, selectedPlayerId, onSelectPlayer, setConfirmModal]);
+    }, [dispatch, selectedPlayerId, onSelectPlayer, setConfirmModal, canDeletePlayers]);
 
-    const handleNotInHouseToggle = useCallback((playerId: string) => {
+    const handleNotInHouseToggle = useCallback((playerId: string, playerRole?: string) => {
+        if (!canToggleNotInHouse) return;
+        if (playerRole === 'Owner') return; // Owners can't be set to inactive 
         dispatch({ type: 'TOGGLE_NOT_IN_HOUSE', payload: { playerId } });
-    }, [dispatch]);
+    }, [dispatch, canToggleNotInHouse]);
 
     return (
         <div>
@@ -88,11 +97,38 @@ export const PlayerList = React.memo(({
                                             </span>
                                         </div>
                                         <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                                            <label className="flex items-center mr-2 cursor-pointer text-xs text-gray-400" title="Not in House">
-                                                <input type="checkbox" checked={player.notInHouse || false} onChange={() => handleNotInHouseToggle(player.id)} className="form-checkbox h-4 w-4 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500" aria-label="Mark as Not in House" />
+                                            <label className={cn("flex items-center mr-2 cursor-pointer text-xs text-gray-400", (!canToggleNotInHouse || player.role === 'Owner') && "opacity-30 cursor-not-allowed")} title={player.role === 'Owner' ? "Owner cannot be inactive" : "Toggle Not in House"}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={player.notInHouse || false} 
+                                                    onChange={() => handleNotInHouseToggle(player.id, player.role)} 
+                                                    disabled={!canToggleNotInHouse || player.role === 'Owner'}
+                                                    className="form-checkbox h-4 w-4 rounded bg-gray-600 border-gray-500 text-orange-500 focus:ring-orange-500" 
+                                                    aria-label="Mark as Not in House" 
+                                                />
                                             </label>
-                                            <Button variant="ghost" size="icon" className="text-blue-400 disabled:opacity-30" onClick={() => setEditingPlayer({ id: player.id, name: player.name })} title="Edit Player Name" aria-label="Edit Player Name" disabled={!canEditDisplayName}><Pencil size={18} /></Button>
-                                            <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDeletePlayer(player.id, player.name)} title="Delete Player" aria-label="Delete Player"><Trash2 size={18} /></Button>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="text-blue-400 disabled:opacity-30" 
+                                                onClick={() => setEditingPlayer({ id: player.id, name: player.name })} 
+                                                title="Edit Player Name" 
+                                                aria-label="Edit Player Name" 
+                                                disabled={!canEditDisplayName || player.role === 'Owner'}
+                                            >
+                                                <Pencil size={18} />
+                                            </Button>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="text-red-500 disabled:opacity-30" 
+                                                onClick={() => handleDeletePlayer(player.id, player.name, player.role)} 
+                                                title="Delete Player" 
+                                                aria-label="Delete Player"
+                                                disabled={!canDeletePlayers || player.role === 'Owner'}
+                                            >
+                                                <Trash2 size={18} />
+                                            </Button>
                                         </div>
                                     </>
                                 )}

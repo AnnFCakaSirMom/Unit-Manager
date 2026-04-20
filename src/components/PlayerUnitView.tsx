@@ -4,12 +4,14 @@ import { CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star, Trash2 
 import { ParseFormModal } from './ParseFormModal';
 import { Button } from './Button';
 import { Input } from './Input';
+import { Select } from './Select';
 import { UnitTierSection } from './UnitTierSection';
 import { OwnedUnitsView } from './OwnedUnitsView';
 import { cn } from '../utils';
 import { useSelector } from 'react-redux';
 import { RootState } from '../state/store';
 import { supabase } from '../services/supabase';
+import { UserRole } from '../types';
 
 
 
@@ -28,7 +30,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     const { 
         canEditOthersUnits, 
         isOfficerPlus,
-        canEditDisplayName 
+        canEditDisplayName,
+        canManageRole 
     } = usePermission();
     const { userId } = useSelector((state: RootState) => state.auth);
     
@@ -116,7 +119,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
         }
     }, [playerNameText, player, dispatch, setStatusMessage]);
 
-    const handleProfileSave = useCallback(() => {
+    const handleProfileSave = useCallback((newRole?: UserRole) => {
         const newAliases = aliasesText.split(',').map(s => s.trim()).filter(s => s);
         dispatch({
             type: 'UPDATE_PLAYER_PROFILE',
@@ -124,11 +127,12 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                 playerId: player.id,
                 joinedDate: joinedDate || undefined,
                 inactiveDate: inactiveDate || null,
-                aliases: newAliases
+                aliases: newAliases,
+                role: newRole || player.role
             }
         });
         setStatusMessage("Player profile updated.");
-    }, [joinedDate, inactiveDate, aliasesText, player.id, dispatch, setStatusMessage]);
+    }, [joinedDate, inactiveDate, aliasesText, player.id, player.role, dispatch, setStatusMessage]);
 
     const padRight = (str: string, length: number) => {
         return str.padEnd(length, ' ');
@@ -204,9 +208,28 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                 Your name is locked to your in-game name. Contact a Gatekeeper if you need to change it.
                             </p>
                         )}
-                        <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected.</p>
+                        <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected. 
+                            {player.role && <span className="ml-2 px-1.5 py-0.5 bg-gray-800 rounded border border-gray-700 text-xs text-gray-300">{player.role}</span>}
+                        </p>
                     </div>
                     <div className="flex items-center gap-2">
+                        {/* ROLE SELECTOR - For those with power to manage the target user's role */}
+                        {canManageRole(player.role || 'Member') && (
+                            <div className="flex flex-col items-end gap-1 mr-2">
+                                <span className="text-[10px] text-gray-500 uppercase font-bold">Ändra Roll</span>
+                                <Select 
+                                    value={player.role || 'Member'} 
+                                    onChange={(e) => handleProfileSave(e.target.value as UserRole)}
+                                    className="text-xs py-1 h-8 bg-gray-800/80 border-indigo-500/30 text-indigo-300"
+                                >
+                                    {['Pending', 'Member', 'Officer', 'Gatekeeper', 'Admin', 'Owner'].map(r => (
+                                        <option key={r} value={r} disabled={!canManageRole(r as UserRole)}>
+                                            {r}
+                                        </option>
+                                    ))}
+                                </Select>
+                            </div>
+                        )}
                         {isOfficerPlus && (
                             <>
                                 <Button onClick={handleClearUnits} variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-400/10" size="sm">

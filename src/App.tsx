@@ -6,6 +6,7 @@ import { AppStateContext, AppDispatchContext } from './AppContext';
 
 import { useFileHandler } from './hooks/useFileHandler';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
+import { useCloudSync } from './hooks/useCloudSync';
 import { Sidebar } from './components/Sidebar';
 import { PlayerUnitView } from './components/PlayerUnitView';
 import { GroupView } from './components/GroupView';
@@ -26,6 +27,7 @@ import { RootState, AppDispatch } from './state/store';
 import { fetchPlayersFromSupabase } from './services/playerService';
 import { fetchGroupsFromSupabase } from './services/groupService';
 import { fetchTWAttendanceData } from './services/twAttendanceService';
+import { fetchTWImport } from './services/twImportService';
 
 declare global {
     interface Window {
@@ -81,6 +83,32 @@ const App: React.FC = () => {
             })
             .catch(err => {
                 console.warn('[App] Could not hydrate players from Supabase:', err);
+            });
+    }, [dispatch]);
+
+    // Hydrate TW Attendance import list
+    useEffect(() => {
+        fetchTWImport()
+            .then(data => {
+                if (data.length > 0) {
+                    dispatch({ type: 'HYDRATE_TW_ATTENDANCE', payload: data });
+                }
+            })
+            .catch(err => {
+                console.warn('[App] Could not hydrate TW import list:', err);
+            });
+    }, [dispatch]);
+
+    // Hydrate TW Attendance import list
+    useEffect(() => {
+        fetchTWImport()
+            .then(data => {
+                if (data.length > 0) {
+                    dispatch({ type: 'HYDRATE_TW_ATTENDANCE', payload: data });
+                }
+            })
+            .catch(err => {
+                console.warn('[App] Could not hydrate TW import list:', err);
             });
     }, [dispatch]);
 
@@ -185,11 +213,29 @@ const App: React.FC = () => {
         // Initial load
         loadGroups();
 
-        // Real-time listener for groups and group_members
+        // Real-time listener for groups, group_members, profiles, profile_units
         const channel = supabase
-            .channel('group-sync')
+            .channel('db-sync')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, loadGroups)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, loadGroups)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+                fetchPlayersFromSupabase()
+                    .then(players => {
+                        if (players.length > 0) {
+                            dispatch({ type: 'HYDRATE_PLAYERS', payload: players });
+                        }
+                    })
+                    .catch(e => console.warn(e));
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_units' }, () => {
+                fetchPlayersFromSupabase()
+                    .then(players => {
+                        if (players.length > 0) {
+                            dispatch({ type: 'HYDRATE_PLAYERS', payload: players });
+                        }
+                    })
+                    .catch(e => console.warn(e));
+            })
             .subscribe();
 
         return () => {
@@ -201,13 +247,28 @@ const App: React.FC = () => {
     useEffect(() => {
         if (!isOfficerPlus) return;
 
-        fetchTWAttendanceData()
-            .then(data => {
-                dispatch({ type: 'HYDRATE_TW_DATA', payload: data });
-            })
-            .catch(err => {
-                console.warn('[App] Could not hydrate TW attendance data:', err);
-            });
+        const loadTWData = () => {
+            fetchTWAttendanceData()
+                .then(data => {
+                    dispatch({ type: 'HYDRATE_TW_DATA', payload: data });
+                })
+                .catch(err => {
+                    console.warn('[App] Could not hydrate TW attendance data:', err);
+                });
+        };
+
+        loadTWData();
+
+        const channel = supabase
+            .channel('tw-sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_seasons' }, loadTWData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_events' }, loadTWData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_attendance' }, loadTWData)
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        }
     }, [isOfficerPlus, dispatch]);
 
     const handleSelectPlayer = useCallback((playerId: string | null) => {
@@ -283,6 +344,8 @@ const App: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, [statusMessage]);
+
+    useCloudSync(state, setStatusMessage);
 
     // Merge manual state with Redux unitConfig for the Context Provider
     const mergedState = useMemo(() => ({
