@@ -5,7 +5,6 @@ import { usePermission } from '../hooks/usePermission';
 import { Button } from './Button';
 import { Select } from './Select';
 import { Check, UserPlus, Link as LinkIcon, AlertTriangle } from './icons';
-import type { Player } from '../types';
 
 interface PendingProfile {
     id: string;

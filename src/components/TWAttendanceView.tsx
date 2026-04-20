@@ -9,6 +9,8 @@ import { AttendanceGroupGrid } from './AttendanceGroupGrid';
 import { ConfirmModalInfo } from '../types';
 import { supabase } from '../services/supabase';
 import { clearTWImport } from '../services/twImportService';
+import { HelpIcon } from './HelpIcon';
+import { HELP_CONTENT } from '../helpContent';
 
 interface TWAttendanceViewProps {
     onSelectPlayer: (id: string | null) => void;
@@ -98,7 +100,10 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
         <div className="h-full flex flex-col">
             <div className="flex justify-between items-start mb-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-white mb-1">TW Attendance</h2>
+                    <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-1">
+                        TW Attendance
+                        <HelpIcon helpKey="att-groups" text={HELP_CONTENT.attendance_group_mgmt} />
+                    </h2>
                     <p className="text-gray-400 text-sm">Drag and drop players, or use the dropdown menus</p>
                 </div>
                 <div className="flex items-center gap-2">

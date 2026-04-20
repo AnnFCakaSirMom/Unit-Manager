@@ -23,6 +23,8 @@ interface PlayerUnitViewProps {
 
 import { useAppState, useAppDispatch } from '../AppContext';
 import { usePermission } from '../hooks/usePermission';
+import { HelpIcon } from './HelpIcon';
+import { HELP_CONTENT } from '../helpContent';
 
 export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatusMessage, setConfirmModal }) => {
     const { unitConfig } = useAppState();
@@ -291,7 +293,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                     type="date"
                                     value={joinedDate}
                                     onChange={(e) => setJoinedDate(e.target.value)}
-                                    onBlur={handleProfileSave}
+                                    onBlur={() => handleProfileSave()}
                                     readOnly={!isOfficerPlus}
                                     className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
                                 />
@@ -304,7 +306,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                         type="date"
                                         value={inactiveDate}
                                         onChange={(e) => setInactiveDate(e.target.value)}
-                                        onBlur={handleProfileSave}
+                                        onBlur={() => handleProfileSave()}
                                         readOnly={!isOfficerPlus}
                                         className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
                                     />
@@ -321,7 +323,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         type="text"
                         value={aliasesText}
                         onChange={(e) => setAliasesText(e.target.value)}
-                        onBlur={handleProfileSave}
+                        onBlur={() => handleProfileSave()}
                         readOnly={!isOfficerPlus}
                         placeholder="e.g. KalleRox, Kalle_99"
                         className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
@@ -348,9 +350,21 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                     </div>
                     <div className="flex items-center gap-4 text-xs text-gray-400 mt-2">
                         {/* LEGEND FOR STAR/ICONS */}
-                        <div className="flex items-center gap-2"><Star size={12} className="text-yellow-400 fill-yellow-400" /><span>= Favorite</span></div>
-                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500"></div><span>= Full Mastery</span></div>
-                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500 border-2 border-green-400 flex-shrink-0"></div><span>= Maxed Unit</span></div>
+                        <div className="flex items-center gap-1" title="Marked as priority unit.">
+                            <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                            <span>= Favorite</span>
+                            <HelpIcon helpKey="fav" text={{ title: "Favorite", content: HELP_CONTENT.unit_tracking.favorite }} />
+                        </div>
+                        <div className="flex items-center gap-1" title="All Mastery nodes are fully upgraded.">
+                            <div className="w-3 h-3 rounded-sm bg-yellow-500"></div>
+                            <span>= Full Mastery</span>
+                            <HelpIcon helpKey="mast" text={{ title: "Full Mastery", content: HELP_CONTENT.unit_tracking.mastery }} />
+                        </div>
+                        <div className="flex items-center gap-1" title="Unit has reached its maximum level.">
+                            <div className="w-3 h-3 rounded-full bg-green-500 border-2 border-green-400 flex-shrink-0"></div>
+                            <span>= Maxed Unit</span>
+                            <HelpIcon helpKey="max" text={{ title: "Maxed Unit", content: HELP_CONTENT.unit_tracking.maxed }} />
+                        </div>
                     </div>
                 </div>
                 <div className="flex-grow overflow-y-auto">

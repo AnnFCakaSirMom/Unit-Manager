@@ -12,6 +12,8 @@ export interface GroupsListProps {
 }
 
 import { useAppState, useAppDispatch } from '../AppContext';
+import { HelpIcon } from './HelpIcon';
+import { HELP_CONTENT } from '../helpContent';
 
 export const GroupsList = React.memo(({
     selectedGroupId, onSelectGroup, setConfirmModal, onCopy
@@ -75,7 +77,10 @@ export const GroupsList = React.memo(({
     return (
         <div className="flex-grow flex flex-col mt-3">
             <div className="flex justify-between items-center mb-2">
-                <h2 className="text-base font-semibold text-gray-300 flex items-center gap-2"><Shield size={18} /> Groups ({groups.length})</h2>
+                <h2 className="text-base font-semibold text-gray-300 flex items-center gap-1">
+                    <Shield size={18} /> Groups ({groups.length})
+                    <HelpIcon helpKey="groups" text={HELP_CONTENT.group_management} />
+                </h2>
                 <div className="flex items-center gap-2">
                     <Button variant="primary" size="sm" onClick={handleCopyAllGroups} title="Copy All Groups" aria-label="Copy All Groups">
                         <Clipboard size={16} /> Copy

@@ -9,6 +9,8 @@ import { cn } from '../utils';
 import { usePermission } from '../hooks/usePermission';
 import { saveTWSeason, saveTWAttendanceRecords, fetchTWAttendanceData } from '../services/twAttendanceService';
 import { findMatchedPlayer } from '../utils/reducerHelpers';
+import { HelpIcon } from './HelpIcon';
+import { HELP_CONTENT } from '../helpContent';
 import type { TWPlayerRecord, TWRecordStatus } from '../types';
 
 type SortKey = 'name' | 'attendance' | 'percentage' | 'declined' | 'awol';
@@ -229,7 +231,10 @@ export const TWStatisticsView: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
                 <div>
-                    <h2 className="text-xl font-bold text-white mb-1">TW Statistics</h2>
+                    <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-1">
+                        TW Statistics
+                        <HelpIcon helpKey="tw-stats" text={HELP_CONTENT.date_selection_warning} />
+                    </h2>
                     <div className="flex items-center gap-2">
                         <select
                             value={activeSeasonId}
@@ -392,10 +397,11 @@ export const TWStatisticsView: React.FC = () => {
                     Include Inactive & Zero-Event Players
                 </label>
                 <div className="w-px h-6 bg-gray-600 mx-2 hidden sm:block"></div>
-                <label className="flex items-center gap-2 text-sm text-blue-300 cursor-pointer hover:text-blue-200">
+                <label className="flex items-center gap-2 text-sm text-blue-300 cursor-pointer hover:text-blue-200" title="Increases message character limit to 4000 for Discord Nitro users.">
                     <input type="checkbox" className="hidden" checked={isNitroMode} onChange={() => setIsNitroMode(!isNitroMode)} />
                     {isNitroMode ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
                     🚀 Discord Nitro Mode
+                    <HelpIcon helpKey="nitro" text={HELP_CONTENT.nitro_mode} />
                 </label>
             </div>
 

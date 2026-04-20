@@ -36,7 +36,7 @@ export function useFileHandler({ state, dispatch, handleSelectPlayer, setStatusM
 
                 const validatedPayload = validationResult.data;
 
-                dispatch({ type: 'LOAD_STATE', payload: validatedPayload });
+                dispatch({ type: 'LOAD_STATE', payload: validatedPayload as any });
                 setFileHandle(handle);
                 handleSelectPlayer(validatedPayload.players[0]?.id || null);
                 setStatusMessage(`File "${file.name}" loaded successfully!`);

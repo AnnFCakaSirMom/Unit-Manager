@@ -58,12 +58,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose 
     return (
         <div className="h-full flex flex-col">
             {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
-                <Shield size={28} className="text-indigo-400" />
-                <div>
-                    <h2 className="text-2xl font-bold text-white">Admin Panel</h2>
-                    <p className="text-sm text-gray-400">Centralized management for Gatekeepers, Admins & Owners.</p>
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <Shield size={28} className="text-indigo-400" />
+                    <div>
+                        <h2 className="text-2xl font-bold text-white">Admin Panel</h2>
+                        <p className="text-sm text-gray-400">Centralized management for Gatekeepers, Admins & Owners.</p>
+                    </div>
                 </div>
+                <Button variant="ghost" onClick={onClose} className="text-gray-400 hover:text-white">
+                    Stäng
+                </Button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

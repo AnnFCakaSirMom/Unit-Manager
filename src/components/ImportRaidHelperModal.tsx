@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, CheckIcon } from './icons';
 import { Button } from './Button';
+import { HelpIcon } from './HelpIcon';
+import { HELP_CONTENT } from '../helpContent';
 
 interface ImportRaidHelperModalProps {
     isOpen: boolean;
@@ -37,8 +39,9 @@ export const ImportRaidHelperModal: React.FC<ImportRaidHelperModalProps> = ({ is
         >
             <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl flex flex-col">
                 <header className="p-4 border-b border-gray-700 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-white">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-1">
                         Import Raid Helper Data
+                        <HelpIcon helpKey="raid-helper" text={HELP_CONTENT.raid_helper_import} />
                     </h2>
                     <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-gray-700" title="Close" aria-label="Close"><X size={24} /></Button>
                 </header>

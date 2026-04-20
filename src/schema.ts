@@ -81,5 +81,6 @@ export const AppStateSchema = z.object({
     twSeasons: z.array(TWSeasonSchema).optional().default([]),
     twEvents: z.array(TWEventSchema).optional().default([]),
     twRecords: z.array(TWPlayerRecordSchema).optional().default([]),
-    hasUnsavedChanges: z.boolean().optional().default(false), // Optional as we overwrite it on load anyway 
+    hasUnsavedChanges: z.boolean().optional().default(false), 
+    showHelpMode: z.boolean().optional().default(false),
 });

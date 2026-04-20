@@ -1,5 +1,4 @@
 import type { AppState, AppAction } from '../types';
-import { handleLoadState } from '../utils/reducerHelpers';
 
 import { playerReducer } from './slices/playerSlice';
 import { groupReducer } from './slices/groupSlice';
@@ -8,8 +7,18 @@ import { twReducer } from './slices/twSlice';
 // unitConfig is merged into AppStateContext via useSelector in App.tsx.
 
 export const rootReducer = (state: AppState, action: AppAction): AppState => {
+    if (action.type === 'TOGGLE_HELP_MODE') {
+        const newHelpMode = !state.showHelpMode;
+        localStorage.setItem('unit_manager_help_mode', String(newHelpMode));
+        return { ...state, showHelpMode: newHelpMode };
+    }
+
     if (action.type === 'LOAD_STATE') {
-        return handleLoadState(state, action.payload);
+        return {
+            ...action.payload,
+            showHelpMode: action.payload.showHelpMode ?? state.showHelpMode,
+            hasUnsavedChanges: false
+        };
     }
     
     // We don't care about setting hasUnsavedChanges anymore, handled by Autosave.
@@ -29,6 +38,7 @@ export const rootReducer = (state: AppState, action: AppAction): AppState => {
         twSeasons: nextTWState.twSeasons,
         twEvents: nextTWState.twEvents,
         twRecords: nextTWState.twRecords,
-        hasUnsavedChanges: state.hasUnsavedChanges
+        hasUnsavedChanges: state.hasUnsavedChanges,
+        showHelpMode: state.showHelpMode
     };
 };

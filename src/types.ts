@@ -109,9 +109,11 @@ export interface AppState {
   twEvents: TWEvent[];
   twRecords: TWPlayerRecord[];
   hasUnsavedChanges: boolean;
+  showHelpMode: boolean;
 }
 
 export type AppAction =
+  | { type: 'TOGGLE_HELP_MODE' }
   | { type: 'HYDRATE_PLAYERS'; payload: Player[] }
   | { type: 'HYDRATE_GROUPS'; payload: Group[] }
   | { type: 'ADD_PLAYER'; payload: { name: string } }

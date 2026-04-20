@@ -14,8 +14,6 @@ const ROLE_WEIGHTS: Record<UserRole, number> = {
 
 export const usePermission = () => {
     const { role } = useSelector((state: RootState) => state.auth);
-
-    const check = (roles: UserRole[]) => roles.includes(role);
     
     const weight = ROLE_WEIGHTS[role] || 0;
 

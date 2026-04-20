@@ -46,6 +46,7 @@ const App: React.FC = () => {
         twEvents: [],
         twRecords: [],
         hasUnsavedChanges: false,
+        showHelpMode: localStorage.getItem('unit_manager_help_mode') === 'true',
     };
 
     const [state, dispatch] = useReducer(rootReducer, initialState);
