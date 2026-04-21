@@ -139,17 +139,7 @@ export function useCloudSync(
       // Execute & Log Group Deletions
       for (const g of deletedGroups) {
         const success = await deleteGroup(g.id);
-        if (success) {
-            await auditService.logAction({
-                actor_id: actorId,
-                actor_nickname: actorNickname || 'Unknown',
-                action_type: 'SMALL_CHANGE',
-                action_detail: `Deleted group ${g.name}`,
-                target_id: g.id,
-                target_name: g.name,
-                old_data: g
-            });
-        } else hasErrors = true;
+        if (!success) hasErrors = true;
       }
 
       // Execute & Log Group Upserts
@@ -160,19 +150,7 @@ export function useCloudSync(
         
         if (changedGroups.includes(group) || prevIndex !== i) {
           const success = await upsertGroup(group, i);
-          if (success) {
-              const detail = !prev ? `Created group ${group.name}` : `Updated group ${group.name}`;
-              await auditService.logAction({
-                  actor_id: actorId,
-                  actor_nickname: actorNickname || 'Unknown',
-                  action_type: 'SMALL_CHANGE',
-                  action_detail: detail,
-                  target_id: group.id,
-                  target_name: group.name,
-                  old_data: prev,
-                  new_data: group
-              });
-          } else hasErrors = true;
+          if (!success) hasErrors = true;
         }
       }
 
