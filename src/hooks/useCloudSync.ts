@@ -19,12 +19,25 @@ export function useCloudSync(
   // ... (rest of the refs remain same)
   const prevGroupsRef = useRef(state.groups);
   const prevTWAttendanceRef = useRef(state.twAttendance);
+  const isInitialized = useRef(false);
 
   useEffect(() => {
     const currentPlayers = state.players;
     const currentGroups = state.groups;
     const currentTWAttendance = state.twAttendance;
     
+    // 1. Initial hydration guard:
+    // If we haven't initialized yet, but we just got data, 
+    // mark as initialized and set current state as the baseline.
+    if (!isInitialized.current && (currentPlayers.length > 0 || currentGroups.length > 0)) {
+        prevPlayersRef.current = currentPlayers;
+        prevGroupsRef.current = currentGroups;
+        prevTWAttendanceRef.current = currentTWAttendance;
+        isInitialized.current = true;
+        console.log('[useCloudSync] System initialized with hydrated state. Skipping initial sync logs.');
+        return;
+    }
+
     if (
       currentPlayers === prevPlayersRef.current && 
       currentGroups === prevGroupsRef.current &&
