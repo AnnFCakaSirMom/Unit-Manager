@@ -51,10 +51,12 @@ export async function fetchGroupsFromSupabase(): Promise<Group[]> {
       group_members (
         profile_id,
         selected_units,
-        is_locked
+        is_locked,
+        order_index
       )
     `)
-    .order('order_index', { ascending: true });
+    .order('order_index', { ascending: true })
+    .order('order_index', { foreignTable: 'group_members', ascending: true });
 
   if (error) {
     console.warn('[groupService] Supabase fetch failed:', error.message);
@@ -101,11 +103,12 @@ export async function upsertGroup(group: Group, orderIndex: number): Promise<boo
   }
 
   // 3. Insert new members
-  const membersToInsert = group.members.map((m) => ({
+  const membersToInsert = group.members.map((m, index) => ({
     group_id: group.id,
     profile_id: m.playerId,
     selected_units: m.selectedUnits,
     is_locked: m.isLocked,
+    order_index: index,
   }));
 
   if (membersToInsert.length > 0) {
