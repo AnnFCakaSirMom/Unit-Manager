@@ -26,15 +26,8 @@ export function useCloudSync(
     const currentGroups = state.groups;
     const currentTWAttendance = state.twAttendance;
     
-    // 1. Initial hydration guard:
-    // If we haven't initialized yet, but we just got data, 
-    // mark as initialized and set current state as the baseline.
-    if (!isInitialized.current && (currentPlayers.length > 0 || currentGroups.length > 0)) {
-        prevPlayersRef.current = currentPlayers;
-        prevGroupsRef.current = currentGroups;
-        prevTWAttendanceRef.current = currentTWAttendance;
-        isInitialized.current = true;
-        console.log('[useCloudSync] System initialized with hydrated state. Skipping initial sync logs.');
+    // Skip deep comparison if we are still waiting for initial data
+    if (!isInitialized.current && currentPlayers.length === 0 && currentGroups.length === 0) {
         return;
     }
 
@@ -48,6 +41,18 @@ export function useCloudSync(
 
     const timer = setTimeout(async () => {
       if (!actorId) return;
+
+      // 1. Initial hydration guard (Debounced):
+      // By initializing here, we ensure that all initial data fetches from Supabase
+      // have settled before we start tracking diffs for the Audit Log.
+      if (!isInitialized.current) {
+          prevPlayersRef.current = currentPlayers;
+          prevGroupsRef.current = currentGroups;
+          prevTWAttendanceRef.current = currentTWAttendance;
+          isInitialized.current = true;
+          console.log('[useCloudSync] System initialized (debounced). Skipping initial sync logs.');
+          return;
+      }
 
       setIsSyncing(true);
       setStatusMessage("Saving to cloud...");
