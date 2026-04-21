@@ -1,28 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { AppState } from '../types';
+import { RootState } from '../state/store';
 import { upsertPlayer, deletePlayer } from '../services/playerService';
 import { upsertGroup, deleteGroup } from '../services/groupService';
 import { upsertTWImport, deleteTWImportEntry } from '../services/twImportService';
+import { auditService } from '../services/auditService';
 
 export function useCloudSync(
   state: AppState, 
   setStatusMessage: (msg: string) => void
 ) {
   const [isSyncing, setIsSyncing] = useState(false);
+  const { userId: actorId, discordNickname: actorNickname } = useSelector((state: RootState) => state.auth);
   
   // Keep refs to previous state to compute diffs
   const prevPlayersRef = useRef(state.players);
+  // ... (rest of the refs remain same)
   const prevGroupsRef = useRef(state.groups);
   const prevTWAttendanceRef = useRef(state.twAttendance);
 
   useEffect(() => {
-    // If there's no unsaved changes or nothing changed, exit early.
-    // However, it's safer to just check structural changes.
     const currentPlayers = state.players;
     const currentGroups = state.groups;
     const currentTWAttendance = state.twAttendance;
     
-    // We only want to trigger the timeout if there is a difference.
     if (
       currentPlayers === prevPlayersRef.current && 
       currentGroups === prevGroupsRef.current &&
@@ -32,6 +34,8 @@ export function useCloudSync(
     }
 
     const timer = setTimeout(async () => {
+      if (!actorId) return;
+
       setIsSyncing(true);
       setStatusMessage("Saving to cloud...");
 
@@ -41,83 +45,137 @@ export function useCloudSync(
 
       const prevPlayersMap = new Map(prevPlayers.map(p => [p.id, p]));
       const prevGroupsMap = new Map(prevGroups.map(g => [g.id, g]));
-      const prevTWAttendanceMap = new Map(prevTWAttendance.map(p => [p.discordName, p]));
 
-      // 1. Find Modified or Added Players
+      // 1. Diffs for Players
       const changedPlayers = currentPlayers.filter(p => {
         const prev = prevPlayersMap.get(p.id);
         return !prev || JSON.stringify(prev) !== JSON.stringify(p);
       });
-      
-      // 2. Find Deleted Players
       const currentPlayerIds = new Set(currentPlayers.map(p => p.id));
-      const deletedPlayerIds = prevPlayers.filter(p => !currentPlayerIds.has(p.id)).map(p => p.id);
+      const deletedPlayers = prevPlayers.filter(p => !currentPlayerIds.has(p.id));
 
-      // 3. Find Modified or Added Groups
+      // 2. Diffs for Groups
       const changedGroups = currentGroups.filter(g => {
         const prev = prevGroupsMap.get(g.id);
         return !prev || JSON.stringify(prev) !== JSON.stringify(g);
       });
-
-      // 4. Find Deleted Groups
       const currentGroupIds = new Set(currentGroups.map(g => g.id));
-      const deletedGroupIds = prevGroups.filter(g => !currentGroupIds.has(g.id)).map(g => g.id);
+      const deletedGroups = prevGroups.filter(g => !currentGroupIds.has(g.id));
 
-      // 5. Find Modified or Added TW entries
+      let hasErrors = false;
+
+      // Execute & Log Player Deletions
+      for (const p of deletedPlayers) {
+        const success = await deletePlayer(p.id);
+        if (success) {
+            await auditService.logAction({
+                actor_id: actorId,
+                actor_nickname: actorNickname || 'Unknown',
+                action_type: 'MAJOR_CHANGE',
+                action_detail: `Deleted player ${p.name}`,
+                target_id: p.id,
+                target_name: p.name,
+                old_data: p,
+                is_suspicious: true
+            });
+        } else hasErrors = true;
+      }
+
+      // Execute & Log Player Upserts
+      for (const player of changedPlayers) {
+        const prev = prevPlayersMap.get(player.id);
+        const success = await upsertPlayer(player);
+        
+        if (success) {
+            const isSelf = actorId === player.id;
+            let actionType: 'SMALL_CHANGE' | 'MAJOR_CHANGE' = 'SMALL_CHANGE';
+            let detail = isSelf ? 'Updated their profile' : `Updated units for ${player.name}`;
+            let isSuspicious = false;
+
+            if (!prev) {
+                actionType = 'MAJOR_CHANGE';
+                detail = `Added new player: ${player.name}`;
+            } else {
+                if (prev.role !== player.role) {
+                    actionType = 'MAJOR_CHANGE';
+                    detail = `Changed role for ${player.name}: ${prev.role} -> ${player.role}`;
+                    // Flag if upgrading to a high-power role
+                    if (['Admin', 'Owner', 'Gatekeeper'].includes(player.role || '')) {
+                        isSuspicious = true;
+                    }
+                } else if (prev.name !== player.name) {
+                    actionType = 'MAJOR_CHANGE';
+                    detail = `Renamed ${player.name} (formerly ${prev.name})`;
+                }
+            }
+
+            await auditService.logAction({
+                actor_id: actorId,
+                actor_nickname: actorNickname || 'Unknown',
+                action_type: actionType,
+                action_detail: detail,
+                target_id: player.id,
+                target_name: player.name,
+                old_data: prev,
+                new_data: player,
+                is_suspicious: isSuspicious
+            });
+        } else hasErrors = true;
+      }
+
+      // Execute & Log Group Deletions
+      for (const g of deletedGroups) {
+        const success = await deleteGroup(g.id);
+        if (success) {
+            await auditService.logAction({
+                actor_id: actorId,
+                actor_nickname: actorNickname || 'Unknown',
+                action_type: 'SMALL_CHANGE',
+                action_detail: `Deleted group ${g.name}`,
+                target_id: g.id,
+                target_name: g.name,
+                old_data: g
+            });
+        } else hasErrors = true;
+      }
+
+      // Execute & Log Group Upserts
+      for (let i = 0; i < currentGroups.length; i++) {
+        const group = currentGroups[i];
+        const prev = prevGroupsMap.get(group.id);
+        const prevIndex = prevGroups.findIndex(g => g.id === group.id);
+        
+        if (changedGroups.includes(group) || prevIndex !== i) {
+          const success = await upsertGroup(group, i);
+          if (success) {
+              const detail = !prev ? `Created group ${group.name}` : `Updated group ${group.name}`;
+              await auditService.logAction({
+                  actor_id: actorId,
+                  actor_nickname: actorNickname || 'Unknown',
+                  action_type: 'SMALL_CHANGE',
+                  action_detail: detail,
+                  target_id: group.id,
+                  target_name: group.name,
+                  old_data: prev,
+                  new_data: group
+              });
+          } else hasErrors = true;
+        }
+      }
+
+      // ... (TW logic remains same, but without specific audit logs as requested)
+      const prevTWAttendanceMap = new Map(prevTWAttendance.map(p => [p.discordName, p]));
       const changedTW = currentTWAttendance.filter(p => {
         const prev = prevTWAttendanceMap.get(p.discordName);
         return !prev || JSON.stringify(prev) !== JSON.stringify(p);
       });
-
-      // 6. Find Deleted TW entries
       const currentTWNames = new Set(currentTWAttendance.map(p => p.discordName));
       const deletedTWNames = prevTWAttendance.filter(p => !currentTWNames.has(p.discordName)).map(p => p.discordName);
 
-      let hasErrors = false;
-
-      // Execute Player Deletions
-      for (const id of deletedPlayerIds) {
-        const success = await deletePlayer(id);
-        if (!success) hasErrors = true;
-      }
-
-      // Execute Player Upserts
-      for (const player of changedPlayers) {
-        const success = await upsertPlayer(player);
-        if (!success) hasErrors = true;
-      }
-
-      // Execute Group Deletions
-      for (const id of deletedGroupIds) {
-        const success = await deleteGroup(id);
-        if (!success) hasErrors = true;
-      }
-
-      // Execute Group Upserts
-      for (let i = 0; i < currentGroups.length; i++) {
-        const group = currentGroups[i];
-        // We might need to upsert groups even if only order changed, so checking order index.
-        // Wait, if order index changes, the group object in state might not change identity if we mutated it?
-        // In useReducer, it should change identity.
-        if (changedGroups.includes(group)) {
-          const success = await upsertGroup(group, i);
-          if (!success) hasErrors = true;
-        } else {
-          const prevIndex = prevGroups.findIndex(g => g.id === group.id);
-          if (prevIndex !== i) {
-            const success = await upsertGroup(group, i);
-            if (!success) hasErrors = true;
-          }
-        }
-      }
-
-      // Execute TW Import Deletions
       for (const name of deletedTWNames) {
         const success = await deleteTWImportEntry(name);
         if (!success) hasErrors = true;
       }
-
-      // Execute TW Import Upserts
       for (const entry of changedTW) {
         const success = await upsertTWImport(entry);
         if (!success) hasErrors = true;
@@ -129,17 +187,13 @@ export function useCloudSync(
       prevTWAttendanceRef.current = currentTWAttendance;
 
       setIsSyncing(false);
-      if (hasErrors) {
-        setStatusMessage("Cloud save completed with errors.");
-      } else {
-        setStatusMessage("Saved to cloud.");
-      }
+      setStatusMessage(hasErrors ? "Cloud save completed with errors." : "Saved to cloud.");
 
     }, 2000);
 
     return () => clearTimeout(timer);
 
-  }, [state.players, state.groups, state.twAttendance, setStatusMessage]);
+  }, [state.players, state.groups, state.twAttendance, setStatusMessage, actorId, actorNickname]);
 
   return { isSyncing };
 }

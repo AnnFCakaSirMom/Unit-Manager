@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import type { ConfirmModalInfo } from '../types';
 import { Settings, UserPlus, Users, ChevronUp, ChevronDown, Shield } from './icons';
 import { Button } from './Button';
@@ -8,8 +8,10 @@ import { PlayerList } from './PlayerList';
 import { GroupsList } from './GroupsList';
 import { cn } from '../utils';
 import { usePermission } from '../hooks/usePermission';
+import { auditService } from '../services/auditService';
 
 interface SidebarProps {
+    // ... (rest of props)
     selectedPlayerId: string | null;
     selectedGroupId: string | null;
     onSelectPlayer: (id: string | null) => void;
@@ -36,6 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
     const { players, showHelpMode } = useAppState();
     const dispatch = useAppDispatch();
     const [isManualOpen, setIsManualOpen] = useState(false);
+    const [suspiciousCount, setSuspiciousCount] = useState(0);
+
     const { 
         canViewPlayerList, 
         canViewGroups, 
@@ -56,6 +60,18 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
     const [newPlayerName, setNewPlayerName] = useState("");
     const [notInHouse, setNotInHouse] = useState(false);
     const [unitSearchTerm, setUnitSearchTerm] = useState('');
+
+    useEffect(() => {
+        if (!canViewAdminPanel) return;
+        const check = async () => {
+            const lastChecked = localStorage.getItem('last_checked_audit_logs') || new Date(0).toISOString();
+            const count = await auditService.checkNewSuspiciousActivity(lastChecked);
+            setSuspiciousCount(count);
+        };
+        check();
+        const interval = setInterval(check, 60000); // Check every minute
+        return () => clearInterval(interval);
+    }, [canViewAdminPanel]);
 
     const handleAddPlayer = useCallback(() => {
         if (!newPlayerName.trim()) return;
@@ -90,14 +106,22 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
                     {canViewAdminPanel && (
                         <div className="flex items-center gap-2">
-                            <Button
-                                variant="ghost"
-                                className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10"
-                                onClick={onOpenAdminPanel}
-                            >
-                                <Shield size={16} />
-                                <span>Admin Panel</span>
-                            </Button>
+                            <div className="relative flex-1 flex">
+                                <Button
+                                    variant="ghost"
+                                    className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10"
+                                    onClick={onOpenAdminPanel}
+                                >
+                                    <Shield size={16} />
+                                    <span>Admin Panel</span>
+                                </Button>
+                                {suspiciousCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                    </span>
+                                )}
+                            </div>
 
                             {/* Pending Approvals badge button */}
                             <button
