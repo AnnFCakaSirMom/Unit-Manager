@@ -81,5 +81,19 @@ export const HELP_CONTENT = {
     status_awol: {
         title: "AWOL (Absent Without Leave)",
         content: "Used for players who did not do their attendance at all (did not click Accepted, Declined, or Maybe in Raid Helper)."
+    },
+
+    // Administrative Manuals (Restricted to Gatekeeper+)
+    audit_log_manual: {
+        title: "Audit Log System",
+        content: "Every change to players, groups, or roles is tracked for 60 days. 'Major' changes (like deletions or role upgrades) are highlighted in red. Use the 'Suspicious Only' toggle to quickly find unauthorized activity."
+    },
+    roles_manual: {
+        title: "Roles & Permissions",
+        content: "Permissions are built on a recursive weight system (0-6). Owners (6) and Admins (5) have full access. Gatekeepers (4) can match profiles and add players. Officers (3) can manage groups. Members (2) can only edit their own units."
+    },
+    approval_manual: {
+        title: "User Approval Process",
+        content: "New users appear as 'Pending' after logging in via Discord. They are prompted to enter their In-Game Name (IGN) to help you identify them. Use the 'Link & Upgrade' button to merge their login with an existing manual profile or create a fresh one."
     }
 };

@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Button } from './Button';
-import { Info, X, Book, Users, Star, Layout, BarChart, Shield } from './icons';
+import { Info, X, Book, Users, Star, Layout, BarChart, Shield, History, Lock, UserCheck } from './icons';
 import { HELP_CONTENT } from '../helpContent';
+import { usePermission } from '../hooks/usePermission';
 
 interface HelpManualModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-type Section = 'getting-started' | 'members' | 'units' | 'groups' | 'statistics' | 'admin';
+type Section = 'getting-started' | 'members' | 'units' | 'groups' | 'statistics' | 'admin' | 'audit-logs' | 'roles' | 'approvals';
 
 export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClose }) => {
+    const { isGatekeeperPlus } = usePermission();
     const [activeSection, setActiveSection] = useState<Section>('getting-started');
 
     if (!isOpen) return null;
@@ -22,11 +24,17 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
         { id: 'groups', label: 'Groups & Formations', icon: <Layout size={18} /> },
         { id: 'statistics', label: 'TW Statistics', icon: <BarChart size={18} /> },
         { id: 'admin', label: 'Admin Tools', icon: <Shield size={18} /> },
+        // Protected Admin Manuals
+        ...(isGatekeeperPlus ? [
+            { id: 'audit-logs', label: 'Audit Log System', icon: <History size={18} /> },
+            { id: 'roles', label: 'Roles & Permissions', icon: <Lock size={18} /> },
+            { id: 'approvals', label: 'User Approvals', icon: <UserCheck size={18} /> },
+        ] : [])
     ];
 
     return (
         <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm shadow-2xl">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
                 <header className="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
                     <div className="flex items-center gap-3 text-blue-400">
                         <Info size={24} />
@@ -59,7 +67,7 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                     </aside>
 
                     {/* Content */}
-                    <main className="flex-1 p-6 overflow-y-auto bg-gray-900/50 scrollbar-thin scrollbar-thumb-gray-700">
+                    <main className="flex-1 p-8 overflow-y-auto bg-gray-900/50 scrollbar-thin scrollbar-thumb-gray-700">
                         {activeSection === 'getting-started' && (
                             <section className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
                                 <h3 className="text-2xl font-bold text-white mb-4 border-b border-blue-500/30 pb-2">Getting Started</h3>
@@ -201,14 +209,90 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                                 </div>
                             </section>
                         )}
+
+                        {/* ADVANCED ADMIN MANUALS */}
+                        {isGatekeeperPlus && (
+                            <>
+                                {activeSection === 'audit-logs' && (
+                                    <section className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                                        <h3 className="text-2xl font-bold text-white mb-4 border-b border-blue-500/30 pb-2">Audit Log System</h3>
+                                        <div className="space-y-4 text-gray-300 leading-relaxed text-sm lg:text-base">
+                                            <h4 className="text-blue-300 font-bold">{HELP_CONTENT.audit_log_manual.title}</h4>
+                                            <p>{HELP_CONTENT.audit_log_manual.content}</p>
+                                            <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 space-y-3">
+                                                <div className="flex gap-3">
+                                                    <div className="w-2 h-2 mt-1.5 rounded-full bg-red-500"></div>
+                                                    <p>
+                                                        <strong>Major Changes (Security Highlight):</strong> Actions like player deletions, role upgrades, or changes to system settings are highlighted in red. This is designed for <strong>Security Auditing</strong>, allowing you to instantly spot high-risk or unauthorized activity within the app.
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <div className="w-2 h-2 mt-1.5 rounded-full bg-blue-500"></div>
+                                                    <p><strong>Small Changes:</strong> Unit updates, status changes, or routine group edits.</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-gray-400 italic">Logs are automatically purged after 60 days to maintain performance.</p>
+                                        </div>
+                                    </section>
+                                )}
+
+                                {activeSection === 'roles' && (
+                                    <section className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                                        <h3 className="text-2xl font-bold text-white mb-4 border-b border-blue-500/30 pb-2">Roles & Permissions</h3>
+                                        <div className="space-y-4 text-gray-300 leading-relaxed text-sm lg:text-base">
+                                            <h4 className="text-blue-300 font-bold">{HELP_CONTENT.roles_manual.title}</h4>
+                                            <p>{HELP_CONTENT.roles_manual.content}</p>
+                                            <div className="space-y-2">
+                                                {[
+                                                    { r: 'Owner', d: 'System creator. Full uncontrolled access to all configuration and data.' },
+                                                    { r: 'Admin', d: 'Full house management. Can delete players, edit seasons, and change system settings.' },
+                                                    { r: 'Gatekeeper', d: 'Can manage the roster, approve new users, and match Discord profiles.' },
+                                                    { r: 'Officer', d: 'Can manage battle groups, TW attendance, and view full roster units.' },
+                                                    { r: 'Member', d: 'Can manage their own units and barracks only.' },
+                                                    { r: 'Pending', d: 'New login awaiting approval by a Gatekeeper.' }
+                                                ].map(item => (
+                                                    <div key={item.r} className="flex gap-4 p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                                                        <span className={cn(
+                                                            "w-24 font-bold shrink-0",
+                                                            item.r === 'Owner' ? "text-yellow-500" : item.r === 'Admin' ? "text-red-400" : "text-white"
+                                                        )}>{item.r}</span>
+                                                        <span className="text-gray-400">{item.d}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </section>
+                                )}
+
+                                {activeSection === 'approvals' && (
+                                    <section className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                                        <h3 className="text-2xl font-bold text-white mb-4 border-b border-blue-500/30 pb-2">User Approval Process</h3>
+                                        <div className="space-y-4 text-gray-300 leading-relaxed text-sm lg:text-base">
+                                            <h4 className="text-blue-300 font-bold">{HELP_CONTENT.approval_manual.title}</h4>
+                                            <p>{HELP_CONTENT.approval_manual.content}</p>
+                                            <div className="bg-yellow-900/20 p-4 rounded-lg border border-yellow-600/30">
+                                                <h5 className="text-yellow-500 font-bold mb-2">Identification Guide</h5>
+                                                <ul className="list-disc pl-5 space-y-1 text-sm">
+                                                    <li>Always check the <strong>In-Game Name Claim</strong> provided by the user.</li>
+                                                    <li>The system uses <strong>Washed Matching</strong> (ignores case and special characters).</li>
+                                                    <li>If no match is suggested, you can still select a profile manually from the dropdown.</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </section>
+                                )}
+                            </>
+                        )}
                     </main>
                 </div>
 
                 <footer className="p-4 bg-gray-800 border-t border-gray-700 flex justify-between items-center">
-                    <p className="text-xs text-gray-500 italic">Unit Manager Help System • Version 1.0</p>
+                    <p className="text-xs text-gray-500 italic">Unit Manager Help System • Version 1.1</p>
                     <Button variant="primary" onClick={onClose}>Close Manual</Button>
                 </footer>
             </div>
         </div>
     );
 };
+
+const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
