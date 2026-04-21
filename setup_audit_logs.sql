@@ -25,7 +25,7 @@ TO authenticated
 USING (
   EXISTS (
     SELECT 1 FROM public.profiles 
-    WHERE profiles.id = auth.uid() 
+    WHERE profiles.user_id = auth.uid() 
     AND profiles.role IN ('Admin', 'Owner')
   )
 );

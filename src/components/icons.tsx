@@ -53,3 +53,4 @@ export const Info: React.FC<IconProps> = (props) => <Icon {...props}><circle cx=
 export const Book: React.FC<IconProps> = (props) => <Icon {...props}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></Icon>;
 export const Layout: React.FC<IconProps> = (props) => <Icon {...props}><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" x2="21" y1="9" y2="9" /><line x1="9" x2="9" y1="21" y2="9" /></Icon>;
 export const BarChart: React.FC<IconProps> = (props) => <Icon {...props}><line x1="18" x2="18" y1="20" y2="10" /><line x1="12" x2="12" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="14" /></Icon>;
+export const LogOut: React.FC<IconProps> = (props) => <Icon {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></Icon>;

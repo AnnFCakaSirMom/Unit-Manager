@@ -41,18 +41,29 @@ export const auditService = {
 
                 if (existingLog) {
                     // Update the timestamp of the existing log instead of creating a new one
-                    await supabase
+                    const { error } = await supabase
                         .from('audit_logs')
                         .update({ created_at: new Date().toISOString() })
                         .eq('id', existingLog.id);
-                    return;
+                    
+                    if (error) {
+                        console.warn('[auditService] Debounce update failed (likely RLS):', error.message);
+                        // Fallback: create new log anyway if update fails
+                    } else {
+                        return;
+                    }
                 }
             }
 
             // Create new log entry
-            await supabase
+            const { error } = await supabase
                 .from('audit_logs')
                 .insert([log]);
+
+            if (error) {
+                console.error('[auditService] Supabase insert failed:', error.message);
+                throw error;
+            }
         } catch (error) {
             console.error('[auditService] Failed to log action:', error);
         }

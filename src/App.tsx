@@ -338,6 +338,16 @@ const App: React.FC = () => {
         setPlayerListOpen(prev => !prev);
     }, [isPlayerListOpen]);
 
+    const handleLogout = useCallback(async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            setStatusMessage(`Error logging out: ${error.message}`);
+        } else {
+            // State will be cleared by the onAuthStateChange listener
+            setStatusMessage("Logged out successfully.");
+        }
+    }, []);
+
 
     useEffect(() => {
         if (statusMessage) {
@@ -400,6 +410,7 @@ const App: React.FC = () => {
                                 setConfirmModal={setConfirmModal}
                                 isPlayerListOpen={isPlayerListOpen}
                                 onTogglePlayerList={handleTogglePlayerList}
+                                onLogout={handleLogout}
                             />
 
                             <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
