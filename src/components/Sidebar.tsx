@@ -42,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
         canViewAttendance, 
         canViewStats,
         canViewAdminPanel,
+        canViewHelp,
         isOfficerPlus
     } = usePermission();
 
@@ -116,30 +117,32 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                     )}
                 </div>
                 
-                <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-gray-700/50">
-                    <button 
-                        onClick={() => dispatch({ type: 'TOGGLE_HELP_MODE' })}
-                        className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border",
-                            showHelpMode 
-                                ? "bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]" 
-                                : "bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300"
-                        )}
-                        title="Toggle Detailed Help Mode (ⓘ icons)"
-                    >
-                        <Shield size={14} className={cn(showHelpMode && "animate-pulse")} />
-                        <span>HELP MODE: {showHelpMode ? 'ON' : 'OFF'}</span>
-                    </button>
+                {canViewHelp && (
+                    <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-gray-700/50">
+                        <button 
+                            onClick={() => dispatch({ type: 'TOGGLE_HELP_MODE' })}
+                            className={cn(
+                                "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border",
+                                showHelpMode 
+                                    ? "bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]" 
+                                    : "bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300"
+                            )}
+                            title="Toggle Detailed Help Mode (ⓘ icons)"
+                        >
+                            <Shield size={14} className={cn(showHelpMode && "animate-pulse")} />
+                            <span>HELP MODE: {showHelpMode ? 'ON' : 'OFF'}</span>
+                        </button>
 
-                    <button 
-                        onClick={() => setIsManualOpen(true)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold bg-gray-800/80 border border-gray-700 text-gray-300 hover:bg-gray-700 transition-colors"
-                        title="Open Information Manual"
-                    >
-                        <Settings size={14} />
-                        <span>MANUAL</span>
-                    </button>
-                </div>
+                        <button 
+                            onClick={() => setIsManualOpen(true)}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold bg-gray-800/80 border border-gray-700 text-gray-300 hover:bg-gray-700 transition-colors"
+                            title="Open Information Manual"
+                        >
+                            <Settings size={14} />
+                            <span>MANUAL</span>
+                        </button>
+                    </div>
+                )}
 
                 <div className="h-5 mt-2 text-center">
                     {statusMessage && <p className={cn("text-sm", statusMessage.startsWith('Error') ? 'text-red-400' : 'text-green-400')}>{statusMessage}</p>}

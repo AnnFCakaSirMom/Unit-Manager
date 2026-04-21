@@ -1,6 +1,7 @@
 import React from 'react';
 import { Info } from './icons';
 import { useAppState } from '../AppContext';
+import { usePermission } from '../hooks/usePermission';
 import { cn } from '../utils';
 
 interface HelpIconProps {
@@ -11,8 +12,9 @@ interface HelpIconProps {
 
 export const HelpIcon: React.FC<HelpIconProps> = ({ text, className }) => {
     const { showHelpMode } = useAppState();
+    const { canViewHelp } = usePermission();
 
-    if (!showHelpMode) return null;
+    if (!showHelpMode || !canViewHelp) return null;
 
     return (
         <span 

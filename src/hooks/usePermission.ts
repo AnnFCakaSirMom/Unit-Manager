@@ -25,6 +25,7 @@ export const usePermission = () => {
         canViewUnitManager: weight >= 3, // Officer+
         canViewAttendance: weight >= 3, // Officer+
         canViewStats: weight >= 3,      // Officer+
+        canViewHelp: weight >= 3,       // Officer+
         
         // Action permissions
         canEditOthersUnits: weight >= 3, // Officer+

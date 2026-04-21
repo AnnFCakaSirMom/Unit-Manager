@@ -273,7 +273,8 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                     {/* Column 3: Metadata (Leadership & Dates) */}
                     <div className="flex flex-col gap-3 order-2">
                         <div>
-                            <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-1">Total Leadership</label>
+                            <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-0.5">Total Leadership</label>
+                            <p className="text-[10px] text-gray-500 mb-1.5 leading-tight italic">Total Leadership on your armor that you use for TW</p>
                             <Input
                                 id="playerLeadership"
                                 type="number"
