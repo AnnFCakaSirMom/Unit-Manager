@@ -5,10 +5,12 @@ import { usePermission } from '../hooks/usePermission';
 import { Button } from './Button';
 import { Select } from './Select';
 import { Check, UserPlus, Link as LinkIcon, AlertTriangle } from './icons';
+import { washName } from '../utils';
 
 interface PendingProfile {
     id: string;
     discord_nickname: string;
+    claimed_name?: string;
 }
 
 export const ProfileMatcher: React.FC = () => {
@@ -26,7 +28,7 @@ export const ProfileMatcher: React.FC = () => {
             // Get pending profiles
             const { data: pendingData, error: pendingError } = await supabase
                 .from('profiles')
-                .select('id, discord_nickname')
+                .select('id, discord_nickname, claimed_name')
                 .eq('role', 'Pending');
             
             if (pendingError) throw pendingError;
@@ -54,16 +56,32 @@ export const ProfileMatcher: React.FC = () => {
         return players.filter(p => !linkedProfileIds.has(p.id)).sort((a, b) => a.name.localeCompare(b.name));
     }, [players, linkedProfileIds]);
 
-    const getSuggestedMatchId = (discordNickname: string) => {
-        if (!discordNickname) return '';
-        const lowerNick = discordNickname.toLowerCase();
+    const getSuggestedMatchId = (pending: PendingProfile) => {
+        const washedDiscord = washName(pending.discord_nickname);
+        const washedClaimed = pending.claimed_name ? washName(pending.claimed_name) : null;
         
-        // Find best match based on simple inclusion
-        const match = unlinkedLocalPlayers.find(p => 
-            p.name.toLowerCase().includes(lowerNick) || 
-            lowerNick.includes(p.name.toLowerCase()) ||
-            p.aliases?.some(alias => alias.toLowerCase() === lowerNick)
-        );
+        if (!washedDiscord && !washedClaimed) return '';
+        
+        // 1. Try to match claimed name first (highest priority)
+        if (washedClaimed) {
+            const match = unlinkedLocalPlayers.find(p => {
+                const washedPlayerName = washName(p.name);
+                return washedPlayerName === washedClaimed || 
+                       washedPlayerName.includes(washedClaimed) || 
+                       washedClaimed.includes(washedPlayerName) ||
+                       p.aliases?.some(alias => washName(alias) === washedClaimed);
+            });
+            if (match) return match.id;
+        }
+
+        // 2. Fallback to Discord nickname matching
+        const match = unlinkedLocalPlayers.find(p => {
+            const washedPlayerName = washName(p.name);
+            return washedPlayerName.includes(washedDiscord) || 
+                   washedDiscord.includes(washedPlayerName) ||
+                   p.aliases?.some(alias => washName(alias) === washedDiscord);
+        });
+        
         return match ? match.id : '';
     };
 
@@ -72,7 +90,7 @@ export const ProfileMatcher: React.FC = () => {
         if (pendingProfiles.length > 0 && unlinkedLocalPlayers.length > 0 && Object.keys(selectedMatches).length === 0) {
             const initialSelection: { [id: string]: string } = {};
             pendingProfiles.forEach(pp => {
-                const suggestion = getSuggestedMatchId(pp.discord_nickname);
+                const suggestion = getSuggestedMatchId(pp);
                 if (suggestion) {
                     initialSelection[pp.id] = suggestion;
                 }
@@ -192,7 +210,7 @@ export const ProfileMatcher: React.FC = () => {
     };
 
     return (
-        <div className="bg-gray-800 rounded-lg p-6 shadow-xl max-w-4xl mx-auto w-full">
+        <div className="bg-gray-800 rounded-lg p-6 shadow-xl max-w-5xl mx-auto w-full">
             <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                 <AlertTriangle className="text-yellow-500" /> Pending Approvals
             </h2>
@@ -216,26 +234,46 @@ export const ProfileMatcher: React.FC = () => {
             ) : (
                 <div className="space-y-4">
                     {pendingProfiles.map(pending => {
-                        const suggestionId = getSuggestedMatchId(pending.discord_nickname);
+                        const suggestionId = getSuggestedMatchId(pending);
                         const selectedVal = selectedMatches[pending.id] || '';
 
                         return (
-                            <div key={pending.id} className="bg-gray-700/30 border border-gray-600 rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
-                                <div className="flex-1 w-full bg-gray-800/80 px-4 py-2 rounded border border-gray-700">
-                                    <span className="text-xs text-gray-400 uppercase tracking-wider block mb-1">Discord User</span>
-                                    <span className="font-semibold text-white">{pending.discord_nickname}</span>
+                            <div key={pending.id} className="bg-gray-700/30 border border-gray-600 rounded-lg p-4 flex flex-col lg:flex-row items-center gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow w-full">
+                                    <div className="bg-gray-800/80 px-4 py-2 rounded border border-gray-700">
+                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider block mb-1">Discord User</span>
+                                        <span className="font-semibold text-white">{pending.discord_nickname}</span>
+                                    </div>
+                                    
+                                    <div className={cn(
+                                        "px-4 py-2 rounded border transition-all",
+                                        pending.claimed_name 
+                                            ? "bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20" 
+                                            : "bg-gray-800/40 border-gray-700/50 opacity-50"
+                                    )}>
+                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider block mb-1 leading-none">In-Game Name Claim</span>
+                                        <span className={cn(
+                                            "font-bold",
+                                            pending.claimed_name ? "text-blue-400" : "text-gray-600 italic text-sm"
+                                        )}>
+                                            {pending.claimed_name || "No name claimed yet"}
+                                        </span>
+                                    </div>
                                 </div>
                                 
-                                <div className="text-gray-400 flex-shrink-0">
+                                <div className="text-gray-400 flex-shrink-0 hidden lg:block">
                                     <LinkIcon size={20} />
                                 </div>
                                 
-                                <div className="flex-1 w-full">
-                                    <span className="text-xs text-gray-400 uppercase tracking-wider block mb-1">Existing Profile</span>
+                                <div className="w-full lg:w-64">
+                                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block mb-1">Link to Register</span>
                                     <Select 
                                         value={selectedVal} 
                                         onChange={(e) => handleSelectChange(pending.id, e.target.value)}
-                                        className="w-full"
+                                        className={cn(
+                                            "w-full text-sm",
+                                            suggestionId && selectedVal === suggestionId && "border-green-500/50 bg-green-500/5"
+                                        )}
                                     >
                                         <option value="">-- Do not link --</option>
                                         {unlinkedLocalPlayers.map(p => (
@@ -246,23 +284,23 @@ export const ProfileMatcher: React.FC = () => {
                                     </Select>
                                 </div>
 
-                                <div className="flex flex-col gap-2 w-full md:w-auto">
+                                <div className="flex flex-col gap-2 w-full lg:w-auto">
                                     <Button 
                                         variant="primary" 
                                         disabled={isProcessing || !selectedVal}
                                         onClick={() => handleLinkProfile(pending.id)}
-                                        className="w-full whitespace-nowrap bg-blue-600 hover:bg-blue-500"
+                                        className="w-full whitespace-nowrap bg-blue-600 hover:bg-blue-500 py-1.5 h-auto text-xs"
                                     >
-                                        <LinkIcon size={16} /> Koppla & Uppgradera
+                                        <LinkIcon size={14} /> Link & Upgrade
                                     </Button>
                                     
                                     <Button 
                                         variant="secondary" 
                                         disabled={isProcessing || !!selectedVal}
                                         onClick={() => handleCreateNew(pending.id, pending.discord_nickname)}
-                                        className="w-full whitespace-nowrap"
+                                        className="w-full whitespace-nowrap py-1.5 h-auto text-xs"
                                     >
-                                        <UserPlus size={16} /> Skapa som ny medlem
+                                        <UserPlus size={14} /> Create New
                                     </Button>
                                 </div>
                             </div>
@@ -273,3 +311,5 @@ export const ProfileMatcher: React.FC = () => {
         </div>
     );
 };
+
+const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');

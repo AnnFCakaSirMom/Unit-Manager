@@ -61,6 +61,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 -- ------------------------------------------------------------------------------
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS claimed_name TEXT;
 
 DROP POLICY IF EXISTS "Profiles visibility" ON public.profiles;
 DROP POLICY IF EXISTS "Profiles update hierarchy" ON public.profiles;
@@ -79,15 +80,19 @@ FOR INSERT WITH CHECK (
   get_my_role_weight() >= 4
 );
 
--- UPDATE: Hierarchy based
+-- UPDATE: Hierarchy based. 
+-- Users can update themselves but NOT their own role. 
+-- Managers can update anyone below them (including role changes).
 CREATE POLICY "Profiles update hierarchy" ON public.profiles
 FOR UPDATE USING (
   user_id = auth.uid() OR can_manage_role_weight(role)
 ) WITH CHECK (
-  -- If updating self: cannot change own role (new.role must equals old.role)
-  -- In WITH CHECK, 'role' is the new value. 
-  -- We use a function check if the role is being changed across a security boundary.
-  (user_id = auth.uid()) -- Self-update allowed (role change prevention is handled by logic elsewhere or can be added)
+  (
+    user_id = auth.uid() 
+    AND (
+      role = (SELECT p.role FROM public.profiles p WHERE p.id = profiles.id)
+    )
+  ) 
   OR 
   (can_manage_role_weight(role))
 );

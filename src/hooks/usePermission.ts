@@ -32,6 +32,7 @@ export const usePermission = () => {
         canEditInternalNotes: weight >= 3, // Officer+
         canExportGroups: weight >= 3,    // Officer+
         canManageGroups: weight >= 3,    // Officer+
+        canAddPlayers: weight >= 4,      // Gatekeeper+
         
         // Gatekeeper/Admin specific
         canApproveUsers: weight >= 4,    // Gatekeeper+

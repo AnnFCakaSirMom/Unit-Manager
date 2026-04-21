@@ -13,6 +13,7 @@ export interface Profile {
   internal_notes?: string;       // [DEPRECATED] Use player_info instead
   player_info?: { internal_notes: string }[];
   discord_aliases?: string[];
+  claimed_name?: string;
 }
 
 // Row in `profile_units` junction table

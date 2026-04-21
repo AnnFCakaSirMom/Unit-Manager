@@ -18,7 +18,7 @@ export const HELP_CONTENT = {
     // Player/Member Management
     member_management: {
         title: "Member Management",
-        content: "Add new players by name in the sidebar. Gatekeepers and higher can set roles, track 'Joined' and 'Inactive' dates, and manage Discord aliases to keep the roster synchronized."
+        content: "Gatekeepers and higher can add new players by name in the sidebar, set roles, track 'Joined' and 'Inactive' dates, and manage Discord aliases to keep the roster synchronized."
     },
     player_roles: {
         title: "User Roles",

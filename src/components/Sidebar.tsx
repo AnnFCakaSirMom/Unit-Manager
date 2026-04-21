@@ -48,6 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
         canViewStats,
         canViewAdminPanel,
         canViewHelp,
+        canAddPlayers,
         isOfficerPlus
     } = usePermission();
 
@@ -176,7 +177,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
             <HelpManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
 
-            {isOfficerPlus && (
+            {canAddPlayers && (
                 <div className="flex items-center gap-2 mb-3">
                     <Input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()} placeholder="New player name..." className="flex-grow px-2 py-1.5 text-sm" aria-label="New Player Name Input" />
                     <Button variant="primary" size="icon" className="p-1.5" onClick={handleAddPlayer} disabled={!newPlayerName.trim()} title="Add Player" aria-label="Add Player"><UserPlus size={18} /></Button>
