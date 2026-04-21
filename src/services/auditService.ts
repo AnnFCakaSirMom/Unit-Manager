@@ -74,10 +74,17 @@ export const auditService = {
         actionType?: string;
         startDate?: string;
         endDate?: string;
+        page?: number;
+        pageSize?: number;
     }) {
+        const page = filters?.page || 1;
+        const pageSize = filters?.pageSize || 50;
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+
         let query = supabase
             .from('audit_logs')
-            .select('*')
+            .select('*', { count: 'exact' })
             .order('created_at', { ascending: false });
 
         if (filters?.name) {
@@ -93,9 +100,14 @@ export const auditService = {
             query = query.lte('created_at', `${filters.endDate}T23:59:59`);
         }
 
-        const { data, error } = await query.limit(100);
+        const { data, error, count } = await query.range(from, to);
+        
         if (error) throw error;
-        return data as AuditLog[];
+        
+        return {
+            logs: (data as AuditLog[]) || [],
+            totalCount: count || 0
+        };
     },
 
     async checkNewSuspiciousActivity(lastCheckedTimestamp: string) {

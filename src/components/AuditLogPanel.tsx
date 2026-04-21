@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { auditService, AuditLog } from '../services/auditService';
-import { Search, ExportIcon, AlertTriangle, ChevronDown, ChevronUp, ChevronRight } from './icons';
+import { Search, ExportIcon, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import { cn } from '../utils';
@@ -15,17 +15,25 @@ export const AuditLogPanel: React.FC = () => {
     const [typeFilter, setTypeFilter] = useState<string>('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const pageSize = 50;
 
     const loadLogs = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await auditService.fetchLogs({
+            const { logs: data, totalCount: count } = await auditService.fetchLogs({
                 name: nameFilter,
                 actionType: typeFilter,
                 startDate,
-                endDate
+                endDate,
+                page: currentPage,
+                pageSize
             });
             setLogs(data);
+            setTotalCount(count);
             
             // Mark logs as viewed locally
             localStorage.setItem('last_checked_audit_logs', new Date().toISOString());
@@ -34,6 +42,11 @@ export const AuditLogPanel: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
+    }, [nameFilter, typeFilter, startDate, endDate, currentPage, pageSize]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
     }, [nameFilter, typeFilter, startDate, endDate]);
 
     useEffect(() => {
@@ -176,7 +189,55 @@ export const AuditLogPanel: React.FC = () => {
                 </table>
             </div>
             
-            <div className="text-[10px] text-gray-500 text-center uppercase tracking-widest">
+            {/* Pagination Controls */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-1 py-2">
+                <div className="text-xs text-gray-500 font-medium">
+                    {totalCount > 0 ? (
+                        <>
+                            Showing <span className="text-gray-300">{(currentPage - 1) * pageSize + 1}</span> to <span className="text-gray-300">{Math.min(currentPage * pageSize, totalCount)}</span> of <span className="text-gray-300 font-bold">{totalCount}</span> results
+                        </>
+                    ) : (
+                        "No results found"
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1 || isLoading}
+                        className="px-2 py-1"
+                    >
+                        <ChevronLeft size={16} />
+                        <span>Previous</span>
+                    </Button>
+                    
+                    <div className="flex items-center gap-1 mx-2">
+                        <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Page</span>
+                        <span className="bg-gray-800 text-indigo-400 font-bold text-sm px-2.5 py-1 rounded border border-gray-700 min-w-[32px] text-center">
+                            {currentPage}
+                        </span>
+                        <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">of</span>
+                        <span className="text-gray-400 font-medium text-sm">
+                            {Math.ceil(totalCount / pageSize) || 1}
+                        </span>
+                    </div>
+
+                    <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                        disabled={currentPage >= Math.ceil(totalCount / pageSize) || isLoading}
+                        className="px-2 py-1"
+                    >
+                        <span>Next</span>
+                        <ChevronRight size={16} />
+                    </Button>
+                </div>
+            </div>
+            
+            <div className="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2">
                 Logs are automatically deleted after 60 days
             </div>
         </div>
