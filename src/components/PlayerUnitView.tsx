@@ -12,6 +12,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../state/store';
 import { supabase } from '../services/supabase';
 import { UserRole } from '../types';
+import { RoleBadge } from './RoleBadge';
 
 
 
@@ -185,11 +186,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                             {!canEditDisplayName ? (
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-2xl font-bold text-white">Units for <span className="text-blue-400">{player?.name}</span></h2>
-                                    {player?.role === 'Owner' && (
-                                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 text-xs font-semibold">
-                                            👑 House Owner
-                                        </span>
-                                    )}
+                                    {player?.role && <RoleBadge role={player.role} className="mt-0.5" />}
                                 </div>
                             ) : (
                                 <div className="flex-grow max-w-md">
@@ -210,9 +207,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                 Your name is locked to your in-game name. Contact a Gatekeeper if you need to change it.
                             </p>
                         )}
-                        <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected. 
-                            {player.role && <span className="ml-2 px-1.5 py-0.5 bg-gray-800 rounded border border-gray-700 text-xs text-gray-300">{player.role}</span>}
-                        </p>
+                        <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         {/* ROLE SELECTOR - For those with power to manage the target user's role */}
