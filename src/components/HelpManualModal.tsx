@@ -276,6 +276,7 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                                                     <li>Always check the <strong>In-Game Name Claim</strong> provided by the user.</li>
                                                     <li>The system uses <strong>Washed Matching</strong> (ignores case and special characters).</li>
                                                     <li>If no match is suggested, you can still select a profile manually from the dropdown.</li>
+                                                    <li><strong>Deny:</strong> Use this to delete unauthorized requests. The user will be permanently removed from the approval queue and lose their pending status.</li>
                                                 </ul>
                                             </div>
                                         </div>

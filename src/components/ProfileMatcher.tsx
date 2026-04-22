@@ -4,7 +4,7 @@ import { useAppState, useAppDispatch } from '../AppContext';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from './Button';
 import { Select } from './Select';
-import { Check, UserPlus, Link as LinkIcon, AlertTriangle } from './icons';
+import { Check, UserPlus, Link as LinkIcon, AlertTriangle, Trash2 } from './icons';
 import { washName } from '../utils';
 
 interface PendingProfile {
@@ -209,6 +209,34 @@ export const ProfileMatcher: React.FC = () => {
         }
     };
 
+    const handleDeny = async (pendingId: string, discordNick: string) => {
+        if (!window.confirm(`Är du säker på att du vill neka och radera ${discordNick}? Personen kommer inte längre synas i listan.`)) {
+            return;
+        }
+
+        setIsProcessing(true);
+        setMessage(null);
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .delete()
+                .eq('id', pendingId);
+
+            if (error) throw error;
+
+            setMessage({ text: `Raderade ${discordNick} från kön.`, type: 'info' });
+            setPendingProfiles(prev => prev.filter(p => p.id !== pendingId));
+            
+            // Re-fetch to ensure everything is in sync
+            fetchProfiles();
+        } catch (err: any) {
+            setMessage({ text: `Delete Failed: ${err.message}`, type: 'error' });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     return (
         <div className="bg-gray-800 rounded-lg p-6 shadow-xl max-w-5xl mx-auto w-full">
             <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
@@ -216,7 +244,7 @@ export const ProfileMatcher: React.FC = () => {
             </h2>
             
             <p className="text-gray-400 mb-6 text-sm">
-                These users have logged in via Discord but are waiting for access. You can link them to an existing migrated profile to keep their history, or approve them as brand new members.
+                These users have logged in via Discord but are waiting for access. You can link them to an existing profile to keep their history, approve them as new members, or use the <strong>Deny</strong> button to remove unauthorized requests.
             </p>
 
             {message && (
@@ -301,6 +329,15 @@ export const ProfileMatcher: React.FC = () => {
                                         className="w-full whitespace-nowrap py-1.5 h-auto text-xs"
                                     >
                                         <UserPlus size={14} /> Create New
+                                    </Button>
+
+                                    <Button 
+                                        variant="ghost" 
+                                        disabled={isProcessing}
+                                        onClick={() => handleDeny(pending.id, pending.discord_nickname)}
+                                        className="w-full whitespace-nowrap py-1.5 h-auto text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/20"
+                                    >
+                                        <Trash2 size={14} /> Deny
                                     </Button>
                                 </div>
                             </div>

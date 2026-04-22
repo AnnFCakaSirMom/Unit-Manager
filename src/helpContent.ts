@@ -94,6 +94,6 @@ export const HELP_CONTENT = {
     },
     approval_manual: {
         title: "User Approval Process",
-        content: "New users appear as 'Pending' after logging in via Discord. They are prompted to enter their In-Game Name (IGN) to help you identify them. Use the 'Link & Upgrade' button to merge their login with an existing manual profile or create a fresh one."
+        content: "New users appear as 'Pending' after logging in via Discord. They are prompted to enter their In-Game Name (IGN) to help you identify them. Use the 'Link & Upgrade' button to merge their login with an existing manual profile or create a fresh one. If an unauthorized user attempts to gain access, use the 'Deny' button to permanently remove their request from the queue."
     }
 };
