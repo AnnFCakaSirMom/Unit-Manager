@@ -30,8 +30,19 @@ export const PlayerList = React.memo(({
     const filteredPlayers = useMemo(() => {
         const washedQuery = washName(searchQuery);
         const basePlayers = players.filter((p: Player) => notInHouse ? p.notInHouse : !p.notInHouse);
-        if (!searchQuery) return basePlayers;
-        return basePlayers.filter((p: Player) => washName(p.name).includes(washedQuery));
+        const results = searchQuery 
+            ? basePlayers.filter((p: Player) => washName(p.name).includes(washedQuery))
+            : basePlayers;
+        return [...results].sort((a, b) => {
+            const aWashed = washName(a.name);
+            const bWashed = washName(b.name);
+            const aStarts = aWashed.startsWith(washedQuery);
+            const bStarts = bWashed.startsWith(washedQuery);
+
+            if (aStarts && !bStarts) return -1;
+            if (!aStarts && bStarts) return 1;
+            return aWashed.localeCompare(bWashed);
+        });
     }, [players, searchQuery, notInHouse]);
 
     const handleSavePlayerName = useCallback(() => {

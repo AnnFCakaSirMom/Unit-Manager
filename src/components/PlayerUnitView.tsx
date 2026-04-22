@@ -372,7 +372,18 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                     {unitViewMode === 'all' ? (
                         <div className="space-y-6">
                             {Object.entries(allUnitsByTier).map(([tier, units]) => {
-                                const filteredUnits = mainUnitSearchQuery ? units.filter(u => u.name.toLowerCase().includes(mainUnitSearchQuery.toLowerCase())) : units;
+                                const lowerQuery = mainUnitSearchQuery.toLowerCase();
+                                const filteredUnits = (mainUnitSearchQuery ? units.filter(u => u.name.toLowerCase().includes(lowerQuery)) : units)
+                                    .sort((a, b) => {
+                                        const aName = a.name.toLowerCase();
+                                        const bName = b.name.toLowerCase();
+                                        const aStarts = aName.startsWith(lowerQuery);
+                                        const bStarts = bName.startsWith(lowerQuery);
+
+                                        if (aStarts && !bStarts) return -1;
+                                        if (!aStarts && bStarts) return 1;
+                                        return a.name.localeCompare(b.name);
+                                    });
                                 if (filteredUnits.length === 0) return null;
                                 return <UnitTierSection key={tier} tier={tier} units={filteredUnits} selectedPlayerId={player.id} selectedUnits={selectedPlayerUnits} preparedUnits={selectedPlayerPreparedUnits} masteryUnits={selectedPlayerMasteryUnits} favoriteUnits={selectedPlayerFavoriteUnits} onUnitToggle={handleUnitToggle} />
                             })}

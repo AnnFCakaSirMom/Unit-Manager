@@ -47,7 +47,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
 
                 if (aStarts && !bStarts) return -1;
                 if (!aStarts && bStarts) return 1;
-                return aLower.localeCompare(bLower);
+                return a.localeCompare(b);
             });
     }, [searchTerm, players, selectedUnit]);
 

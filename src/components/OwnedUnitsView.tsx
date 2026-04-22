@@ -32,7 +32,16 @@ export const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, pre
             const ownedInTier = unitsInTier
                 .map(u => u.name)
                 .filter(unitName => existingOwnedUnits.includes(unitName))
-                .sort();
+                .sort((a, b) => {
+                    const aLower = a.toLowerCase();
+                    const bLower = b.toLowerCase();
+                    const aStarts = aLower.startsWith(lowerCaseQuery);
+                    const bStarts = bLower.startsWith(lowerCaseQuery);
+
+                    if (aStarts && !bStarts) return -1;
+                    if (!aStarts && bStarts) return 1;
+                    return a.localeCompare(b);
+                });
             if (ownedInTier.length > 0) result[tier] = ownedInTier;
         });
         return result;

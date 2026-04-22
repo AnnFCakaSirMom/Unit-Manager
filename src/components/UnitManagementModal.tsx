@@ -139,7 +139,19 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
 
                         <div className="space-y-4">
                             {Object.entries(unitConfig.tiers).map(([tier, units]) => {
-                                const filteredUnits = units.filter(unit => unit.name.toLowerCase().includes(unitSearchQuery.toLowerCase()));
+                                const filteredUnits = units
+                                    .filter(unit => unit.name.toLowerCase().includes(unitSearchQuery.toLowerCase()))
+                                    .sort((a, b) => {
+                                        const aName = a.name.toLowerCase();
+                                        const bName = b.name.toLowerCase();
+                                        const lowerQuery = unitSearchQuery.toLowerCase();
+                                        const aStarts = aName.startsWith(lowerQuery);
+                                        const bStarts = bName.startsWith(lowerQuery);
+
+                                        if (aStarts && !bStarts) return -1;
+                                        if (!aStarts && bStarts) return 1;
+                                        return a.name.localeCompare(b.name);
+                                    });
                                 if (filteredUnits.length === 0) return null;
 
                                 return (
