@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Save, FolderOpen, Settings, Database, Shield, List, AlertTriangle } from './icons';
+import { Save, FolderOpen, Settings, Database, Shield, List } from './icons';
 import { Button } from './Button';
 import { UnitManagementModal } from './UnitManagementModal';
-import { useAppState, useAppDispatch } from '../AppContext';
-import { saveTWSeason, saveTWAttendanceRecords, fetchTWAttendanceData } from '../services/twAttendanceService';
-import { upsertPlayer } from '../services/playerService';
-import { upsertGroup } from '../services/groupService';
 import { AuditLogPanel } from './AuditLogPanel';
 import { auditService } from '../services/auditService';
 import { cn } from '../utils';
@@ -17,13 +13,9 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose }) => {
-    const { players, groups, twSeasons, twEvents, twRecords } = useAppState();
-    const dispatch = useAppDispatch();
 
     const [activeTab, setActiveTab] = useState<'tools' | 'logs'>('tools');
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState(false);
-    const [isMigrating, setIsMigrating] = useState(false);
-    const [migrationStatus, setMigrationStatus] = useState<'idle' | 'done' | 'error'>('idle');
     const [suspiciousCount, setSuspiciousCount] = useState(0);
 
     useEffect(() => {
@@ -38,34 +30,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose 
         return () => clearInterval(interval);
     }, [activeTab]);
 
-    const handleMigrateToCloud = async () => {
-        if (isMigrating) return;
-        setIsMigrating(true);
-        setMigrationStatus('idle');
-        try {
-            for (const player of players) {
-                await upsertPlayer(player);
-            }
-            for (let i = 0; i < groups.length; i++) {
-                await upsertGroup(groups[i], i);
-            }
-            for (const season of twSeasons) {
-                const seasonEvents = twEvents.filter(e => e.seasonId === season.id);
-                await saveTWSeason(season, seasonEvents);
-            }
-            if (twRecords.length > 0) {
-                await saveTWAttendanceRecords(twRecords);
-            }
-            setMigrationStatus('done');
-            const data = await fetchTWAttendanceData();
-            dispatch({ type: 'HYDRATE_TW_DATA', payload: data });
-        } catch (err) {
-            console.error('[AdminPanel] Migration failed:', err);
-            setMigrationStatus('error');
-        } finally {
-            setIsMigrating(false);
-        }
-    };
 
     return (
         <div className="h-full flex flex-col">
@@ -150,41 +114,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose 
                             </div>
                         </div>
 
-                        {/* Card: Cloud Migration */}
-                        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
-                            <div>
-                                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                    <span className="text-xl">☁️</span>
-                                    Cloud Migration
-                                </h3>
-                                <p className="text-sm text-gray-400 mt-1">
-                                    Push all local TW Seasons, Events and Attendance Records to Supabase. Run this once after setting up a new season locally.
-                                </p>
-                            </div>
-                            <div className="mt-auto">
-                                {migrationStatus === 'done' ? (
-                                    <div className="flex items-center gap-2 text-green-400 font-medium">
-                                        <span>✅</span> Migration complete!
-                                    </div>
-                                ) : migrationStatus === 'error' ? (
-                                    <div className="text-red-400 text-sm">❌ Migration failed. Check the console.</div>
-                                ) : (
-                                    <Button
-                                        variant="ghost"
-                                        onClick={handleMigrateToCloud}
-                                        disabled={isMigrating || twSeasons.length === 0}
-                                        className="w-full text-yellow-400 border border-yellow-400/30 hover:bg-yellow-400/10"
-                                    >
-                                        {isMigrating ? 'Migrerar...' : '☁️ Migrate to Cloud'}
-                                    </Button>
-                                )}
-                                {twSeasons.length === 0 && (
-                                    <p className="text-xs text-gray-500 mt-2">No local seasons found to migrate.</p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Card: Unit Management */}
                         <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
                             <div>
                                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">

@@ -1,13 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppState } from '../AppContext';
 import { Button } from './Button';
 import { Clipboard as Copy, ImportIcon, Settings, Plus, CheckSquare, Square, ChevronUp, ChevronDown } from './icons';
 import { SeasonManagementModal } from './SeasonManagementModal';
 import { ImportTWStatsModal } from './ImportTWStatsModal';
 import { EditTWAttendanceModal } from './EditTWAttendanceModal';
 import { cn } from '../utils';
-import { usePermission } from '../hooks/usePermission';
-import { saveTWSeason, saveTWAttendanceRecords, fetchTWAttendanceData } from '../services/twAttendanceService';
+import { saveTWAttendanceRecords } from '../services/twAttendanceService';
 import { findMatchedPlayer } from '../utils/reducerHelpers';
 import { HelpIcon } from './HelpIcon';
 import { HELP_CONTENT } from '../helpContent';
@@ -17,7 +16,6 @@ type SortKey = 'name' | 'attendance' | 'percentage' | 'declined' | 'awol';
 
 export const TWStatisticsView: React.FC = () => {
     const { twSeasons, twEvents, twRecords, players } = useAppState();
-    const dispatch = useAppDispatch();
 
     const [activeSeasonId, setActiveSeasonId] = useState<string>('');
     const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
@@ -33,9 +31,6 @@ export const TWStatisticsView: React.FC = () => {
 
     const [sortKey, setSortKey] = useState<SortKey>('percentage');
     const [sortAsc, setSortAsc] = useState(false);
-    const [isMigrating, setIsMigrating] = useState(false);
-    const [migrationComplete, setMigrationComplete] = useState(false);
-    const { isOfficerPlus } = usePermission();
 
     // Auto-select season logic
     useEffect(() => {
@@ -179,35 +174,6 @@ export const TWStatisticsView: React.FC = () => {
         }
     };
 
-    const handleMigrateToCloud = async () => {
-        if (!isOfficerPlus || isMigrating) return;
-        
-        setIsMigrating(true);
-        try {
-            // 1. Seasons & Events (Order matters)
-            for (const season of twSeasons) {
-                const seasonEvents = twEvents.filter(e => e.seasonId === season.id);
-                await saveTWSeason(season, seasonEvents);
-            }
-
-            // 2. Records
-            if (twRecords.length > 0) {
-                await saveTWAttendanceRecords(twRecords);
-            }
-
-            setMigrationComplete(true);
-            alert('Migration till molnet klar!');
-            
-            // Refresh state from DB
-            const data = await fetchTWAttendanceData();
-            dispatch({ type: 'HYDRATE_TW_DATA', payload: data });
-        } catch (err) {
-            console.error('Migration failed:', err);
-            alert('Migration misslyckades. Se konsol för detaljer.');
-        } finally {
-            setIsMigrating(false);
-        }
-    };
 
     const renderSortIcon = (key: SortKey) => {
         if (sortKey !== key) return null;
@@ -356,16 +322,6 @@ export const TWStatisticsView: React.FC = () => {
                     >
                         🏆 Copy Leaderboard
                     </Button>
-                    {isOfficerPlus && !migrationComplete && (
-                        <Button 
-                            variant="ghost" 
-                            onClick={handleMigrateToCloud} 
-                            disabled={isMigrating || twSeasons.length === 0}
-                            className="text-yellow-400 border-yellow-400/30 hover:bg-yellow-400/10"
-                        >
-                            {isMigrating ? 'Migrerar...' : '☁️ Migrate to Cloud'}
-                        </Button>
-                    )}
                     <Button variant="primary" onClick={handleCopy}>
                         <Copy size={16} /> Copy to Discord
                     </Button>
