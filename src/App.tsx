@@ -227,6 +227,8 @@ const App: React.FC = () => {
                         }
                     })
                     .catch(e => console.warn(e));
+                // Refresh JWT so any role change takes effect immediately (no logout needed)
+                supabase.auth.refreshSession().catch(e => console.warn('[App] Session refresh after profile change failed:', e));
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_units' }, () => {
                 fetchPlayersFromSupabase()
