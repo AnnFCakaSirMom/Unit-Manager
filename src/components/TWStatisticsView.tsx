@@ -11,141 +11,30 @@ import { findMatchedPlayer } from '../utils/reducerHelpers';
 import { HelpIcon } from './HelpIcon';
 import { HELP_CONTENT } from '../helpContent';
 import type { TWPlayerRecord, TWRecordStatus } from '../types';
-
-type SortKey = 'name' | 'attendance' | 'percentage' | 'declined' | 'awol';
+import { useTWStats } from '../hooks/useTWStats';
+import { formatTWStatsToDiscord, formatTWLeaderboardToDiscord } from '../utils/discordExport';
 
 export const TWStatisticsView: React.FC = () => {
-    const { twSeasons, twEvents, twRecords, players } = useAppState();
 
-    const [activeSeasonId, setActiveSeasonId] = useState<string>('');
+    const {
+        twSeasons, players, twRecords,
+        activeSeasonId, setActiveSeasonId,
+        showAttendance, setShowAttendance,
+        showDeclined, setShowDeclined,
+        showAwol, setShowAwol,
+        showInactive, setShowInactive,
+        isNitroMode, setIsNitroMode,
+        sortKey, sortAsc, handleSort,
+        activeSeason, activeEvents, sortedStats
+    } = useTWStats();
+
     const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
     const [isCreatingNewSeason, setIsCreatingNewSeason] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-    const [showAttendance, setShowAttendance] = useState(true);
-    const [showDeclined, setShowDeclined] = useState(true);
-    const [showAwol, setShowAwol] = useState(true);
-    const [showInactive, setShowInactive] = useState(false);
-    const [isNitroMode, setIsNitroMode] = useState(false);
-
-    const [sortKey, setSortKey] = useState<SortKey>('percentage');
-    const [sortAsc, setSortAsc] = useState(false);
-
-    // Auto-select season logic
-    useEffect(() => {
-        if (!activeSeasonId && twSeasons.length > 0) {
-            const today = new Date().toISOString().split('T')[0];
-            const active = twSeasons.find(s => s.startDate <= today && s.endDate >= today);
-            if (active) {
-                setActiveSeasonId(active.id);
-            } else {
-                const sortedSeasons = [...twSeasons].sort((a, b) => b.endDate.localeCompare(a.endDate));
-                setActiveSeasonId(sortedSeasons[0].id);
-            }
-        }
-    }, [twSeasons, activeSeasonId]);
-
-    const activeSeason = useMemo(() => twSeasons.find(s => s.id === activeSeasonId), [twSeasons, activeSeasonId]);
-    const activeEvents = useMemo(() => twEvents.filter(e => e.seasonId === activeSeasonId), [twEvents, activeSeasonId]);
-
-    const playerStats = useMemo(() => {
-        if (!activeSeason) return [];
-
-        // O(1) event lookup: build a Set of active event IDs to avoid .some() inside .filter()
-        const activeEventIdSet = new Set(activeEvents.map(e => e.id));
-        const records = twRecords.filter(r => activeEventIdSet.has(r.eventId));
-
-        // O(1) record lookup: group all records by playerId before the player loop
-        // This eliminates the O(N²) nested filter that previously ran for every player
-        const recordsByPlayerId = new Map<string, TWPlayerRecord[]>();
-        records.forEach(r => {
-            if (!recordsByPlayerId.has(r.playerId)) {
-                recordsByPlayerId.set(r.playerId, []);
-            }
-            recordsByPlayerId.get(r.playerId)!.push(r);
-        });
-
-        const stats = players.map(p => {
-            // joinedDate / inactiveDate logic unchanged — determines eligible event count per player
-            const applicableEvents = activeEvents.filter(e => {
-                const isAfterJoined = !p.joinedDate || e.date >= p.joinedDate;
-                const isBeforeInactive = !p.inactiveDate || e.date <= p.inactiveDate;
-                return isAfterJoined && isBeforeInactive;
-            });
-            const possibleCount = applicableEvents.length;
-
-            // O(1) lookup instead of O(M) filter on every iteration
-            const playerRecords = recordsByPlayerId.get(p.id) ?? [];
-            const attended = playerRecords.filter(r => r.status === 'Attended').length;
-            const declined = playerRecords.filter(r => r.status === 'Declined').length;
-            const awol = playerRecords.filter(r => r.status === 'AWOL').length;
-            const percentage = possibleCount > 0 ? Math.round((attended / possibleCount) * 100) : 0;
-
-            return {
-                player: p,
-                attended,
-                possibleCount,
-                percentage,
-                declined,
-                awol
-            }
-        });
-
-        // notInHouse and showInactive filtering is unchanged
-        return showInactive ? stats : stats.filter(s => s.possibleCount > 0 && !s.player.notInHouse);
-
-    }, [activeSeason, activeEvents, twRecords, players, showInactive]);
-
-    const sortedStats = useMemo(() => {
-        return [...playerStats].sort((a, b) => {
-            let valA: string | number;
-            let valB: string | number;
-
-            switch (sortKey) {
-                case 'name': valA = a.player.name.toLowerCase(); valB = b.player.name.toLowerCase(); break;
-                case 'attendance': valA = a.attended; valB = b.attended; break;
-                case 'percentage': valA = a.percentage; valB = b.percentage; break;
-                case 'declined': valA = a.declined; valB = b.declined; break;
-                case 'awol': valA = a.awol; valB = b.awol; break;
-                default: valA = a.percentage; valB = b.percentage; break;
-            }
-
-            if (valA < valB) return sortAsc ? -1 : 1;
-            if (valA > valB) return sortAsc ? 1 : -1;
-            return 0;
-        });
-    }, [playerStats, sortKey, sortAsc]);
-
-    const handleSort = (key: SortKey) => {
-        if (sortKey === key) {
-            setSortAsc(!sortAsc);
-        } else {
-            setSortKey(key);
-            setSortAsc(false); // default descending when switching
-        }
-    };
-
     const handleCopy = () => {
-        let text = `\`\`\`\n`;
-        text += `--- TW Statistics: ${activeSeason?.name || 'Unknown'} ---\n\n`;
-
-        // Format headers
-        text += `Player`.padEnd(20, ' ');
-        if (showAttendance) text += `Attended`.padEnd(12, ' ') + `%`.padEnd(6, ' ');
-        if (showDeclined) text += `Declined`.padEnd(10, ' ');
-        if (showAwol) text += `AWOL`.padEnd(6, ' ');
-        text += `\n` + `-`.repeat(54) + `\n`;
-
-        sortedStats.forEach(s => {
-            text += s.player.name.padEnd(20, ' ');
-            if (showAttendance) text += `${s.attended}/${s.possibleCount}`.padEnd(12, ' ') + `${s.percentage}%`.padEnd(6, ' ');
-            if (showDeclined) text += `${s.declined}`.padEnd(10, ' ');
-            if (showAwol) text += `${s.awol}`.padEnd(6, ' ');
-            text += `\n`;
-        });
-        text += `\`\`\``;
-
+        const text = formatTWStatsToDiscord(sortedStats, activeSeason, showAttendance, showDeclined, showAwol);
         navigator.clipboard.writeText(text);
         alert("Statistics copied to clipboard!");
     };
@@ -282,51 +171,7 @@ export const TWStatisticsView: React.FC = () => {
                                     return a.name.localeCompare(b.name);
                                 });
 
-                            let text = `🏆 --- TW LEADERBOARD: ${activeSeason?.name || 'Unknown'} --- 🏆\n`;
-                            text += `\`\`\`\n`;
-                            
-                            const splitLimit = isNitroMode ? 3800 : 1800;
-                            let lastSplitIndex = 0;
-
-                            let currentDisplayRank = 0;
-                            let lastPercentage = -1;
-
-                            leaderboardStats.forEach((s) => {
-                                let emoji = '';
-
-                                if (s.percentage > 0) {
-                                    if (s.percentage !== lastPercentage) {
-                                        currentDisplayRank++;
-                                        lastPercentage = s.percentage;
-                                    }
-                                    
-                                    // Emoji prioritization
-                                    if (currentDisplayRank === 1) emoji = '🥇 ';
-                                    else if (currentDisplayRank === 2) emoji = '🥈 ';
-                                    else if (currentDisplayRank === 3) emoji = '🥉 ';
-                                    else if (s.percentage >= 50) emoji = '✨ ';
-                                    else emoji = '🔸 ';
-                                } else {
-                                    // 0% attendance = sequential ranking
-                                    currentDisplayRank++;
-                                    emoji = '♦️ ';
-                                }
-
-                                const rankStr = `${currentDisplayRank}.`.padEnd(4, ' ');
-                                const nameStr = s.name.padEnd(20, ' ');
-                                const pctStr = `${s.percentage}%`.padStart(5, ' ');
-
-                                text += `${emoji}${rankStr}${nameStr}${pctStr}\n`;
-
-                                // Auto-split into multiple code blocks if the character limit is approached
-                                if (text.length - lastSplitIndex > splitLimit) {
-                                    text += `\`\`\`\n\`\`\`\n`;
-                                    lastSplitIndex = text.length;
-                                }
-                            });
-
-                            text += `\`\`\`\n`;
-                            text += `**Legend:** ✨ 50%+ | 🔸 <50% | ♦️ 0%\n`;
+                            const text = formatTWLeaderboardToDiscord(leaderboardStats, activeSeason, isNitroMode);
 
                             navigator.clipboard.writeText(text);
                             alert("Leaderboard copied to clipboard! (Formatting optimized for Discord)");

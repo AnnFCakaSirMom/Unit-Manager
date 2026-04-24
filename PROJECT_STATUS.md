@@ -20,18 +20,19 @@ Denna fil sammanfattar genomförda åtgärder baserat på `CODE_REVIEW_REPORT.md
 - **Lösning:** Implementerat `Map`-baserad uppslagning (O(1)) för spelarrecords.
 - **Resultat:** Blixtsnabb rendering av statistik även med stora datamängder.
 
+### 4. Refaktorering av "God Components" (Punkt 5)
+- **Problem:** `App.tsx`, `TWStatisticsView.tsx` och `PlayerUnitView.tsx` var för stora och svårhanterliga.
+- **Lösning:** Brutit ut logik till Custom Hooks: `useAuth`, `useNavigationState`, `useDatabaseSync`, `useTWStats` och `usePlayerProfile`.
+- **Resultat:** Betydligt renare kodbas, bättre separation av ansvar och förberett för Redux-migrering.
+- **Filer:** `src/hooks/*.ts`, `src/utils/discordExport.ts`.
+
 ---
 
 ## 📋 Återstående uppgifter
 
 ### Punkt 3: Konsolidera State (Redux vs Context) - [HÖG KOMPLEXITET]
-- **Status:** Parkerad.
-- **Mål:** Flytta ut `mergedState` från `App.tsx` och `AppContext.tsx` till Redux för att minska onödiga om-renderingar. Detta är ett stort ingrepp som kräver en egen session och noggrann planering.
-
-### Punkt 5: Refaktorera "God Components"
-- **Status:** Nästa steg.
-- **Mål:** Bryta ner `App.tsx`, `TWStatisticsView.tsx` och `PlayerUnitView.tsx` i mindre komponenter och Custom Hooks.
-- **Prioritet:** Börja med att bryta ut logik från `App.tsx` till hooks (t.ex. `useAuth`, `useDatabaseSync`).
+- **Status:** Parkerad / Nästa steg.
+- **Mål:** Flytta ut `mergedState` från `App.tsx` och `AppContext.tsx` till Redux för att minska onödiga om-renderingar. Den nyligen genomförda refaktoreringen av hooks gör detta steg betydligt enklare.
 
 ---
 

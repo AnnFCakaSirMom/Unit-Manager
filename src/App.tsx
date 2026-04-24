@@ -19,11 +19,13 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
 
 import { useDispatch, useSelector } from 'react-redux';
-import { setAuthSession, clearAuthSession } from './state/slices/authSlice';
 import { supabase } from './services/supabase';
 import { AuthGuard } from './components/AuthGuard';
 import { fetchUnitsFromSupabase } from './state/slices/unitSlice';
 import { RootState, AppDispatch } from './state/store';
+import { useAuth } from './hooks/useAuth';
+import { useNavigationState } from './hooks/useNavigationState';
+import { useDatabaseSync } from './hooks/useDatabaseSync';
 import { fetchPlayersFromSupabase } from './services/playerService';
 import { fetchGroupsFromSupabase } from './services/groupService';
 import { fetchTWAttendanceData } from './services/twAttendanceService';
@@ -55,127 +57,29 @@ const App: React.FC = () => {
     const reduxDispatch = useDispatch<AppDispatch>();
     const reduxUnitConfig = useSelector((state: RootState) => state.unit.unitConfig);
 
-    const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-    const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-    const [showAttendanceView, setShowAttendanceView] = useState<boolean>(false);
-    const [showTWStatisticsView, setShowTWStatisticsView] = useState<boolean>(false);
-    const [showProfileMatcher, setShowProfileMatcher] = useState<boolean>(false);
-    const [showAdminPanel, setShowAdminPanel] = useState<boolean>(false);
-    const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
-
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
     const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
-    const [isPlayerListOpen, setPlayerListOpen] = useState(true);
+    const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
+
+    const { role, userId, isOfficerPlus } = useAuth();
+    
+    const {
+        selectedPlayerId, selectedGroupId, showAttendanceView, showTWStatisticsView,
+        showProfileMatcher, showAdminPanel, isPlayerListOpen,
+        handleSelectPlayer, handleSelectGroup, handleOpenAttendance,
+        handleOpenTWStatistics, handleOpenProfileMatcher, handleOpenAdminPanel,
+        handleTogglePlayerList, setShowAdminPanel
+    } = useNavigationState(role, userId);
+
+    useDatabaseSync(dispatch, isOfficerPlus);
 
     useEffect(() => {
         // Hämta enheter från Supabase vid start
         reduxDispatch(fetchUnitsFromSupabase());
     }, [reduxDispatch]);
 
-    // Hydrate the player list from Supabase (once at mount).
-    // Supabase is the source of truth; local useReducer takes ownership after.
-    useEffect(() => {
-        fetchPlayersFromSupabase()
-            .then(players => {
-                if (players.length > 0) {
-                    dispatch({ type: 'HYDRATE_PLAYERS', payload: players });
-                }
-            })
-            .catch(err => {
-                console.warn('[App] Could not hydrate players from Supabase:', err);
-            });
-    }, [dispatch]);
 
-    // Hydrate TW Attendance import list
-    useEffect(() => {
-        fetchTWImport()
-            .then(data => {
-                if (data.length > 0) {
-                    dispatch({ type: 'HYDRATE_TW_ATTENDANCE', payload: data });
-                }
-            })
-            .catch(err => {
-                console.warn('[App] Could not hydrate TW import list:', err);
-            });
-    }, [dispatch]);
-
-
-
-    useEffect(() => {
-        // Hjälpfunktion för att hantera session och ladda profil
-        const handleSession = async (session: any) => {
-            if (session) {
-                try {
-                    const { data: profile, error } = await supabase
-                        .from('profiles')
-                        .select('id, role, discord_nickname')
-                        .eq('user_id', session.user.id)
-                        .maybeSingle();
-
-                    if (error) throw error;
-
-                    if (!profile) {
-                        console.warn('[App] No profile linked to auth id:', session.user.id);
-                        reduxDispatch(setAuthSession({
-                            userId: session.user.id,
-                            role: 'NoProfile' as any,
-                            discordNickname: session.user.user_metadata?.full_name || ''
-                        }));
-                    } else {
-                        reduxDispatch(setAuthSession({ 
-                            userId: profile.id,
-                            role: profile.role || 'Pending',
-                            discordNickname: profile.discord_nickname || ''
-                        }));
-                    }
-                } catch (err: any) {
-                    console.error('[App] Failed to fetch profile:', err.message);
-                    reduxDispatch(clearAuthSession());
-                }
-            } else {
-                reduxDispatch(clearAuthSession());
-            }
-        };
-
-        // 1. Hämta sessionen direkt (viktigt vid F5-refresh)
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            handleSession(session);
-        }).catch(err => {
-            console.error('[App] Initial getSession failed:', err);
-            reduxDispatch(clearAuthSession()); // Fallback så vi inte fastnar
-        });
-
-        // 2. Lyssna på framtida ändringar
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            handleSession(session);
-        });
-
-        return () => subscription.unsubscribe();
-    }, [reduxDispatch]);
-
-    // Role-based Security Lock ("The Shield")
-    // Ensures restricted data is cleared if the user's role is not authorized.
-    const { role, userId } = useSelector((state: RootState) => state.auth);
-    const isOfficerPlus = useMemo(() => ['Officer', 'Gatekeeper', 'Admin', 'Owner'].includes(role), [role]);
-
-    useEffect(() => {
-        if (role === 'Member' || role === 'Pending') {
-            if (selectedPlayerId && selectedPlayerId !== userId) setSelectedPlayerId(null);
-            if (selectedGroupId) setSelectedGroupId(null);
-            if (showAttendanceView) setShowAttendanceView(false);
-            if (showTWStatisticsView) setShowTWStatisticsView(false);
-            if (showProfileMatcher) setShowProfileMatcher(false);
-            if (showAdminPanel) setShowAdminPanel(false);
-        }
-    }, [role, userId, selectedPlayerId, selectedGroupId, showAttendanceView, showTWStatisticsView, showProfileMatcher, showAdminPanel]);
-
-    // Auto-select own profile for Members on load
-    useEffect(() => {
-        if (role === 'Member' && userId && !selectedPlayerId && !selectedGroupId) {
-            setSelectedPlayerId(userId);
-        }
-    }, [role, userId, selectedPlayerId, selectedGroupId]);
 
     // Fetch pending approvals count for Sidebar badge
     useEffect(() => {
@@ -188,153 +92,9 @@ const App: React.FC = () => {
             .then(({ count }) => setPendingApprovalsCount(count ?? 0));
     }, [role]);
 
-    // Hydrate Groups from Supabase & Real-time Listeners
-    useEffect(() => {
-        if (!isOfficerPlus) return;
 
-        const loadGroups = () => {
-            fetchGroupsFromSupabase()
-                .then(groups => {
-                    dispatch({ type: 'HYDRATE_GROUPS', payload: groups });
-                })
-                .catch(err => console.warn('[App] Group hydration failed:', err));
-        };
 
-        // Initial load
-        loadGroups();
 
-        // Real-time listener for groups, group_members, profiles, profile_units
-        const channel = supabase
-            .channel('db-sync')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, loadGroups)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, loadGroups)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-                fetchPlayersFromSupabase()
-                    .then(players => {
-                        if (players.length > 0) {
-                            dispatch({ type: 'HYDRATE_PLAYERS', payload: players });
-                        }
-                    })
-                    .catch(e => console.warn(e));
-                // Refresh JWT so any role change takes effect immediately (no logout needed)
-                supabase.auth.refreshSession().catch(e => console.warn('[App] Session refresh after profile change failed:', e));
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_units' }, () => {
-                fetchPlayersFromSupabase()
-                    .then(players => {
-                        if (players.length > 0) {
-                            dispatch({ type: 'HYDRATE_PLAYERS', payload: players });
-                        }
-                    })
-                    .catch(e => console.warn(e));
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_import_list' }, () => {
-                fetchTWImport()
-                    .then(data => {
-                        dispatch({ type: 'HYDRATE_TW_ATTENDANCE', payload: data });
-                    })
-                    .catch(e => console.warn('[App] Realtime TW import refresh failed:', e));
-            })
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [isOfficerPlus]);
-
-    // Hydrate TW Attendance Data from Supabase
-    useEffect(() => {
-        if (!isOfficerPlus) return;
-
-        const loadTWData = () => {
-            fetchTWAttendanceData()
-                .then(data => {
-                    dispatch({ type: 'HYDRATE_TW_DATA', payload: data });
-                })
-                .catch(err => {
-                    console.warn('[App] Could not hydrate TW attendance data:', err);
-                });
-        };
-
-        loadTWData();
-
-        const channel = supabase
-            .channel('tw-sync')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_seasons' }, loadTWData)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_events' }, loadTWData)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_attendance' }, loadTWData)
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        }
-    }, [isOfficerPlus]);
-
-    const handleSelectPlayer = useCallback((playerId: string | null) => {
-        setSelectedPlayerId(playerId);
-        if (playerId) {
-            setSelectedGroupId(null);
-            setShowAttendanceView(false);
-            setShowTWStatisticsView(false);
-            setShowProfileMatcher(false);
-            setShowAdminPanel(false);
-            if (!isPlayerListOpen) setPlayerListOpen(true);
-        }
-    }, [isPlayerListOpen]);
-
-    const handleSelectGroup = useCallback((groupId: string | null) => {
-        setSelectedGroupId(groupId);
-        if (groupId) {
-            setSelectedPlayerId(null);
-            setShowAttendanceView(false);
-            setShowTWStatisticsView(false);
-            setShowProfileMatcher(false);
-            setShowAdminPanel(false);
-        }
-    }, []);
-
-    const handleOpenAttendance = useCallback(() => {
-        setShowAttendanceView(true);
-        setShowTWStatisticsView(false);
-        setShowProfileMatcher(false);
-        setShowAdminPanel(false);
-        setSelectedPlayerId(null);
-        setSelectedGroupId(null);
-    }, []);
-
-    const handleOpenTWStatistics = useCallback(() => {
-        setShowTWStatisticsView(true);
-        setShowAttendanceView(false);
-        setShowProfileMatcher(false);
-        setShowAdminPanel(false);
-        setSelectedPlayerId(null);
-        setSelectedGroupId(null);
-    }, []);
-
-    const handleOpenProfileMatcher = useCallback(() => {
-        setShowProfileMatcher(true);
-        setShowTWStatisticsView(false);
-        setShowAttendanceView(false);
-        setShowAdminPanel(false);
-        setSelectedPlayerId(null);
-        setSelectedGroupId(null);
-    }, []);
-
-    const handleOpenAdminPanel = useCallback(() => {
-        setShowAdminPanel(true);
-        setShowProfileMatcher(false);
-        setShowTWStatisticsView(false);
-        setShowAttendanceView(false);
-        setSelectedPlayerId(null);
-        setSelectedGroupId(null);
-    }, []);
-
-    const handleTogglePlayerList = useCallback(() => {
-        if (isPlayerListOpen) {
-            setSelectedPlayerId(null);
-        }
-        setPlayerListOpen(prev => !prev);
-    }, [isPlayerListOpen]);
 
     const handleLogout = useCallback(async () => {
         const { error } = await supabase.auth.signOut();
