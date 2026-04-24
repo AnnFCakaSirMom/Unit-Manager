@@ -52,9 +52,22 @@ export const TWStatisticsView: React.FC = () => {
     const playerStats = useMemo(() => {
         if (!activeSeason) return [];
 
-        const records = twRecords.filter(r => activeEvents.some(e => e.id === r.eventId));
+        // O(1) event lookup: build a Set of active event IDs to avoid .some() inside .filter()
+        const activeEventIdSet = new Set(activeEvents.map(e => e.id));
+        const records = twRecords.filter(r => activeEventIdSet.has(r.eventId));
+
+        // O(1) record lookup: group all records by playerId before the player loop
+        // This eliminates the O(N²) nested filter that previously ran for every player
+        const recordsByPlayerId = new Map<string, TWPlayerRecord[]>();
+        records.forEach(r => {
+            if (!recordsByPlayerId.has(r.playerId)) {
+                recordsByPlayerId.set(r.playerId, []);
+            }
+            recordsByPlayerId.get(r.playerId)!.push(r);
+        });
 
         const stats = players.map(p => {
+            // joinedDate / inactiveDate logic unchanged — determines eligible event count per player
             const applicableEvents = activeEvents.filter(e => {
                 const isAfterJoined = !p.joinedDate || e.date >= p.joinedDate;
                 const isBeforeInactive = !p.inactiveDate || e.date <= p.inactiveDate;
@@ -62,7 +75,8 @@ export const TWStatisticsView: React.FC = () => {
             });
             const possibleCount = applicableEvents.length;
 
-            const playerRecords = records.filter(r => r.playerId === p.id);
+            // O(1) lookup instead of O(M) filter on every iteration
+            const playerRecords = recordsByPlayerId.get(p.id) ?? [];
             const attended = playerRecords.filter(r => r.status === 'Attended').length;
             const declined = playerRecords.filter(r => r.status === 'Declined').length;
             const awol = playerRecords.filter(r => r.status === 'AWOL').length;
@@ -78,7 +92,7 @@ export const TWStatisticsView: React.FC = () => {
             }
         });
 
-        // Filter out players who had 0 possible attendance or are flagged inactive if we hide inactive
+        // notInHouse and showInactive filtering is unchanged
         return showInactive ? stats : stats.filter(s => s.possibleCount > 0 && !s.player.notInHouse);
 
     }, [activeSeason, activeEvents, twRecords, players, showInactive]);
