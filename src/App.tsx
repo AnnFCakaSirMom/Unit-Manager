@@ -100,18 +100,7 @@ const App: React.FC = () => {
             });
     }, [dispatch]);
 
-    // Hydrate TW Attendance import list
-    useEffect(() => {
-        fetchTWImport()
-            .then(data => {
-                if (data.length > 0) {
-                    dispatch({ type: 'HYDRATE_TW_ATTENDANCE', payload: data });
-                }
-            })
-            .catch(err => {
-                console.warn('[App] Could not hydrate TW import list:', err);
-            });
-    }, [dispatch]);
+
 
     useEffect(() => {
         // Hjälpfunktion för att hantera session och ladda profil
@@ -239,6 +228,13 @@ const App: React.FC = () => {
                     })
                     .catch(e => console.warn(e));
             })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_import_list' }, () => {
+                fetchTWImport()
+                    .then(data => {
+                        dispatch({ type: 'HYDRATE_TW_ATTENDANCE', payload: data });
+                    })
+                    .catch(e => console.warn('[App] Realtime TW import refresh failed:', e));
+            })
             .subscribe();
 
         return () => {
@@ -272,7 +268,7 @@ const App: React.FC = () => {
         return () => {
             supabase.removeChannel(channel);
         }
-    }, [isOfficerPlus, dispatch]);
+    }, [isOfficerPlus]);
 
     const handleSelectPlayer = useCallback((playerId: string | null) => {
         setSelectedPlayerId(playerId);
