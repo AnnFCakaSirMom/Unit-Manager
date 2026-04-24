@@ -6,27 +6,27 @@ Denna rapport sammanställer identifierade förbättringsområden för projektet
 
 ## 1. Kritiska fel & Säkerhetsrisker
 
-### Allvarlig Prestandabottleneck i Supabase RLS (N+1 Problematik)
+### Allvarlig Prestandabottleneck i Supabase RLS (N+1 Problematik) [ÅTGÄRDAD]
 *   **Var:** `secure_hierarchy.sql` (funktionen `get_my_role_weight()`).
 *   **Problem:** Funktionen gör en `SELECT` mot `profiles`-tabellen för varje enskild rad som utvärderas av RLS-policyerna. Vid hämtning av t.ex. 100 rader körs 101 frågor mot databasen.
 *   **Lösning:** Använd JWT-claims för att läsa rollen direkt från användarens token via `auth.jwt() ->> 'role'`.
-*   **Nytta:** Drastisk prestandaförbättring och ökad stabilitet i backend.
+*   **Nytta:** Drastisk prestandaförbättring och ökad stabilitet i backend. (Implementerat via JWT-trigger).
 
-### Duplicerad Kodblock / Race Condition-risk
+### Duplicerad Kodblock / Race Condition-risk [ÅTGÄRDAD]
 *   **Var:** `src/App.tsx` (rader 91–101 och 103–114).
 *   **Problem:** Dubbla `useEffect`-hookar för att hämta TW Attendance-data skickar duplicerade dispatches till staten.
-*   **Lösning:** Ta bort det överflödiga kodblocket.
+*   **Lösning:** Tog bort det överflödiga kodblocket och konsoliderade i `useDatabaseSync`.
 *   **Nytta:** Renare logik och eliminerar onödiga nätverksanrop vid start.
 
 ---
 
 ## 2. Kodoptimering & Prestanda
 
-### Ineffektiv Loop (O(N²) Komplexitet) i Statistik
+### Ineffektiv Loop (O(N²) Komplexitet) i Statistik [ÅTGÄRDAD]
 *   **Var:** `src/components/TWStatisticsView.tsx` (rad 65).
 *   **Problem:** En `filter()` körs inuti en `map()` över alla spelare, vilket leder till kvadratisk tidskomplexitet vid beräkning av statistik.
-*   **Lösning:** Skapa en Map för records grupperade per `playerId` före loopen för O(1) uppslagning.
-*   **Nytta:** Snabbare rendering av statistikvyn, särskilt med mycket historisk data.
+*   **Lösning:** Implementerat `Map`-baserad uppslagning (O(1)) för spelarrecords i `useTWStats`.
+*   **Nytta:** Blixtsnabb rendering av statistikvyn, särskilt med mycket historisk data.
 
 ### Konflikterande Tillståndshantering (Redux vs Context)
 *   **Var:** `src/App.tsx` och `src/AppContext.tsx`.
@@ -38,17 +38,17 @@ Denna rapport sammanställer identifierade förbättringsområden för projektet
 
 ## 3. Arkitektur & Struktur
 
-### "God Components" (Överbelastade Vyer)
+### "God Components" (Överbelastade Vyer) [ÅTGÄRDAD]
 *   **Var:** `App.tsx`, `TWStatisticsView.tsx`, `PlayerUnitView.tsx`.
-*   **Problem:** Komponenterna är för stora (400+ rader) och hanterar för många ansvarsområden (data, formatering, UI).
-*   **Lösning:** Bryt ut logik till Custom Hooks och flytta formateringslogik (t.ex. Discord-export) till `src/utils/`.
-*   **Nytta:** Bättre läsbarhet, enklare underhåll och möjlighet till enhetstester.
+*   **Problem:** Komponenterna var för stora (400+ rader) och hanterade för många ansvarsområden.
+*   **Lösning:** Brutit ut logik till Custom Hooks och flyttat Discord-export till `src/utils/discordExport.ts`.
+*   **Nytta:** Bättre läsbarhet, enklare underhåll och förberett för Redux.
 
-### Ostabila Supabase Realtime-kanaler
+### Ostabila Supabase Realtime-kanaler [ÅTGÄRDAD]
 *   **Var:** `src/App.tsx`.
-*   **Problem:** Prenumerationer startas om vid varje render om referenser byts ut, vilket kan leda till tappade datauppdateringar.
-*   **Lösning:** Stabilisera referenser eller flytta realtime-logik utanför Reacts render-cykel.
-*   **Nytta:** Mer pålitlig synkronisering mellan olika användare i realtid.
+*   **Problem:** Prenumerationer startades om vid varje render om referenser byttes ut.
+*   **Lösning:** Stabiliserat referenser med `useCallback` och `useEffect` i `useDatabaseSync`.
+*   **Nytta:** Pålitlig synkronisering utan onödiga omstarter av kanaler.
 
 ---
 
