@@ -74,7 +74,11 @@ const groupSlice = createSlice({
       if (memberToMove) {
         const targetGroup = state.groups.find(g => g.id === targetGroupId);
         if (targetGroup && targetGroup.members.length < 5) {
+          const isTargetEmpty = targetGroup.members.length === 0;
           targetGroup.members.push(memberToMove);
+          if (isTargetEmpty) {
+            targetGroup.leaderId = playerId;
+          }
         }
       }
     },

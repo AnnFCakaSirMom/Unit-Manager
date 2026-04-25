@@ -1,5 +1,11 @@
 import { useState } from 'react';
 import type { Group } from '../types';
+import { 
+    addPlayerToGroup, 
+    removePlayerFromGroup, 
+    movePlayerBetweenGroups, 
+    reorderGroupMember 
+} from '../state/slices/groupSlice';
 
 export const useGroupDragAndDrop = (groups: Group[], dispatch: any) => {
     const [draggedPlayer, setDraggedPlayer] = useState<string | null>(null);
@@ -14,7 +20,7 @@ export const useGroupDragAndDrop = (groups: Group[], dispatch: any) => {
         if (targetGroupId === "REMOVE") {
             const currentGroup = getPlayerGroup(playerId);
             if (currentGroup) {
-                dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId: currentGroup.id, playerId } });
+                dispatch(removePlayerFromGroup({ groupId: currentGroup.id, playerId }));
             }
         } else {
             const targetGroup = groups.find(g => g.id === targetGroupId);
@@ -28,9 +34,9 @@ export const useGroupDragAndDrop = (groups: Group[], dispatch: any) => {
 
             const currentGroup = getPlayerGroup(playerId);
             if (currentGroup && currentGroup.id !== targetGroupId) {
-                dispatch({ type: 'MOVE_PLAYER_BETWEEN_GROUPS', payload: { playerId, sourceGroupId: currentGroup.id, targetGroupId } });
+                dispatch(movePlayerBetweenGroups({ playerId, sourceGroupId: currentGroup.id, targetGroupId }));
             } else if (!currentGroup) {
-                dispatch({ type: 'ADD_PLAYER_TO_GROUP', payload: { groupId: targetGroupId, playerId } });
+                dispatch(addPlayerToGroup({ groupId: targetGroupId, playerId }));
             }
         }
     };
@@ -80,7 +86,7 @@ export const useGroupDragAndDrop = (groups: Group[], dispatch: any) => {
             const data = JSON.parse(e.dataTransfer.getData('application/json'));
             if (data.playerId) {
                 if (data.sourceGroupId === targetGroupId && data.playerId !== targetPlayerId) {
-                    dispatch({ type: 'REORDER_GROUP_MEMBER', payload: { groupId: targetGroupId, playerId: data.playerId, targetPlayerId } });
+                    dispatch(reorderGroupMember({ groupId: targetGroupId, playerId: data.playerId, targetPlayerId }));
                 } else {
                     handleAssignGroup(data.playerId, targetGroupId);
                 }
