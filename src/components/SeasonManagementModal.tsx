@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '../state/store';
 import { updateTWSeason, createTWSeason, clearTWEventRecords } from '../state/slices/twSlice';
 import { ConfirmationModal } from './ConfirmationModal';
 import { saveTWSeason, clearEventRecords } from '../services/twAttendanceService';
+import { auditService } from '../services/auditService';
 
 interface SeasonManagementModalProps {
     isOpen: boolean;
@@ -18,6 +19,7 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
     const dispatch = useAppDispatch();
     const twEvents = useAppSelector(state => state.tw.twEvents);
     const twRecords = useAppSelector(state => state.tw.twRecords);
+    const { userId: actorId, discordNickname: actorNickname } = useAppSelector(state => state.auth);
 
     const [name, setName] = useState(existingSeason?.name || "");
     const [startDate, setStartDate] = useState(existingSeason?.startDate || "");
@@ -91,8 +93,24 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
     const handleClearStats = async () => {
         if (eventToClear) {
             try {
+                // Fetch records for logging
+                const recordsToLog = twRecords.filter(r => r.eventId === eventToClear);
+                
                 await clearEventRecords(eventToClear);
                 dispatch(clearTWEventRecords({ eventId: eventToClear }));
+
+                // Log the action
+                const event = localEvents.find(e => e.id === eventToClear);
+                await auditService.logAction({
+                    actor_id: actorId || '',
+                    actor_nickname: actorNickname || 'Unknown',
+                    action_type: 'MAJOR_CHANGE',
+                    action_detail: `Cleared statistics for ${event?.date || eventToClear} (${name})`,
+                    target_id: eventToClear,
+                    target_name: event?.date,
+                    old_data: recordsToLog
+                });
+
                 setEventToClear(null);
             } catch (err) {
                 console.error('Failed to clear stats:', err);

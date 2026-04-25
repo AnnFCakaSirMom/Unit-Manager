@@ -111,7 +111,7 @@ export const useDatabaseSync = (dispatch: AppDispatch, isOfficerPlus: boolean) =
             .channel('tw-sync')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_seasons' }, loadTWData)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_events' }, loadTWData)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_attendance' }, loadTWData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_attendance_records' }, loadTWData)
             .subscribe();
 
         return () => {

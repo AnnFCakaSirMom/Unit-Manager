@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAppSelector } from '../state/store';
 
 import { Button } from './Button';
 import { Clipboard as Copy, ImportIcon, Settings, Plus, CheckSquare, Square, ChevronUp, ChevronDown } from './icons';
@@ -7,6 +8,7 @@ import { ImportTWStatsModal } from './ImportTWStatsModal';
 import { EditTWAttendanceModal } from './EditTWAttendanceModal';
 import { cn } from '../utils';
 import { saveTWAttendanceRecords } from '../services/twAttendanceService';
+import { auditService } from '../services/auditService';
 import { findMatchedPlayer } from '../utils/reducerHelpers';
 import { HelpIcon } from './HelpIcon';
 import { HELP_CONTENT } from '../helpContent';
@@ -15,6 +17,7 @@ import { useTWStats, SortKey } from '../hooks/useTWStats';
 import { formatTWStatsToDiscord, formatTWLeaderboardToDiscord } from '../utils/discordExport';
 
 export const TWStatisticsView: React.FC = () => {
+    const { userId: actorId, discordNickname: actorNickname } = useAppSelector(state => state.auth);
 
     const {
         twSeasons, players, twRecords,
@@ -68,8 +71,18 @@ export const TWStatisticsView: React.FC = () => {
 
             if (newRecords.length > 0) {
                 await saveTWAttendanceRecords(newRecords);
-                // Thanks to our real-time listeners in App.tsx, the state will be automatically hydrated 
-                // instantly across all clients without needing hacky local timeouts or manual reducer dispatch.
+                
+                // Log the action
+                const event = activeEvents.find(e => e.id === eventId);
+                await auditService.logAction({
+                    actor_id: actorId || '',
+                    actor_nickname: actorNickname || 'Unknown',
+                    action_type: 'MAJOR_CHANGE',
+                    action_detail: `Imported Raid Helper stats for ${event?.date || eventId}`,
+                    target_id: eventId,
+                    target_name: event?.date,
+                    new_data: newRecords
+                });
             }
         } catch (err) {
             console.error('Failed to parse or auto-save imported records:', err);

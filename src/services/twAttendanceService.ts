@@ -132,3 +132,21 @@ export async function clearEventRecords(eventId: string) {
   
   if (error) throw error;
 }
+
+/**
+ * Deletes specific attendance records.
+ * Used for undoing an import action.
+ */
+export async function deleteTWAttendanceRecords(records: TWPlayerRecord[]) {
+  if (records.length === 0) return;
+
+  for (const record of records) {
+    const { error } = await supabase
+      .from('tw_attendance_records')
+      .delete()
+      .eq('event_id', record.eventId)
+      .eq('profile_id', record.playerId);
+    
+    if (error) throw error;
+  }
+}

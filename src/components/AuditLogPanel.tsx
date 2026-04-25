@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { auditService, AuditLog } from '../services/auditService';
-import { Search, ExportIcon, AlertTriangle, ChevronDown, ChevronRight, ChevronLeft } from './icons';
+import { restoreService } from '../services/restoreService';
+import { useAppSelector } from '../state/store';
+import { Search, ExportIcon, AlertTriangle, ChevronDown, ChevronRight, ChevronLeft, RefreshCcw } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import { cn } from '../utils';
+import { ConfirmationModal } from './ConfirmationModal';
 
 export const AuditLogPanel: React.FC = () => {
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+    
+    const { userId: actorId, discordNickname: actorNickname } = useAppSelector(state => state.auth);
+    const [isRestoring, setIsRestoring] = useState(false);
+    const [restoreLog, setRestoreLog] = useState<AuditLog | null>(null);
     
     // Filters
     const [nameFilter, setNameFilter] = useState('');
@@ -55,6 +62,37 @@ export const AuditLogPanel: React.FC = () => {
 
     const handleExport = () => {
         auditService.exportToCSV(logs);
+    };
+
+    const isEligibleForRestore = (log: AuditLog) => {
+        if (log.action_detail.startsWith('RESTORED:')) return false;
+        return (
+            log.action_detail.startsWith('Deleted player') ||
+            log.action_detail.startsWith('Updated profile') ||
+            log.action_detail.startsWith('Changed role') ||
+            log.action_detail.startsWith('Renamed') ||
+            log.action_detail.startsWith('Cleared statistics') ||
+            log.action_detail.startsWith('Imported Raid Helper stats')
+        );
+    };
+
+    const handleRestore = async () => {
+        if (!restoreLog) return;
+        setIsRestoring(true);
+        try {
+            const { success, message } = await restoreService.restoreFromLog(restoreLog, actorId || '', actorNickname || 'Unknown');
+            if (success) {
+                setRestoreLog(null);
+                loadLogs();
+            } else {
+                alert(message);
+            }
+        } catch (error) {
+            console.error('Restoration failed:', error);
+            alert('Restoration failed. See console for details.');
+        } finally {
+            setIsRestoring(false);
+        }
     };
 
     return (
@@ -165,16 +203,30 @@ export const AuditLogPanel: React.FC = () => {
                                     {expandedLogId === log.id && (
                                         <tr className="bg-gray-900/50">
                                             <td colSpan={5} className="px-14 py-4">
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <div className="text-gray-500 uppercase font-bold text-[10px] tracking-wider">Data Snapshot</div>
+                                                    {isEligibleForRestore(log) && (
+                                                        <Button 
+                                                            variant="primary" 
+                                                            size="sm" 
+                                                            className="h-8 text-xs bg-indigo-600 hover:bg-indigo-500"
+                                                            onClick={() => setRestoreLog(log)}
+                                                        >
+                                                            <RefreshCcw size={14} className="mr-1" />
+                                                            Restore / Undo
+                                                        </Button>
+                                                    )}
+                                                </div>
                                                 <div className="grid grid-cols-2 gap-4 text-xs font-mono">
                                                     <div className="space-y-2">
-                                                        <div className="text-gray-500 uppercase font-bold">Before:</div>
-                                                        <pre className="p-3 bg-red-500/5 border border-red-500/10 rounded-md overflow-x-auto text-red-300/80">
+                                                        <div className="text-gray-500 uppercase font-bold opacity-50">Before:</div>
+                                                        <pre className="p-3 bg-red-500/5 border border-red-500/10 rounded-md overflow-x-auto text-red-300/80 max-h-60">
                                                             {log.old_data ? JSON.stringify(log.old_data, null, 2) : '(No data)'}
                                                         </pre>
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <div className="text-gray-500 uppercase font-bold">After:</div>
-                                                        <pre className="p-3 bg-green-500/5 border border-green-500/10 rounded-md overflow-x-auto text-green-300/80">
+                                                        <div className="text-gray-500 uppercase font-bold opacity-50">After:</div>
+                                                        <pre className="p-3 bg-green-500/5 border border-green-500/10 rounded-md overflow-x-auto text-green-300/80 max-h-60">
                                                             {log.new_data ? JSON.stringify(log.new_data, null, 2) : '(No data)'}
                                                         </pre>
                                                     </div>
@@ -240,6 +292,15 @@ export const AuditLogPanel: React.FC = () => {
             <div className="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2">
                 Logs are automatically deleted after 60 days
             </div>
+
+            <ConfirmationModal
+                isOpen={!!restoreLog}
+                title="Restore Data?"
+                message={`Are you sure you want to revert/restore this change? \n\nAction: ${restoreLog?.action_detail}`}
+                confirmText={isRestoring ? "Restoring..." : "Yes, Restore"}
+                onConfirm={handleRestore}
+                onClose={() => setRestoreLog(null)}
+            />
         </div>
     );
 };

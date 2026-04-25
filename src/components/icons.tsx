@@ -57,3 +57,4 @@ export const BarChart: React.FC<IconProps> = (props) => <Icon {...props}><line x
 export const LogOut: React.FC<IconProps> = (props) => <Icon {...props}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></Icon>;
 export const History: React.FC<IconProps> = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></Icon>;
 export const UserCheck: React.FC<IconProps> = (props) => <Icon {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><polyline points="16 11 18 13 22 9" /></Icon>;
+export const RefreshCcw: React.FC<IconProps> = (props) => <Icon {...props}><path d="M1 4v6h6" /><path d="M3.35 15a9 9 0 1 1 2.82-5.32L1 10" /></Icon>;
