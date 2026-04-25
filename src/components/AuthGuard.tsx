@@ -1,15 +1,54 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../state/store';
+import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../state/store';
 import { LoginView } from './LoginView';
 import { PendingApprovalView } from './PendingApprovalView';
+import { setAuthSession } from '../state/slices/authSlice';
+import { Button } from './Button';
 
 interface AuthGuardProps {
     children: React.ReactNode;
 }
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
-    const { userId, role, isInitialized } = useSelector((state: RootState) => state.auth);
+    const dispatch = useDispatch<AppDispatch>();
+    const { userId, role, isInitialized, discordNickname } = useSelector((state: RootState) => state.auth);
+    const [isRequesting, setIsRequesting] = useState(false);
+
+    const handleRequestAccess = async () => {
+        if (!userId) return;
+        setIsRequesting(true);
+        try {
+            const { supabase } = await import('../services/supabase');
+            
+            // Create a new pending profile
+            const { data: newProfile, error } = await supabase
+                .from('profiles')
+                .insert({
+                    user_id: userId,
+                    discord_nickname: discordNickname || '',
+                    role: 'Pending'
+                })
+                .select('id, role, discord_nickname')
+                .single();
+
+            if (error) throw error;
+
+            if (newProfile) {
+                // Update local state to transition to Pending
+                dispatch(setAuthSession({
+                    userId: newProfile.id,
+                    role: newProfile.role as any,
+                    discordNickname: newProfile.discord_nickname || discordNickname || ''
+                }));
+            }
+        } catch (err: any) {
+            console.error('Failed to request access:', err.message);
+            alert('Det gick inte att skicka begäran: ' + err.message);
+        } finally {
+            setIsRequesting(false);
+        }
+    };
 
     // Om vi fortfarande väntar på att Supabase ska berätta om vi är inloggade
     if (!isInitialized) {
@@ -46,14 +85,22 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                         Ditt Discord-konto är inte kopplat till en profil i Unit Manager.
                     </p>
                     <p className="text-gray-500 text-sm mb-8">
-                        Kontakta en <span className="text-indigo-400 font-medium">Admin eller Gatekeeper</span> för att få tillgång.
+                        Ansök om medlemskap nedan för att bli godkänd av en administratör.
                     </p>
-                    <button
+                    <Button
+                        onClick={handleRequestAccess}
+                        disabled={isRequesting}
+                        className="w-full font-bold py-3 px-4 rounded mb-3 transition-all shadow-lg shadow-blue-900/20"
+                    >
+                        {isRequesting ? 'Skickar...' : '🚀 Begär åtkomst'}
+                    </Button>
+                    <Button
+                        variant="ghost"
                         onClick={async () => { const { supabase } = await import('../services/supabase'); await supabase.auth.signOut(); }}
-                        className="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded transition-colors"
+                        className="w-full text-gray-400 hover:text-white"
                     >
                         Logga ut
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
