@@ -44,13 +44,13 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             }
         } catch (err: any) {
             console.error('Failed to request access:', err.message);
-            alert('Det gick inte att skicka begäran: ' + err.message);
+            alert('Failed to send request: ' + err.message);
         } finally {
             setIsRequesting(false);
         }
     };
 
-    // Om vi fortfarande väntar på att Supabase ska berätta om vi är inloggade
+    // If we are still waiting for Supabase to tell us if we are logged in
     if (!isInitialized) {
         return (
             <div className="flex h-screen w-screen items-center justify-center bg-gray-900 text-gray-200">
@@ -62,17 +62,17 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         );
     }
 
-    // Inte inloggad? Visa inloggningsskärmen
+    // Not logged in? Show the login screen
     if (!userId) {
         return <LoginView />;
     }
 
-    // Inloggad men inte godkänd än? Visa väntrummet
+    // Logged in but not approved yet? Show the waiting room
     if (role === 'Pending') {
         return <PendingApprovalView />;
     }
 
-    // Inloggad men ingen profil kopplad i databasen
+    // Logged in but no profile linked in the database
     if ((role as string) === 'NoProfile') {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-gray-200 p-4">
@@ -80,32 +80,32 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                     <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
                         🚫
                     </div>
-                    <h1 className="text-2xl font-bold mb-3 text-white">Ingen profil kopplad</h1>
+                    <h1 className="text-2xl font-bold mb-3 text-white">No Profile Linked</h1>
                     <p className="text-gray-400 mb-2">
-                        Ditt Discord-konto är inte kopplat till en profil i Unit Manager.
+                        Your Discord account is not linked to a profile in Unit Manager.
                     </p>
                     <p className="text-gray-500 text-sm mb-8">
-                        Ansök om medlemskap nedan för att bli godkänd av en administratör.
+                        Apply for membership below to be approved by an administrator.
                     </p>
                     <Button
                         onClick={handleRequestAccess}
                         disabled={isRequesting}
                         className="w-full font-bold py-3 px-4 rounded mb-3 transition-all shadow-lg shadow-blue-900/20"
                     >
-                        {isRequesting ? 'Skickar...' : '🚀 Begär åtkomst'}
+                        {isRequesting ? 'Sending...' : '🚀 Request Access'}
                     </Button>
                     <Button
                         variant="ghost"
                         onClick={async () => { const { supabase } = await import('../services/supabase'); await supabase.auth.signOut(); }}
                         className="w-full text-gray-400 hover:text-white"
                     >
-                        Logga ut
+                        Sign Out
                     </Button>
                 </div>
             </div>
         );
     }
 
-    // Godkänd roll (Member, Officer, Gatekeeper, Admin, Owner)
+    // Approved role (Member, Officer, Gatekeeper, Admin, Owner)
     return <>{children}</>;
 };

@@ -56,7 +56,7 @@ export const PlayerList = React.memo(({
     const handleDeletePlayer = useCallback((playerId: string, playerName: string, playerRole?: string) => {
         if (!canDeletePlayers) return;
         if (playerRole === 'Owner') {
-            alert("En Owner kan inte raderas.");
+            alert("An Owner cannot be deleted.");
             return;
         }
 

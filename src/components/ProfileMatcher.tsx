@@ -117,7 +117,7 @@ export const ProfileMatcher: React.FC = () => {
         try {
             // Check hierarchy: Can we manage a Member role?
             if (!canManageRole('Member')) {
-                throw new Error("Du har inte behörighet att tilldela rollen Member.");
+                throw new Error("You do not have permission to assign the Member role.");
             }
 
             // Update the profile in Supabase
@@ -190,7 +190,7 @@ export const ProfileMatcher: React.FC = () => {
 
         try {
             if (!canManageRole('Member')) {
-                throw new Error("Behörighet saknas.");
+                throw new Error("Permission denied.");
             }
 
             const { error } = await supabase
@@ -211,7 +211,7 @@ export const ProfileMatcher: React.FC = () => {
     };
 
     const handleDeny = async (pendingId: string, discordNick: string) => {
-        if (!window.confirm(`Är du säker på att du vill neka och radera ${discordNick}? Personen kommer inte längre synas i listan.`)) {
+        if (!window.confirm(`Are you sure you want to deny and delete ${discordNick}? They will no longer appear in this list.`)) {
             return;
         }
 
@@ -226,7 +226,7 @@ export const ProfileMatcher: React.FC = () => {
 
             if (error) throw error;
 
-            setMessage({ text: `Raderade ${discordNick} från kön.`, type: 'info' });
+            setMessage({ text: `Deleted ${discordNick} from the queue.`, type: 'info' });
             setPendingProfiles(prev => prev.filter(p => p.id !== pendingId));
             
             // Re-fetch to ensure everything is in sync

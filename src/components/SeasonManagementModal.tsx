@@ -114,7 +114,7 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
                 setEventToClear(null);
             } catch (err) {
                 console.error('Failed to clear stats:', err);
-                alert('Fel vid rensning av statistik.');
+                alert('Error clearing statistics.');
             }
         }
     };
@@ -146,7 +146,7 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
             onClose();
         } catch (err) {
             console.error('Failed to save season:', err);
-            alert('Fel vid sparande av säsong till databasen.');
+            alert('Error saving season to database.');
         } finally {
             setIsSaving(false);
         }
@@ -242,7 +242,7 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
                     <div className="p-4 border-t border-gray-700 flex justify-end gap-3 bg-gray-800/80 rounded-b-lg">
                         <Button onClick={onClose} variant="ghost" disabled={isSaving}>Cancel</Button>
                         <Button onClick={handleSave} variant="success" disabled={isSaving || !name || !startDate || !endDate}>
-                            {isSaving ? 'Sparar...' : 'Save Season'}
+                            {isSaving ? 'Saving...' : 'Save Season'}
                         </Button>
                     </div>
                 </div>
@@ -250,8 +250,8 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
 
             <ConfirmationModal
                 isOpen={!!eventToClear}
-                title="Rensa statistik?"
-                message="Är du säker på att du vill rensa all importerad statistik för detta datum? Denna handling går inte att ångra."
+                title="Clear statistics?"
+                message="Are you sure you want to clear all imported statistics for this date? This action cannot be undone."
                 onConfirm={handleClearStats}
                 onClose={() => setEventToClear(null)}
             />

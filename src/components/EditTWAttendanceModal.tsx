@@ -69,7 +69,7 @@ export const EditTWAttendanceModal: React.FC<EditTWAttendanceModalProps> = ({ is
             dispatch(updateTWPlayerRecord({ eventId: selectedEventId, playerId, status }));
         } catch (err) {
             console.error('Failed to update attendance record:', err);
-            alert('Fel vid uppdatering av närvaro i databasen.');
+            alert('Error updating attendance in database.');
         }
     };
 

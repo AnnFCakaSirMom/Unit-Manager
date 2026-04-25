@@ -159,7 +159,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         {/* ROLE SELECTOR - For those with power to manage the target user's role */}
                         {canManageRole(player.role || 'Member') && (
                             <div className="flex flex-col items-end gap-1 mr-2">
-                                <span className="text-[10px] text-gray-500 uppercase font-bold">Ändra Roll</span>
+                                <span className="text-[10px] text-gray-500 uppercase font-bold">Change Role</span>
                                 <Select 
                                     value={player.role || 'Member'} 
                                     onChange={(e) => handleProfileSave(e.target.value as UserRole)}

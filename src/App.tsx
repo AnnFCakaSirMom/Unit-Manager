@@ -52,7 +52,7 @@ const App: React.FC = () => {
     useDatabaseSync(reduxDispatch, isOfficerPlus);
 
     useEffect(() => {
-        // Hämta enheter från Supabase vid start
+        // Fetch units from Supabase at startup
         reduxDispatch(fetchUnitsFromSupabase());
     }, [reduxDispatch]);
 

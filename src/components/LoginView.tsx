@@ -19,7 +19,7 @@ export const LoginView: React.FC = () => {
             if (error) throw error;
         } catch (err: any) {
             console.error('Login error:', err);
-            setError(err.message || 'Ett fel uppstod vid inloggning.');
+            setError(err.message || 'An error occurred during login.');
         } finally {
             setIsLoading(false);
         }
