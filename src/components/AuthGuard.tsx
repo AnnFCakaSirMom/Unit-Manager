@@ -14,6 +14,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     const dispatch = useDispatch<AppDispatch>();
     const { userId, role, isInitialized, discordNickname } = useSelector((state: RootState) => state.auth);
     const [isRequesting, setIsRequesting] = useState(false);
+    const [claimedName, setClaimedName] = useState('');
 
     const handleRequestAccess = async () => {
         if (!userId) return;
@@ -22,11 +23,15 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             const { supabase } = await import('../services/supabase');
             
             // Create a new pending profile
+            // We MUST provide 'id' (Primary Key) and 'user_id' (Auth link).
+            // Usually these should be the same UUID from the Auth session.
             const { data: newProfile, error } = await supabase
                 .from('profiles')
                 .insert({
+                    id: userId,
                     user_id: userId,
                     discord_nickname: discordNickname || '',
+                    claimed_name: claimedName.trim() || null,
                     role: 'Pending'
                 })
                 .select('id, role, discord_nickname')
@@ -76,17 +81,31 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     if ((role as string) === 'NoProfile') {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-gray-200 p-4">
-                <div className="p-8 bg-gray-800 rounded-lg shadow-xl border border-red-800/50 max-w-md w-full text-center">
+                <div className="p-8 bg-gray-800 rounded-lg shadow-xl border border-red-800/50 max-w-md w-full">
                     <div className="w-16 h-16 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
                         🚫
                     </div>
-                    <h1 className="text-2xl font-bold mb-3 text-white">No Profile Linked</h1>
-                    <p className="text-gray-400 mb-2">
+                    <h1 className="text-2xl font-bold mb-3 text-white text-center">No Profile Linked</h1>
+                    <p className="text-gray-400 mb-6 text-center">
                         Your Discord account is not linked to a profile in Unit Manager.
                     </p>
-                    <p className="text-gray-500 text-sm mb-8">
-                        Apply for membership below to be approved by an administrator.
-                    </p>
+
+                    <div className="mb-8">
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                            Enter your In-Game Name
+                        </label>
+                        <input
+                            type="text"
+                            value={claimedName}
+                            onChange={(e) => setClaimedName(e.target.value)}
+                            placeholder="e.g. SirMom"
+                            className="w-full bg-gray-900 border border-gray-700 rounded px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                        />
+                        <p className="mt-2 text-[10px] text-gray-500 italic">
+                            This helps admins find and link your existing stats.
+                        </p>
+                    </div>
+
                     <Button
                         onClick={handleRequestAccess}
                         disabled={isRequesting}

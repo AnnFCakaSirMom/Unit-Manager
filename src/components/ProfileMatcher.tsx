@@ -161,8 +161,20 @@ export const ProfileMatcher: React.FC = () => {
                     
                 if (unitError) {
                     console.error("Warning: Profile upgraded, but unit migration failed:", unitError);
-                    // Decide if we throw here. Probably yes to alert the user.
-                    // throw unitError; 
+                }
+            }
+
+            // Also migrate player_info (internal notes)
+            if (localPlayer.info) {
+                const { error: infoError } = await supabase
+                    .from('player_info')
+                    .upsert({ 
+                        player_id: pendingId, 
+                        internal_notes: localPlayer.info 
+                    });
+                
+                if (infoError) {
+                    console.error("Warning: Profile upgraded, but notes migration failed:", infoError);
                 }
             }
 
@@ -176,6 +188,20 @@ export const ProfileMatcher: React.FC = () => {
             
             // Re-fetch profiles to refresh `linkedProfileIds`
             fetchProfiles();
+
+            // CLEANUP: Delete the old manually created profile row from Supabase
+            // Since we've already merged its data into the new 'pendingId' row,
+            // the old row at 'localPlayerId' is now a duplicate.
+            if (localPlayerId !== pendingId) {
+                const { error: cleanupError } = await supabase
+                    .from('profiles')
+                    .delete()
+                    .eq('id', localPlayerId);
+                
+                if (cleanupError) {
+                    console.warn("Merge successful, but failed to delete old duplicate profile:", cleanupError);
+                }
+            }
 
         } catch (err: any) {
             setMessage({ text: `Merge Failed: ${err.message}`, type: 'error' });
