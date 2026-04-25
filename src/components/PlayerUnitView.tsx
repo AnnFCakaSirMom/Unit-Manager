@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import type { Player, Unit, ConfirmModalInfo } from '../types';
 import { CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star, Trash2 } from './icons';
 import { ParseFormModal } from './ParseFormModal';
@@ -10,7 +10,7 @@ import { OwnedUnitsView } from './OwnedUnitsView';
 import { cn } from '../utils';
 import { useSelector } from 'react-redux';
 import { RootState } from '../state/store';
-import { supabase } from '../services/supabase';
+
 import { UserRole } from '../types';
 import { RoleBadge } from './RoleBadge';
 
@@ -22,14 +22,15 @@ interface PlayerUnitViewProps {
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
 }
 
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { togglePlayerUnit, parsePlayerUnitsForm, clearPlayerUnits } from '../state/slices/playerSlice';
 import { usePermission } from '../hooks/usePermission';
 import { usePlayerProfile } from '../hooks/usePlayerProfile';
 import { HelpIcon } from './HelpIcon';
 import { HELP_CONTENT } from '../helpContent';
 
 export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatusMessage, setConfirmModal }) => {
-    const { unitConfig } = useAppState();
+    const unitConfig = useAppSelector(state => state.unit.unitConfig);
     const dispatch = useAppDispatch();
     const { 
         canEditOthersUnits, 
@@ -77,7 +78,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     const selectedPlayerFavoriteUnits = useMemo(() => new Set(player?.favoriteUnits || []), [player]); // <-- NYTT
 
     const handleUnitToggle = useCallback((playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits') => {
-        dispatch({ type: 'TOGGLE_PLAYER_UNIT', payload: { playerId, unitName, unitType } });
+        dispatch(togglePlayerUnit({ playerId, unitName, unitType }));
     }, [dispatch]);
 
 
@@ -104,7 +105,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
     };
 
     const handleParseForm = (formData: string) => {
-        dispatch({ type: 'PARSE_PLAYER_UNITS_FORM', payload: { playerId: player.id, formData, allUnitNames: allUnits } });
+        dispatch(parsePlayerUnitsForm({ playerId: player.id, formData, allUnitNames: allUnits }));
         setIsParseModalOpen(false);
         setStatusMessage(`Parsed unit data for ${player.name}.`);
     };
@@ -115,7 +116,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
             title: 'Clear Unit Data',
             message: `Are you sure you want to clear all unit data for ${player.name}? This action cannot be undone.`,
             onConfirm: () => {
-                dispatch({ type: 'CLEAR_PLAYER_UNITS', payload: { playerId: player.id } });
+                dispatch(clearPlayerUnits({ playerId: player.id }));
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 setStatusMessage(`Cleared unit data for ${player.name}.`);
             }

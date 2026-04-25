@@ -1,6 +1,4 @@
-import type { AppState, TWAttendancePlayer, Unit, TWPlayerRecord, TWRecordStatus, Player } from '../types';
-import { AppStateSchema } from '../schema';
-import { DEFAULT_UNIT_TIERS } from '../units';
+import type { TWAttendancePlayer, TWPlayerRecord, TWRecordStatus, Player, Group } from '../types';
 import { washName } from '../utils';
 
 export const findMatchedPlayer = (players: Player[], discordName: string) => {
@@ -18,61 +16,10 @@ export const findMatchedPlayer = (players: Player[], discordName: string) => {
     });
 };
 
-export const handleParsePlayerUnitsForm = (
-    state: AppState,
-    payload: { playerId: string; formData: string; allUnitNames: string[] }
-): AppState => {
-    const { playerId, formData, allUnitNames } = payload;
-    const player = state.players.find(p => p.id === playerId);
-    if (!player) return state;
-
-    const allUnitNamesSet = new Set(allUnitNames);
-    const parsedUnits: string[] = [];
-    const parsedPreparedUnits: string[] = [];
-    const parsedMasteryUnits: string[] = [];
-    const parsedFavoriteUnits: string[] = [];
-
-    const lines = formData.split('\n');
-    const regex = /(.*?)\s+-\s+✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\](?:.*❤️ Favorite: \[(.*?)\])?/;
-
-    for (const line of lines) {
-        const match = line.match(regex);
-        if (match) {
-            const [_, unitNameStr, ownedStr, maxedStr, masteryStr, favoriteStr] = match;
-            const unitName = unitNameStr.trim();
-
-            if (allUnitNamesSet.has(unitName)) {
-                if (ownedStr.trim().toLowerCase() === 'x') parsedUnits.push(unitName);
-                if (maxedStr.trim().toLowerCase() === 'x') parsedPreparedUnits.push(unitName);
-                if (masteryStr.trim().toLowerCase() === 'x') parsedMasteryUnits.push(unitName);
-                if (favoriteStr && favoriteStr.trim().toLowerCase() === 'x') parsedFavoriteUnits.push(unitName);
-            }
-        }
-    }
-
-    // Merge logic: Combine existing with parsed, preventing duplicates using Set
-    const merge = (existing: string[] = [], parsed: string[]) => Array.from(new Set([...existing, ...parsed]));
-
-    return {
-        ...state,
-        players: state.players.map(p =>
-            p.id === playerId
-                ? {
-                    ...p,
-                    units: merge(p.units, parsedUnits),
-                    preparedUnits: merge(p.preparedUnits, parsedPreparedUnits),
-                    masteryUnits: merge(p.masteryUnits, parsedMasteryUnits),
-                    favoriteUnits: merge(p.favoriteUnits, parsedFavoriteUnits)
-                }
-                : p
-        )
-    };
-};
-
 export const handleTWAttendanceImport = (
-    state: AppState,
+    state: { players: Player[], groups: Group[], twAttendance: TWAttendancePlayer[] },
     payload: { jsonString: string }
-): AppState => {
+): { players: Player[], groups: Group[], twAttendance: TWAttendancePlayer[] } => {
     try {
         const data = JSON.parse(payload.jsonString);
         if (!data.signUps) throw new Error("Invalid Raid Helper format");
@@ -117,9 +64,9 @@ export const handleTWAttendanceImport = (
 };
 
 export const handleTWStatisticsImport = (
-    state: AppState,
+    state: { players: Player[], twRecords: TWPlayerRecord[] },
     payload: { jsonString: string, eventId: string }
-): AppState => {
+): { players: Player[], twRecords: TWPlayerRecord[] } => {
     try {
         const data = JSON.parse(payload.jsonString);
         if (!data.signUps) throw new Error("Invalid Raid Helper format");
@@ -163,46 +110,4 @@ export const handleTWStatisticsImport = (
     }
 };
 
-export const handleLoadState = (
-    state: AppState,
-    payload: any
-): AppState => {
-    try {
-        const loadedData = AppStateSchema.parse(payload);
-        const loadedUnitConfigTiers = loadedData.unitConfig?.tiers || {};
-        const hasExistingConfig = Object.keys(loadedUnitConfigTiers).some(tier => loadedUnitConfigTiers[tier].length > 0);
 
-        let mergedTiers: { [tier: string]: Unit[] } = {};
-
-        if (hasExistingConfig) {
-            // Use existing config as-is, just ensure sorting
-            for (const tier in loadedUnitConfigTiers) {
-                mergedTiers[tier] = [...loadedUnitConfigTiers[tier]].sort((a, b) => a.name.localeCompare(b.name));
-            }
-        } else {
-            // Fallback to defaults if no config exists (legacy or first-time load)
-            for (const tier in DEFAULT_UNIT_TIERS) {
-                mergedTiers[tier] = [...DEFAULT_UNIT_TIERS[tier]].sort((a, b) => a.name.localeCompare(b.name));
-            }
-        }
-
-        const migratedPlayers = loadedData.players.map(p => ({
-            ...p,
-            joinedDate: p.joinedDate || new Date().toISOString().split('T')[0]
-        }));
-
-        return {
-            ...state,
-            players: migratedPlayers,
-            unitConfig: { tiers: mergedTiers },
-            groups: loadedData.groups,
-            twAttendance: loadedData.twAttendance,
-            twSeasons: loadedData.twSeasons,
-            twEvents: loadedData.twEvents,
-            twRecords: loadedData.twRecords
-        };
-    } catch (error) {
-        console.error("Failed to parse and load save file. JSON schema mismatch:", error);
-        return state;
-    }
-};

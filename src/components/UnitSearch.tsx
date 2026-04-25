@@ -6,7 +6,8 @@ import { Search, X, CheckIcon } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Select } from './Select';
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { movePlayerBetweenGroups, addPlayerToGroup, removePlayerFromGroup } from '../state/slices/groupSlice';
 
 interface UnitSearchProps {
     players: Player[];
@@ -17,7 +18,8 @@ interface UnitSearchProps {
 
 export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer, searchTerm, setSearchTerm }) => {
     const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
-    const { twAttendance, groups } = useAppState();
+    const twAttendance = useAppSelector(state => state.tw.twAttendance);
+    const groups = useAppSelector(state => state.group.groups);
     const dispatch = useAppDispatch();
 
     useEffect(() => {
@@ -172,12 +174,12 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                                                             const targetGroupId = e.target.value;
                                                             if (targetGroupId) {
                                                                 if (assignedGroup) {
-                                                                    dispatch({ type: 'MOVE_PLAYER_BETWEEN_GROUPS', payload: { playerId: player.id, sourceGroupId: assignedGroup.id, targetGroupId }});
+                                                                    dispatch(movePlayerBetweenGroups({ playerId: player.id, sourceGroupId: assignedGroup.id, targetGroupId }));
                                                                 } else {
-                                                                    dispatch({ type: 'ADD_PLAYER_TO_GROUP', payload: { groupId: targetGroupId, playerId: player.id }});
+                                                                    dispatch(addPlayerToGroup({ groupId: targetGroupId, playerId: player.id }));
                                                                 }
                                                             } else if (assignedGroup) {
-                                                                dispatch({ type: 'REMOVE_PLAYER_FROM_GROUP', payload: { groupId: assignedGroup.id, playerId: player.id }});
+                                                                dispatch(removePlayerFromGroup({ groupId: assignedGroup.id, playerId: player.id }));
                                                             }
                                                         }}
                                                         className={`w-full text-xs py-1 px-2 h-auto focus:ring-1 ${assignedGroup ? 'bg-indigo-900/40 text-indigo-200 border-indigo-700' : 'bg-gray-700 text-gray-300 border-gray-600'}`}

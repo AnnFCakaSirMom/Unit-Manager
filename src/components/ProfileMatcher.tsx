@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../services/supabase';
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { mergePlayerId } from '../state/slices/playerSlice';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from './Button';
 import { Select } from './Select';
@@ -14,7 +15,7 @@ interface PendingProfile {
 }
 
 export const ProfileMatcher: React.FC = () => {
-    const { players } = useAppState();
+    const players = useAppSelector(state => state.player.players);
     const dispatch = useAppDispatch();
     const { canManageRole } = usePermission();
     const [pendingProfiles, setPendingProfiles] = useState<PendingProfile[]>([]);
@@ -166,7 +167,7 @@ export const ProfileMatcher: React.FC = () => {
             }
 
             // Update local state by replacing all occurrences of localPlayerId with pendingId
-            dispatch({ type: 'MERGE_PLAYER_ID', payload: { oldId: localPlayerId, newId: pendingId } });
+            dispatch(mergePlayerId({ oldId: localPlayerId, newId: pendingId }));
 
             setMessage({ text: `Successfully linked and upgraded ${localPlayer.name}!`, type: 'success' });
             

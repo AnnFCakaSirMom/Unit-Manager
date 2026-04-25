@@ -11,10 +11,12 @@ interface GroupViewProps {
     onCopy: (text: string) => void;
 }
 
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { addPlayerToGroup } from '../state/slices/groupSlice';
 
 export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
-    const { players, unitConfig } = useAppState();
+    const players = useAppSelector(state => state.player.players);
+    const unitConfig = useAppSelector(state => state.unit.unitConfig);
     const dispatch = useAppDispatch();
 
     const [playerSearch, setPlayerSearch] = useState("");
@@ -48,7 +50,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
     }, [players, group.members, playerSearch, showSuggestions]);
 
     const handleSelectPlayer = (playerId: string) => {
-        dispatch({ type: 'ADD_PLAYER_TO_GROUP', payload: { groupId: group.id, playerId } });
+        dispatch(addPlayerToGroup({ groupId: group.id, playerId }));
         setPlayerSearch("");
         setShowSuggestions(false);
     };

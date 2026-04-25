@@ -32,11 +32,14 @@ interface SidebarProps {
     onLogout: () => void;
 }
 
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { addPlayer } from '../state/slices/playerSlice';
+import { toggleHelpMode } from '../state/slices/uiSlice';
 import { HelpManualModal } from './HelpManualModal';
 
 export const Sidebar: React.FC<SidebarProps> = (props) => {
-    const { players, showHelpMode } = useAppState();
+    const players = useAppSelector(state => state.player.players);
+    const showHelpMode = useAppSelector(state => state.ui.showHelpMode);
     const dispatch = useAppDispatch();
     const [isManualOpen, setIsManualOpen] = useState(false);
     const [suspiciousCount, setSuspiciousCount] = useState(0);
@@ -77,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
     const handleAddPlayer = useCallback(() => {
         if (!newPlayerName.trim()) return;
-        dispatch({ type: 'ADD_PLAYER', payload: { name: newPlayerName } });
+        dispatch(addPlayer({ name: newPlayerName }));
         setNewPlayerName("");
     }, [newPlayerName, dispatch]);
 
@@ -146,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 {canViewHelp && (
                     <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-gray-700/50">
                         <button 
-                            onClick={() => dispatch({ type: 'TOGGLE_HELP_MODE' })}
+                            onClick={() => dispatch(toggleHelpMode())}
                             className={cn(
                                 "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border",
                                 showHelpMode 

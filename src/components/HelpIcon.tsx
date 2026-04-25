@@ -1,6 +1,6 @@
 import React from 'react';
 import { Info } from './icons';
-import { useAppState } from '../AppContext';
+import { useAppSelector } from '../state/store';
 import { usePermission } from '../hooks/usePermission';
 import { cn } from '../utils';
 
@@ -11,7 +11,7 @@ interface HelpIconProps {
 }
 
 export const HelpIcon: React.FC<HelpIconProps> = ({ text, className }) => {
-    const { showHelpMode } = useAppState();
+    const showHelpMode = useAppSelector(state => state.ui.showHelpMode);
     const { canViewHelp } = usePermission();
 
     if (!showHelpMode || !canViewHelp) return null;

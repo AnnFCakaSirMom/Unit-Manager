@@ -14,10 +14,10 @@ export interface OwnedUnitsViewProps {
     onUnitToggle: (playerId: string, unitName: string, unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits') => void;
 }
 
-import { useAppState } from '../AppContext';
+import { useAppSelector } from '../state/store';
 
 export const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, preparedUnits, masteryUnits, favoriteUnits, searchQuery, onUnitToggle }: OwnedUnitsViewProps) => {
-    const { unitConfig } = useAppState();
+    const unitConfig = useAppSelector(state => state.unit.unitConfig);
 
     const ownedUnitsByTier = useMemo(() => {
         const result: { [key: string]: string[] } = {};

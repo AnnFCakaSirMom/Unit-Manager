@@ -4,25 +4,27 @@ import { fetchPlayersFromSupabase } from '../services/playerService';
 import { fetchGroupsFromSupabase } from '../services/groupService';
 import { fetchTWAttendanceData } from '../services/twAttendanceService';
 import { fetchTWImport } from '../services/twImportService';
-import { AppAction } from '../types';
+import { AppDispatch } from '../state/store';
+import { hydratePlayers } from '../state/slices/playerSlice';
+import { hydrateGroups } from '../state/slices/groupSlice';
+import { hydrateTWAttendance, hydrateTWData } from '../state/slices/twSlice';
 
 /**
  * useDatabaseSync
  * 
  * Handles initial hydration and sets up Supabase realtime listeners.
  * 
- * @param dispatch - Injected dispatch function. Currently from local useReducer,
- *                   but designed to be easily swapped for Redux useDispatch in the future.
+ * @param dispatch - Injected Redux dispatch function.
  * @param isOfficerPlus - Boolean indicating if the user has sufficient privileges.
  */
-export const useDatabaseSync = (dispatch: React.Dispatch<AppAction>, isOfficerPlus: boolean) => {
+export const useDatabaseSync = (dispatch: AppDispatch, isOfficerPlus: boolean) => {
 
     // Helper to load players
     const loadPlayers = useCallback(() => {
         fetchPlayersFromSupabase()
             .then(players => {
                 if (players.length > 0) {
-                    dispatch({ type: 'HYDRATE_PLAYERS', payload: players });
+                    dispatch(hydratePlayers(players));
                 }
             })
             .catch(err => {
@@ -39,7 +41,7 @@ export const useDatabaseSync = (dispatch: React.Dispatch<AppAction>, isOfficerPl
         fetchTWImport()
             .then(data => {
                 if (data.length > 0) {
-                    dispatch({ type: 'HYDRATE_TW_ATTENDANCE', payload: data });
+                    dispatch(hydrateTWAttendance(data));
                 }
             })
             .catch(err => {
@@ -54,7 +56,7 @@ export const useDatabaseSync = (dispatch: React.Dispatch<AppAction>, isOfficerPl
         const loadGroups = () => {
             fetchGroupsFromSupabase()
                 .then(groups => {
-                    dispatch({ type: 'HYDRATE_GROUPS', payload: groups });
+                    dispatch(hydrateGroups(groups));
                 })
                 .catch(err => console.warn('[useDatabaseSync] Group hydration failed:', err));
         };
@@ -62,7 +64,7 @@ export const useDatabaseSync = (dispatch: React.Dispatch<AppAction>, isOfficerPl
         const loadTWImport = () => {
             fetchTWImport()
                 .then(data => {
-                    dispatch({ type: 'HYDRATE_TW_ATTENDANCE', payload: data });
+                    dispatch(hydrateTWAttendance(data));
                 })
                 .catch(e => console.warn('[useDatabaseSync] Realtime TW import refresh failed:', e));
         }
@@ -96,7 +98,7 @@ export const useDatabaseSync = (dispatch: React.Dispatch<AppAction>, isOfficerPl
         const loadTWData = () => {
             fetchTWAttendanceData()
                 .then(data => {
-                    dispatch({ type: 'HYDRATE_TW_DATA', payload: data });
+                    dispatch(hydrateTWData(data));
                 })
                 .catch(err => {
                     console.warn('[useDatabaseSync] Could not hydrate TW attendance data:', err);
@@ -117,3 +119,4 @@ export const useDatabaseSync = (dispatch: React.Dispatch<AppAction>, isOfficerPl
         }
     }, [isOfficerPlus, dispatch]);
 };
+

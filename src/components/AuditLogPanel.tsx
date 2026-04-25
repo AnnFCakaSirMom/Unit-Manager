@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { auditService, AuditLog } from '../services/auditService';
-import { Search, ExportIcon, AlertTriangle, ChevronDown, ChevronUp, ChevronRight, ChevronLeft } from './icons';
+import { Search, ExportIcon, AlertTriangle, ChevronDown, ChevronRight, ChevronLeft } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import { cn } from '../utils';

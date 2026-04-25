@@ -1,6 +1,5 @@
 import React from 'react';
 import { UserRole } from '../types';
-import { Shield, Star, Lock, Info, UserCheck, Shield as AdminShield } from './icons';
 
 interface RoleBadgeProps {
     role: UserRole;

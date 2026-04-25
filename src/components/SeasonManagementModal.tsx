@@ -3,7 +3,8 @@ import type { TWSeason, TWEvent } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
 import { X, Trash2, Plus, Database } from './icons';
-import { useAppDispatch, useAppState } from '../AppContext';
+import { useAppDispatch, useAppSelector } from '../state/store';
+import { updateTWSeason, createTWSeason, clearTWEventRecords } from '../state/slices/twSlice';
 import { ConfirmationModal } from './ConfirmationModal';
 import { saveTWSeason, clearEventRecords } from '../services/twAttendanceService';
 
@@ -15,7 +16,8 @@ interface SeasonManagementModalProps {
 
 export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ isOpen, onClose, existingSeason }) => {
     const dispatch = useAppDispatch();
-    const { twEvents, twRecords } = useAppState();
+    const twEvents = useAppSelector(state => state.tw.twEvents);
+    const twRecords = useAppSelector(state => state.tw.twRecords);
 
     const [name, setName] = useState(existingSeason?.name || "");
     const [startDate, setStartDate] = useState(existingSeason?.startDate || "");
@@ -90,7 +92,7 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
         if (eventToClear) {
             try {
                 await clearEventRecords(eventToClear);
-                dispatch({ type: 'CLEAR_TW_EVENT_RECORDS', payload: { eventId: eventToClear } });
+                dispatch(clearTWEventRecords({ eventId: eventToClear }));
                 setEventToClear(null);
             } catch (err) {
                 console.error('Failed to clear stats:', err);
@@ -119,9 +121,9 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
 
             // Update local state
             if (existingSeason) {
-                dispatch({ type: 'UPDATE_TW_SEASON', payload: { season, events: finalEvents } });
+                dispatch(updateTWSeason({ season, events: finalEvents }));
             } else {
-                dispatch({ type: 'CREATE_TW_SEASON', payload: { season, events: finalEvents } });
+                dispatch(createTWSeason({ season, events: finalEvents }));
             }
             onClose();
         } catch (err) {

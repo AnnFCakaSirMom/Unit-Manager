@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useAppState } from '../AppContext';
+import React, { useState } from 'react';
+
 import { Button } from './Button';
 import { Clipboard as Copy, ImportIcon, Settings, Plus, CheckSquare, Square, ChevronUp, ChevronDown } from './icons';
 import { SeasonManagementModal } from './SeasonManagementModal';
@@ -11,7 +11,7 @@ import { findMatchedPlayer } from '../utils/reducerHelpers';
 import { HelpIcon } from './HelpIcon';
 import { HELP_CONTENT } from '../helpContent';
 import type { TWPlayerRecord, TWRecordStatus } from '../types';
-import { useTWStats } from '../hooks/useTWStats';
+import { useTWStats, SortKey } from '../hooks/useTWStats';
 import { formatTWStatsToDiscord, formatTWLeaderboardToDiscord } from '../utils/discordExport';
 
 export const TWStatisticsView: React.FC = () => {

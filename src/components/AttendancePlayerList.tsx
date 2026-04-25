@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AppState, Group } from '../types';
+import type { Group, TWAttendancePlayer } from '../types';
 import { UserPlus, AlertTriangle } from './icons';
 import { Button } from './Button';
 import { Select } from './Select';
@@ -12,7 +12,7 @@ const GripIcon = ({ className = "", size = 16 }) => (
 );
 
 export interface AttendancePlayerListProps {
-    list: AppState['twAttendance'];
+    list: TWAttendancePlayer[];
     title: string;
     colorClass: string;
     icon: React.ReactNode;
@@ -46,7 +46,7 @@ export const AttendancePlayerList: React.FC<AttendancePlayerListProps> = ({
                 {icon} {title} ({list.length})
             </h3>
             <div className="space-y-2">
-                {list.map((person, index) => {
+                {list.map((person: TWAttendancePlayer, index: number) => {
                     const existingGroup = getPlayerGroup(person.matchedPlayerId);
                     const isDraggable = !!person.matchedPlayerId;
                     const stableKey = person.matchedPlayerId || `${person.discordName}-${index}`;

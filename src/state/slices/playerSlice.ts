@@ -1,115 +1,168 @@
-import type { AppState, AppAction, Player } from '../../types';
-import { handleParsePlayerUnitsForm } from '../../utils/reducerHelpers';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { Player, UserRole } from '../../types';
 
-export const playerReducer = (state: AppState, action: AppAction): Player[] => {
-    switch (action.type) {
-        case 'HYDRATE_PLAYERS':
-            // Replace the full player list with sorted data fetched from Supabase.
-            // After this, the local useReducer takes ownership — all mutations work normally.
-            return [...action.payload].sort((a, b) => a.name.localeCompare(b.name));
+interface PlayerState {
+  players: Player[];
+}
 
-        case 'ADD_PLAYER': {
-            const newPlayer: Player = { 
-                id: crypto.randomUUID(), 
-                name: action.payload.name.trim(), 
-                units: [], 
-                preparedUnits: [], 
-                masteryUnits: [], 
-                favoriteUnits: [], 
-                notInHouse: false, 
-                totalLeadership: 0, 
-                joinedDate: new Date().toISOString().split('T')[0], 
-                player_info: [],
-                aliases: [] 
-            };
-            return [...state.players, newPlayer].sort((a, b) => a.name.localeCompare(b.name));
-        }
-        case 'DELETE_PLAYER':
-            return state.players.filter(p => p.id !== action.payload.playerId);
-        case 'UPDATE_PLAYER_NAME':
-            return state.players.map(p => p.id === action.payload.playerId ? { ...p, name: action.payload.name.trim() } : p);
-        case 'TOGGLE_NOT_IN_HOUSE':
-            return state.players.map(p => {
-                if (p.id === action.payload.playerId) {
-                    const newNotInHouse = !p.notInHouse;
-                    return {
-                        ...p,
-                        notInHouse: newNotInHouse,
-                        inactiveDate: newNotInHouse ? new Date().toISOString().split('T')[0] : null
-                    };
-                }
-                return p;
-            });
-        case 'UPDATE_PLAYER_INFO':
-            return state.players.map(p =>
-                p.id === action.payload.playerId ? { 
-                    ...p, 
-                    info: action.payload.info,
-                    player_info: [{ internal_notes: action.payload.info }]
-                } : p
-            );
-        case 'UPDATE_PLAYER_LEADERSHIP':
-            return state.players.map(p =>
-                p.id === action.payload.playerId ? { ...p, totalLeadership: action.payload.leadership } : p
-            );
-        case 'TOGGLE_PLAYER_UNIT': {
-            const { playerId, unitName, unitType } = action.payload;
-            return state.players.map(p => {
-                if (p.id === playerId) {
-                    const currentUnits = p[unitType] || [];
-                    const newUnits = currentUnits.includes(unitName) ? currentUnits.filter(u => u !== unitName) : [...currentUnits, unitName];
-                    return { ...p, [unitType]: newUnits };
-                }
-                return p;
-            });
-        }
-        case 'PARSE_PLAYER_UNITS_FORM':
-            return handleParsePlayerUnitsForm(state, action.payload).players;
-        case 'CLEAR_PLAYER_UNITS':
-            return state.players.map(p =>
-                p.id === action.payload.playerId
-                    ? { ...p, units: [], preparedUnits: [], masteryUnits: [], favoriteUnits: [] }
-                    : p
-            );
-        case 'RENAME_UNIT_GLOBALLY': {
-            const { oldName, newName } = action.payload;
-            return state.players.map(player => ({
-                ...player,
-                units: player.units.map(u => u === oldName ? newName : u),
-                preparedUnits: (player.preparedUnits || []).map(u => u === oldName ? newName : u),
-                masteryUnits: (player.masteryUnits || []).map(u => u === oldName ? newName : u),
-                favoriteUnits: (player.favoriteUnits || []).map(u => u === oldName ? newName : u)
-            }));
-        }
-        case 'DELETE_UNIT_GLOBALLY': {
-            const { unitNameToDelete } = action.payload;
-            return state.players.map(player => ({
-                ...player,
-                units: player.units.filter(u => u !== unitNameToDelete),
-                preparedUnits: (player.preparedUnits || []).filter(u => u !== unitNameToDelete),
-                masteryUnits: (player.masteryUnits || []).filter(u => u !== unitNameToDelete),
-                favoriteUnits: (player.favoriteUnits || []).filter(u => u !== unitNameToDelete)
-            }));
-        }
-        case 'UPDATE_PLAYER_PROFILE':
-            return state.players.map(p =>
-                p.id === action.payload.playerId
-                    ? { 
-                        ...p, 
-                        joinedDate: action.payload.joinedDate, 
-                        inactiveDate: action.payload.inactiveDate, 
-                        aliases: action.payload.aliases,
-                        role: action.payload.role || p.role
-                    }
-                    : p
-            );
-        case 'MERGE_PLAYER_ID':
-            return state.players.map(p =>
-                p.id === action.payload.oldId
-                    ? { ...p, id: action.payload.newId }
-                    : p
-            );
-        default:
-            return state.players;
-    }
+const initialState: PlayerState = {
+  players: [],
 };
+
+const playerSlice = createSlice({
+  name: 'player',
+  initialState,
+  reducers: {
+    hydratePlayers(state, action: PayloadAction<Player[]>) {
+      state.players = [...action.payload].sort((a, b) => a.name.localeCompare(b.name));
+    },
+    addPlayer(state, action: PayloadAction<{ name: string }>) {
+      const newPlayer: Player = {
+        id: crypto.randomUUID(),
+        name: action.payload.name.trim(),
+        units: [],
+        preparedUnits: [],
+        masteryUnits: [],
+        favoriteUnits: [],
+        notInHouse: false,
+        totalLeadership: 0,
+        joinedDate: new Date().toISOString().split('T')[0],
+        player_info: [],
+        aliases: []
+      };
+      state.players.push(newPlayer);
+      state.players.sort((a, b) => a.name.localeCompare(b.name));
+    },
+    deletePlayer(state, action: PayloadAction<{ playerId: string }>) {
+      state.players = state.players.filter(p => p.id !== action.payload.playerId);
+    },
+    updatePlayerName(state, action: PayloadAction<{ playerId: string; name: string }>) {
+      const player = state.players.find(p => p.id === action.payload.playerId);
+      if (player) player.name = action.payload.name.trim();
+    },
+    toggleNotInHouse(state, action: PayloadAction<{ playerId: string }>) {
+      const player = state.players.find(p => p.id === action.payload.playerId);
+      if (player) {
+        player.notInHouse = !player.notInHouse;
+        player.inactiveDate = player.notInHouse ? new Date().toISOString().split('T')[0] : null;
+      }
+    },
+    updatePlayerInfo(state, action: PayloadAction<{ playerId: string; info: string }>) {
+      const player = state.players.find(p => p.id === action.payload.playerId);
+      if (player) {
+        player.info = action.payload.info;
+        player.player_info = [{ internal_notes: action.payload.info }];
+      }
+    },
+    updatePlayerLeadership(state, action: PayloadAction<{ playerId: string; leadership: number }>) {
+      const player = state.players.find(p => p.id === action.payload.playerId);
+      if (player) player.totalLeadership = action.payload.leadership;
+    },
+    togglePlayerUnit(state, action: PayloadAction<{ playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits' }>) {
+      const { playerId, unitName, unitType } = action.payload;
+      const player = state.players.find(p => p.id === playerId);
+      if (player) {
+        const currentUnits = player[unitType] || [];
+        if (currentUnits.includes(unitName)) {
+          player[unitType] = currentUnits.filter(u => u !== unitName);
+        } else {
+          player[unitType] = [...currentUnits, unitName];
+        }
+      }
+    },
+    parsePlayerUnitsForm(state, action: PayloadAction<{ playerId: string; formData: string; allUnitNames: string[] }>) {
+      const { playerId, formData, allUnitNames } = action.payload;
+      const player = state.players.find(p => p.id === playerId);
+      if (!player) return;
+
+      const allUnitNamesSet = new Set(allUnitNames);
+      const parsedUnits: string[] = [];
+      const parsedPreparedUnits: string[] = [];
+      const parsedMasteryUnits: string[] = [];
+      const parsedFavoriteUnits: string[] = [];
+
+      const lines = formData.split('\n');
+      const regex = /(.*?)\s+-\s+✅ Owned: \[(.*?)\].*🌟 Maxed: \[(.*?)\].*👑 Mastery: \[(.*?)\](?:.*❤️ Favorite: \[(.*?)\])?/;
+
+      for (const line of lines) {
+        const match = line.match(regex);
+        if (match) {
+          const [_, unitNameStr, ownedStr, maxedStr, masteryStr, favoriteStr] = match;
+          const unitName = unitNameStr.trim();
+
+          if (allUnitNamesSet.has(unitName)) {
+            if (ownedStr.trim().toLowerCase() === 'x') parsedUnits.push(unitName);
+            if (maxedStr.trim().toLowerCase() === 'x') parsedPreparedUnits.push(unitName);
+            if (masteryStr.trim().toLowerCase() === 'x') parsedMasteryUnits.push(unitName);
+            if (favoriteStr && favoriteStr.trim().toLowerCase() === 'x') parsedFavoriteUnits.push(unitName);
+          }
+        }
+      }
+
+      const merge = (existing: string[] = [], parsed: string[]) => Array.from(new Set([...existing, ...parsed]));
+      player.units = merge(player.units, parsedUnits);
+      player.preparedUnits = merge(player.preparedUnits, parsedPreparedUnits);
+      player.masteryUnits = merge(player.masteryUnits, parsedMasteryUnits);
+      player.favoriteUnits = merge(player.favoriteUnits, parsedFavoriteUnits);
+    },
+    clearPlayerUnits(state, action: PayloadAction<{ playerId: string }>) {
+      const player = state.players.find(p => p.id === action.payload.playerId);
+      if (player) {
+        player.units = [];
+        player.preparedUnits = [];
+        player.masteryUnits = [];
+        player.favoriteUnits = [];
+      }
+    },
+    renameUnitGlobally(state, action: PayloadAction<{ oldName: string; newName: string }>) {
+      const { oldName, newName } = action.payload;
+      state.players.forEach(player => {
+        player.units = player.units.map(u => u === oldName ? newName : u);
+        player.preparedUnits = (player.preparedUnits || []).map(u => u === oldName ? newName : u);
+        player.masteryUnits = (player.masteryUnits || []).map(u => u === oldName ? newName : u);
+        player.favoriteUnits = (player.favoriteUnits || []).map(u => u === oldName ? newName : u);
+      });
+    },
+    deleteUnitGlobally(state, action: PayloadAction<{ unitNameToDelete: string }>) {
+      const { unitNameToDelete } = action.payload;
+      state.players.forEach(player => {
+        player.units = player.units.filter(u => u !== unitNameToDelete);
+        player.preparedUnits = (player.preparedUnits || []).filter(u => u !== unitNameToDelete);
+        player.masteryUnits = (player.masteryUnits || []).filter(u => u !== unitNameToDelete);
+        player.favoriteUnits = (player.favoriteUnits || []).filter(u => u !== unitNameToDelete);
+      });
+    },
+    updatePlayerProfile(state, action: PayloadAction<{ playerId: string; joinedDate?: string; inactiveDate?: string | null; aliases?: string[]; role?: UserRole }>) {
+      const player = state.players.find(p => p.id === action.payload.playerId);
+      if (player) {
+        if (action.payload.joinedDate !== undefined) player.joinedDate = action.payload.joinedDate;
+        if (action.payload.inactiveDate !== undefined) player.inactiveDate = action.payload.inactiveDate;
+        if (action.payload.aliases !== undefined) player.aliases = action.payload.aliases;
+        if (action.payload.role !== undefined) player.role = action.payload.role;
+      }
+    },
+    mergePlayerId(state, action: PayloadAction<{ oldId: string; newId: string }>) {
+      const player = state.players.find(p => p.id === action.payload.oldId);
+      if (player) player.id = action.payload.newId;
+    }
+  }
+});
+
+export const {
+  hydratePlayers,
+  addPlayer,
+  deletePlayer,
+  updatePlayerName,
+  toggleNotInHouse,
+  updatePlayerInfo,
+  updatePlayerLeadership,
+  togglePlayerUnit,
+  parsePlayerUnitsForm,
+  clearPlayerUnits,
+  renameUnitGlobally,
+  deleteUnitGlobally,
+  updatePlayerProfile,
+  mergePlayerId
+} = playerSlice.actions;
+
+export const playerReducer = playerSlice.reducer;

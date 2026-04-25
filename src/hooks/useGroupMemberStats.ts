@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../state/store';
 import type { Player, GroupMember } from '../types';
-import { useAppState } from '../AppContext';
 
 export const useGroupMemberStats = (member: GroupMember, player: Player, unitCostMap: Map<string, number>) => {
-    const { unitConfig } = useAppState();
+    const unitConfig = useSelector((state: RootState) => state.unit.unitConfig);
 
     const unitToTierMap = useMemo(() => {
         const map = new Map<string, string>();
@@ -60,3 +61,4 @@ export const useGroupMemberStats = (member: GroupMember, player: Player, unitCos
         sortedTiers,
     };
 };
+

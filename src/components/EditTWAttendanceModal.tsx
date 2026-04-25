@@ -3,9 +3,10 @@ import type { TWEvent, TWRecordStatus } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
 import { X, CheckIcon as Check } from './icons';
-import { useAppDispatch, useAppState } from '../AppContext';
+import { useAppDispatch, useAppSelector } from '../state/store';
 import { cn } from '../utils';
 import { saveTWAttendanceRecords } from '../services/twAttendanceService';
+import { updateTWPlayerRecord } from '../state/slices/twSlice';
 
 interface EditTWAttendanceModalProps {
     isOpen: boolean;
@@ -15,7 +16,8 @@ interface EditTWAttendanceModalProps {
 
 export const EditTWAttendanceModal: React.FC<EditTWAttendanceModalProps> = ({ isOpen, onClose, events }) => {
     const dispatch = useAppDispatch();
-    const { players, twRecords } = useAppState();
+    const players = useAppSelector(state => state.player.players);
+    const twRecords = useAppSelector(state => state.tw.twRecords);
 
     const [selectedEventId, setSelectedEventId] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -64,7 +66,7 @@ export const EditTWAttendanceModal: React.FC<EditTWAttendanceModalProps> = ({ is
             await saveTWAttendanceRecords([{ eventId: selectedEventId, playerId, status }]);
             
             // Sync local state
-            dispatch({ type: 'UPDATE_TW_PLAYER_RECORD', payload: { eventId: selectedEventId, playerId, status } });
+            dispatch(updateTWPlayerRecord({ eventId: selectedEventId, playerId, status }));
         } catch (err) {
             console.error('Failed to update attendance record:', err);
             alert('Fel vid uppdatering av närvaro i databasen.');

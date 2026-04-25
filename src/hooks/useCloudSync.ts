@@ -1,30 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { AppState } from '../types';
-import { RootState } from '../state/store';
+import { useAppSelector } from '../state/store';
 import { upsertPlayer, deletePlayer } from '../services/playerService';
 import { upsertGroup, deleteGroup } from '../services/groupService';
 import { upsertTWImport, deleteTWImportEntry } from '../services/twImportService';
 import { auditService } from '../services/auditService';
 
 export function useCloudSync(
-  state: AppState, 
   setStatusMessage: (msg: string) => void
 ) {
   const [isSyncing, setIsSyncing] = useState(false);
-  const { userId: actorId, discordNickname: actorNickname } = useSelector((state: RootState) => state.auth);
+  const { userId: actorId, discordNickname: actorNickname } = useAppSelector(state => state.auth);
   
+  const players = useAppSelector(state => state.player.players);
+  const groups = useAppSelector(state => state.group.groups);
+  const twAttendance = useAppSelector(state => state.tw.twAttendance);
+
   // Keep refs to previous state to compute diffs
-  const prevPlayersRef = useRef(state.players);
-  // ... (rest of the refs remain same)
-  const prevGroupsRef = useRef(state.groups);
-  const prevTWAttendanceRef = useRef(state.twAttendance);
+  const prevPlayersRef = useRef(players);
+  const prevGroupsRef = useRef(groups);
+  const prevTWAttendanceRef = useRef(twAttendance);
   const isInitialized = useRef(false);
 
   useEffect(() => {
-    const currentPlayers = state.players;
-    const currentGroups = state.groups;
-    const currentTWAttendance = state.twAttendance;
+    const currentPlayers = players;
+    const currentGroups = groups;
+    const currentTWAttendance = twAttendance;
     
     // Skip deep comparison if we are still waiting for initial data
     if (!isInitialized.current && currentPlayers.length === 0 && currentGroups.length === 0) {
@@ -150,7 +150,6 @@ export function useCloudSync(
       // Execute & Log Group Upserts
       for (let i = 0; i < currentGroups.length; i++) {
         const group = currentGroups[i];
-        const prev = prevGroupsMap.get(group.id);
         const prevIndex = prevGroups.findIndex(g => g.id === group.id);
         
         if (changedGroups.includes(group) || prevIndex !== i) {
@@ -189,7 +188,7 @@ export function useCloudSync(
 
     return () => clearTimeout(timer);
 
-  }, [state.players, state.groups, state.twAttendance, setStatusMessage, actorId, actorNickname]);
+  }, [players, groups, twAttendance, setStatusMessage, actorId, actorNickname]);
 
   return { isSyncing };
 }

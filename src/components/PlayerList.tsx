@@ -14,14 +14,15 @@ export interface PlayerListProps {
     setNotInHouse: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { updatePlayerName, deletePlayer, toggleNotInHouse as toggleNotInHouseAction } from '../state/slices/playerSlice';
 import { usePermission } from '../hooks/usePermission';
 import { washName } from '../utils';
 
 export const PlayerList = React.memo(({
     selectedPlayerId, onSelectPlayer, setConfirmModal, notInHouse, setNotInHouse
 }: PlayerListProps) => {
-    const { players } = useAppState();
+    const players = useAppSelector(state => state.player.players);
     const dispatch = useAppDispatch();
     const { canEditDisplayName, canDeletePlayers, canToggleNotInHouse } = usePermission();
 
@@ -48,7 +49,7 @@ export const PlayerList = React.memo(({
 
     const handleSavePlayerName = useCallback(() => {
         if (!editingPlayer.id || !editingPlayer.name.trim()) return;
-        dispatch({ type: 'UPDATE_PLAYER_NAME', payload: { playerId: editingPlayer.id, name: editingPlayer.name } });
+        dispatch(updatePlayerName({ playerId: editingPlayer.id, name: editingPlayer.name }));
         setEditingPlayer({ id: null, name: '' });
     }, [editingPlayer, dispatch]);
 
@@ -64,7 +65,7 @@ export const PlayerList = React.memo(({
             title: 'Delete Player',
             message: `Are you sure you want to delete ${playerName}? This action cannot be undone.`,
             onConfirm: () => {
-                dispatch({ type: 'DELETE_PLAYER', payload: { playerId } });
+                dispatch(deletePlayer({ playerId }));
                 if (selectedPlayerId === playerId) onSelectPlayer(null);
                 setConfirmModal((prev) => ({ ...prev, isOpen: false }));
             }
@@ -74,7 +75,7 @@ export const PlayerList = React.memo(({
     const handleNotInHouseToggle = useCallback((playerId: string, playerRole?: string) => {
         if (!canToggleNotInHouse) return;
         if (playerRole === 'Owner') return; // Owners can't be set to inactive 
-        dispatch({ type: 'TOGGLE_NOT_IN_HOUSE', payload: { playerId } });
+        dispatch(toggleNotInHouseAction({ playerId }));
     }, [dispatch, canToggleNotInHouse]);
 
     return (

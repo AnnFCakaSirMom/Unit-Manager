@@ -1,8 +1,5 @@
-import React, { useState, useReducer, useEffect, useMemo, useCallback } from 'react';
-import type { AppState, ConfirmModalInfo } from './types';
-import { rootReducer } from './state/rootReducer';
-import { DEFAULT_UNIT_TIERS } from './units';
-import { AppStateContext, AppDispatchContext } from './AppContext';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import type { ConfirmModalInfo } from './types';
 
 import { useFileHandler } from './hooks/useFileHandler';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
@@ -26,10 +23,6 @@ import { RootState, AppDispatch } from './state/store';
 import { useAuth } from './hooks/useAuth';
 import { useNavigationState } from './hooks/useNavigationState';
 import { useDatabaseSync } from './hooks/useDatabaseSync';
-import { fetchPlayersFromSupabase } from './services/playerService';
-import { fetchGroupsFromSupabase } from './services/groupService';
-import { fetchTWAttendanceData } from './services/twAttendanceService';
-import { fetchTWImport } from './services/twImportService';
 
 declare global {
     interface Window {
@@ -39,23 +32,7 @@ declare global {
 }
 
 const App: React.FC = () => {
-    const initialState: AppState = {
-        players: [],
-        unitConfig: { tiers: DEFAULT_UNIT_TIERS },
-        groups: [],
-        twAttendance: [],
-        twSeasons: [],
-        twEvents: [],
-        twRecords: [],
-        hasUnsavedChanges: false,
-        showHelpMode: localStorage.getItem('unit_manager_help_mode') === 'true',
-    };
-
-    const [state, dispatch] = useReducer(rootReducer, initialState);
-    const { players, groups } = state;
-    
     const reduxDispatch = useDispatch<AppDispatch>();
-    const reduxUnitConfig = useSelector((state: RootState) => state.unit.unitConfig);
 
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
@@ -72,7 +49,7 @@ const App: React.FC = () => {
         handleTogglePlayerList, setShowAdminPanel
     } = useNavigationState(role, userId);
 
-    useDatabaseSync(dispatch, isOfficerPlus);
+    useDatabaseSync(reduxDispatch, isOfficerPlus);
 
     useEffect(() => {
         // Hämta enheter från Supabase vid start
@@ -114,20 +91,15 @@ const App: React.FC = () => {
         }
     }, [statusMessage]);
 
-    useCloudSync(state, setStatusMessage);
+    useCloudSync(setStatusMessage);
 
-    // Merge manual state with Redux unitConfig for the Context Provider
-    const mergedState = useMemo(() => ({
-        ...state,
-        unitConfig: reduxUnitConfig
-    }), [state, reduxUnitConfig]);
+    const players = useSelector((state: RootState) => state.player.players);
+    const groups = useSelector((state: RootState) => state.group.groups);
 
     const selectedPlayer = useMemo(() => players.find((p: any) => p.id === selectedPlayerId), [players, selectedPlayerId]);
     const selectedGroup = useMemo(() => groups.find((g: any) => g.id === selectedGroupId), [groups, selectedGroupId]);
 
     const { processFile, handleSaveData, handleModernOpenFile } = useFileHandler({
-        state,
-        dispatch,
         handleSelectPlayer,
         setStatusMessage
     });
@@ -138,9 +110,7 @@ const App: React.FC = () => {
 
     return (
         <AuthGuard>
-            <AppStateContext.Provider value={mergedState}>
-                <AppDispatchContext.Provider value={dispatch}>
-                    <div className="bg-gray-900 text-gray-200 min-h-screen font-sans" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+            <div className="bg-gray-900 text-gray-200 min-h-screen font-sans" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                         {isDragging && (
                             <div className="drag-over-overlay">
                                 <div className="text-center text-white">
@@ -231,8 +201,6 @@ const App: React.FC = () => {
                             />
                         )}
                     </div>
-                </AppDispatchContext.Provider>
-            </AppStateContext.Provider>
         </AuthGuard>
     );
 };

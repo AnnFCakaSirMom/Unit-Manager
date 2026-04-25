@@ -11,21 +11,23 @@ export interface GroupsListProps {
     onCopy: (text: string) => void;
 }
 
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { updateGroupName, deleteGroup, addGroup } from '../state/slices/groupSlice';
 import { HelpIcon } from './HelpIcon';
 import { HELP_CONTENT } from '../helpContent';
 
 export const GroupsList = React.memo(({
     selectedGroupId, onSelectGroup, setConfirmModal, onCopy
 }: GroupsListProps) => {
-    const { groups, players } = useAppState();
+    const groups = useAppSelector(state => state.group.groups);
+    const players = useAppSelector(state => state.player.players);
     const dispatch = useAppDispatch();
 
     const [editingGroup, setEditingGroup] = useState<{ id: string | null; name: string }>({ id: null, name: '' });
 
     const handleSaveGroupName = useCallback(() => {
         if (!editingGroup.id || !editingGroup.name.trim()) return;
-        dispatch({ type: 'UPDATE_GROUP_NAME', payload: { groupId: editingGroup.id, name: editingGroup.name } });
+        dispatch(updateGroupName({ groupId: editingGroup.id, name: editingGroup.name }));
         setEditingGroup({ id: null, name: '' });
     }, [editingGroup, dispatch]);
 
@@ -33,7 +35,7 @@ export const GroupsList = React.memo(({
         setConfirmModal({
             isOpen: true, title: 'Delete Group', message: `Are you sure you want to delete group "${groupName}"?`,
             onConfirm: () => {
-                dispatch({ type: 'DELETE_GROUP', payload: { groupId } });
+                dispatch(deleteGroup({ groupId }));
                 if (selectedGroupId === groupId) onSelectGroup(null);
                 setConfirmModal((prev) => ({ ...prev, isOpen: false }));
             }
@@ -85,7 +87,7 @@ export const GroupsList = React.memo(({
                     <Button variant="primary" size="sm" onClick={handleCopyAllGroups} title="Copy All Groups" aria-label="Copy All Groups">
                         <Clipboard size={16} /> Copy
                     </Button>
-                    <Button variant="success" size="sm" onClick={() => dispatch({ type: 'ADD_GROUP' })} aria-label="Create New Group" title="Create New Group">
+                    <Button variant="success" size="sm" onClick={() => dispatch(addGroup())} aria-label="Create New Group" title="Create New Group">
                         <Plus size={16} /> Create
                     </Button>
                 </div>

@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { ImportIcon, Trash2, CheckSquare, Users, Shield, LoadingSpinnerIcon } from './icons';
 import { ImportRaidHelperModal } from './ImportRaidHelperModal';
 import { Button } from './Button';
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { clearTWAttendance, importTWAttendance } from '../state/slices/twSlice';
+import { addGroup } from '../state/slices/groupSlice';
+import { addPlayer } from '../state/slices/playerSlice';
 import { useGroupDragAndDrop } from '../hooks/useGroupDragAndDrop';
 import { AttendancePlayerList } from './AttendancePlayerList';
 import { AttendanceGroupGrid } from './AttendanceGroupGrid';
@@ -19,7 +22,9 @@ interface TWAttendanceViewProps {
 }
 
 export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlayer, setConfirmModal, setStatusMessage }) => {
-    const { twAttendance: attendance, players, groups } = useAppState();
+    const attendance = useAppSelector(state => state.tw.twAttendance);
+    const players = useAppSelector(state => state.player.players);
+    const groups = useAppSelector(state => state.group.groups);
     const dispatch = useAppDispatch();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isClearing, setIsClearing] = useState(false);
@@ -39,12 +44,12 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
     } = useGroupDragAndDrop(groups, dispatch);
 
     const handleCreatePlayer = (discordName: string) => {
-        dispatch({ type: 'ADD_PLAYER', payload: { name: discordName } });
+        dispatch(addPlayer({ name: discordName }));
         alert(`Player "${discordName}" added to Unit Manager!\nPlease import the Raid Helper list again to link them automatically.`);
     };
 
     const handleAddGroup = () => {
-        dispatch({ type: 'ADD_GROUP' });
+        dispatch(addGroup());
     };
 
     const handleClearAttendance = () => {
@@ -77,7 +82,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                     await clearTWImport();
 
                     // Local clear
-                    dispatch({ type: 'CLEAR_TW_ATTENDANCE' });
+                    dispatch(clearTWAttendance());
                     setStatusMessage('TW data successfully cleared.');
                 } catch (err: any) {
                     console.error('Failed to wipe TW data:', err);
@@ -90,7 +95,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
     };
 
     const handleImportAttendance = (json: string) => {
-        dispatch({ type: 'IMPORT_TW_ATTENDANCE', payload: { jsonString: json } });
+        dispatch(importTWAttendance({ jsonString: json }));
     };
 
     const accepted = attendance.filter(p => p.status === 'Accepted');

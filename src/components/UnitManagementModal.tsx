@@ -13,10 +13,13 @@ interface UnitManagementModalProps {
 const tierColorClasses: { [key: string]: string } = { Legendary: 'text-yellow-400', Epic: 'text-purple-400', Rare: 'text-blue-400', Uncommon: 'text-green-400', Common: 'text-gray-400' };
 const tiersWithCost = ['Legendary', 'Epic', 'Rare'];
 
-import { useAppState, useAppDispatch } from '../AppContext';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { updateUnitConfig } from '../state/slices/unitSlice';
+import { renameUnitGlobally, deleteUnitGlobally } from '../state/slices/playerSlice';
+import { renameUnitGloballyInGroups, deleteUnitGloballyInGroups } from '../state/slices/groupSlice';
 
 export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClose }) => {
-    const { unitConfig } = useAppState();
+    const unitConfig = useAppSelector(state => state.unit.unitConfig);
     const dispatch = useAppDispatch();
     const [editingUnit, setEditingUnit] = useState<{ tier: string; originalUnit: Unit; newName: string; newCost: string } | null>(null);
     const [newUnit, setNewUnit] = useState({ name: '', tier: 'Legendary', cost: '' });
@@ -50,7 +53,7 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
         updatedTierUnits.sort((a, b) => a.name.localeCompare(b.name));
         newTiers[newUnit.tier] = updatedTierUnits;
 
-        dispatch({ type: 'UPDATE_UNIT_CONFIG', payload: { unitConfig: { tiers: newTiers } } });
+        dispatch(updateUnitConfig({ tiers: newTiers }));
         setNewUnit({ name: '', tier: 'Legendary', cost: '' });
     };
 
@@ -86,11 +89,12 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
         // Re-sort if the name changed
         newTiers[tier].sort((a, b) => a.name.localeCompare(b.name));
 
-        dispatch({ type: 'UPDATE_UNIT_CONFIG', payload: { unitConfig: { tiers: newTiers } } });
+        dispatch(updateUnitConfig({ tiers: newTiers }));
 
         // If name changed, run the global rename function to update all players.
         if (nameChanged) {
-            dispatch({ type: 'RENAME_UNIT_GLOBALLY', payload: { oldName: originalUnit.name, newName: trimmedNewName } });
+            dispatch(renameUnitGlobally({ oldName: originalUnit.name, newName: trimmedNewName }));
+            dispatch(renameUnitGloballyInGroups({ oldName: originalUnit.name, newName: trimmedNewName }));
         }
 
         setEditingUnit(null);
@@ -103,7 +107,8 @@ export const UnitManagementModal: React.FC<UnitManagementModalProps> = ({ onClos
             title: 'Delete Unit',
             message: `Are you sure you want to delete the unit "${name}"? This will remove it from all players' lists. This action is irreversible.`,
             onConfirm: () => {
-                dispatch({ type: 'DELETE_UNIT_GLOBALLY', payload: { unitNameToDelete: name } });
+                dispatch(deleteUnitGlobally({ unitNameToDelete: name }));
+                dispatch(deleteUnitGloballyInGroups({ unitNameToDelete: name }));
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
             }
         });

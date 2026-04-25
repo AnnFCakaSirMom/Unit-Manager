@@ -1,19 +1,28 @@
 import { useState, useCallback } from 'react';
-import type { AppState, AppAction } from '../types';
 import { AppStateSchema } from '../schema';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { hydratePlayers } from '../state/slices/playerSlice';
+import { hydrateGroups } from '../state/slices/groupSlice';
+import { hydrateTWAttendance, hydrateTWData } from '../state/slices/twSlice';
+import { updateUnitConfig } from '../state/slices/unitSlice';
 
 interface UseFileHandlerProps {
-    state: AppState;
-    dispatch: React.Dispatch<AppAction>;
     handleSelectPlayer: (id: string | null) => void;
     setStatusMessage: (msg: string) => void;
 }
 
-export function useFileHandler({ state, dispatch, handleSelectPlayer, setStatusMessage }: UseFileHandlerProps) {
+export function useFileHandler({ handleSelectPlayer, setStatusMessage }: UseFileHandlerProps) {
     const [aktivFilHandle, setAktivFilHandle] = useState<FileSystemFileHandle | null>(null);
     const [, setFileHandle] = useState<FileSystemFileHandle | null>(null);
 
-    const { players, unitConfig, groups, twAttendance, twSeasons, twEvents, twRecords } = state;
+    const dispatch = useAppDispatch();
+    const players = useAppSelector(state => state.player.players);
+    const unitConfig = useAppSelector(state => state.unit.unitConfig);
+    const groups = useAppSelector(state => state.group.groups);
+    const twAttendance = useAppSelector(state => state.tw.twAttendance);
+    const twSeasons = useAppSelector(state => state.tw.twSeasons);
+    const twEvents = useAppSelector(state => state.tw.twEvents);
+    const twRecords = useAppSelector(state => state.tw.twRecords);
 
     const processFile = useCallback((file: File, handle: FileSystemFileHandle | null) => {
         if (!file || !file.type.match('application/json')) {
@@ -36,7 +45,15 @@ export function useFileHandler({ state, dispatch, handleSelectPlayer, setStatusM
 
                 const validatedPayload = validationResult.data;
 
-                dispatch({ type: 'LOAD_STATE', payload: validatedPayload as any });
+                dispatch(hydratePlayers(validatedPayload.players));
+                dispatch(updateUnitConfig(validatedPayload.unitConfig));
+                dispatch(hydrateGroups(validatedPayload.groups));
+                dispatch(hydrateTWAttendance(validatedPayload.twAttendance));
+                dispatch(hydrateTWData({
+                    seasons: validatedPayload.twSeasons,
+                    events: validatedPayload.twEvents,
+                    records: validatedPayload.twRecords
+                }));
                 setFileHandle(handle);
                 handleSelectPlayer(validatedPayload.players[0]?.id || null);
                 setStatusMessage(`File "${file.name}" loaded successfully!`);
@@ -56,7 +73,7 @@ export function useFileHandler({ state, dispatch, handleSelectPlayer, setStatusM
                 const writable = await aktivFilHandle.createWritable();
                 await writable.write(dataToSave);
                 await writable.close();
-                dispatch({ type: 'SAVE_SUCCESS' });
+
                 setStatusMessage('File saved successfully!');
             } catch (err) {
                 console.error('Could not save to existing file:', err);
@@ -73,7 +90,7 @@ export function useFileHandler({ state, dispatch, handleSelectPlayer, setStatusM
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-                dispatch({ type: 'SAVE_SUCCESS' });
+
                 setStatusMessage('File saved successfully!');
             } catch (err) {
                 console.error('Save failed:', err);

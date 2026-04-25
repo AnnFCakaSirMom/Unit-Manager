@@ -1,11 +1,15 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useAppState } from '../AppContext';
+import { useSelector } from 'react-redux';
+import { RootState } from '../state/store';
 import { TWPlayerRecord } from '../types';
 
 export type SortKey = 'name' | 'attendance' | 'percentage' | 'declined' | 'awol';
 
 export const useTWStats = () => {
-    const { twSeasons, twEvents, twRecords, players } = useAppState();
+    const twSeasons = useSelector((state: RootState) => state.tw.twSeasons);
+    const twEvents = useSelector((state: RootState) => state.tw.twEvents);
+    const twRecords = useSelector((state: RootState) => state.tw.twRecords);
+    const players = useSelector((state: RootState) => state.player.players);
 
     const [activeSeasonId, setActiveSeasonId] = useState<string>('');
     const [showAttendance, setShowAttendance] = useState(true);
@@ -129,3 +133,4 @@ export const useTWStats = () => {
         sortedStats
     };
 };
+
