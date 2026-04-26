@@ -8,22 +8,32 @@ import type { TWSeason, TWEvent, TWPlayerRecord } from '../types';
 /**
  * Fetches all TW-related data (seasons, events, and records) in a structured format.
  */
-export async function fetchTWAttendanceData() {
+export async function fetchTWAttendanceData(signal?: AbortSignal) {
   const { data: seasons, error: sErr } = await supabase
     .from('tw_seasons')
     .select('*')
-    .order('start_date', { ascending: false });
+    .order('start_date', { ascending: false })
+    .abortSignal(signal!);
 
   const { data: events, error: eErr } = await supabase
     .from('tw_events')
     .select('*')
-    .order('date', { ascending: true });
+    .order('date', { ascending: true })
+    .abortSignal(signal!);
 
   const { data: records, error: rErr } = await supabase
     .from('tw_attendance_records')
-    .select('*');
+    .select('*')
+    .abortSignal(signal!);
 
   if (sErr || eErr || rErr) {
+    // Re-throw AbortErrors so SyncManager can handle them correctly.
+    const msg = sErr?.message || eErr?.message || rErr?.message || '';
+    if (msg.includes('abort')) {
+      const e = new Error('AbortError');
+      e.name = 'AbortError';
+      throw e;
+    }
     console.error('[twAttendanceService] Fetch error:', { sErr, eErr, rErr });
     throw new Error('Could not fetch TW attendance data');
   }

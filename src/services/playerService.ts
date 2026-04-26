@@ -64,10 +64,12 @@ function transformProfileToPlayer(row: ProfileRow): Player {
  * Returns an empty array (silent fallback) if the request fails,
  * so the app remains functional even when offline.
  */
-export async function fetchPlayersFromSupabase(): Promise<Player[]> {
+export async function fetchPlayersFromSupabase(signal?: AbortSignal): Promise<Player[]> {
   console.log('[playerService] Fetching players from Supabase...');
 
-  // Fetch profiles with units and player_info separately in parallel
+  // Fetch profiles with units and player_info separately in parallel.
+  // Both queries receive the same AbortSignal so they can both be cancelled
+  // atomically when SyncManager aborts a stale request.
   const [profilesResult, infoResult] = await Promise.all([
     supabase.from('profiles').select(`
       *,
@@ -78,11 +80,17 @@ export async function fetchPlayersFromSupabase(): Promise<Player[]> {
         is_mastery,
         is_favorite
       )
-    `),
-    supabase.from('player_info').select('*')
+    `).abortSignal(signal!),
+    supabase.from('player_info').select('*').abortSignal(signal!)
   ]);
 
   if (profilesResult.error) {
+    // Re-throw AbortErrors so SyncManager can handle them correctly.
+    if (profilesResult.error.message?.includes('abort')) {
+      const e = new Error('AbortError');
+      e.name = 'AbortError';
+      throw e;
+    }
     console.error('[playerService] Profiles fetch failed:', profilesResult.error.message);
     return [];
   }

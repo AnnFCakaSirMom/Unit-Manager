@@ -6,6 +6,7 @@ interface UIState {
   statusMessage: string;
   confirmModal: ConfirmModalInfo;
   pendingApprovalsCount: number;
+  isSyncing: boolean;
 }
 
 const initialState: UIState = {
@@ -13,6 +14,7 @@ const initialState: UIState = {
   statusMessage: '',
   confirmModal: { isOpen: false, title: '', message: '', onConfirm: () => {} },
   pendingApprovalsCount: 0,
+  isSyncing: false,
 };
 
 const uiSlice = createSlice({
@@ -37,6 +39,9 @@ const uiSlice = createSlice({
     },
     setPendingApprovalsCount(state, action: PayloadAction<number>) {
       state.pendingApprovalsCount = action.payload;
+    },
+    setSyncing(state, action: PayloadAction<boolean>) {
+      state.isSyncing = action.payload;
     }
   },
 });
@@ -47,7 +52,8 @@ export const {
   clearStatusMessage, 
   setConfirmModal, 
   closeConfirmModal,
-  setPendingApprovalsCount
+  setPendingApprovalsCount,
+  setSyncing
 } = uiSlice.actions;
 
 export const uiReducer = uiSlice.reducer;

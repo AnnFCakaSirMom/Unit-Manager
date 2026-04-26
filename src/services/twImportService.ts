@@ -4,13 +4,20 @@ import { TWAttendancePlayer } from '../types';
 /**
  * Fetches the temporary TW import list from Supabase.
  */
-export async function fetchTWImport(): Promise<TWAttendancePlayer[]> {
+export async function fetchTWImport(signal?: AbortSignal): Promise<TWAttendancePlayer[]> {
   const { data, error } = await supabase
     .from('tw_import_list')
     .select('*')
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .abortSignal(signal!);
 
   if (error) {
+    // Re-throw AbortErrors so SyncManager can handle them correctly.
+    if (error.message?.includes('abort')) {
+      const e = new Error('AbortError');
+      e.name = 'AbortError';
+      throw e;
+    }
     console.error('[twImportService] Fetch failed:', error.message);
     return [];
   }

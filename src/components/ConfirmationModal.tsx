@@ -6,12 +6,22 @@ interface ConfirmationModalProps {
     isOpen: boolean;
     title: string;
     message: string;
+    confirmText?: string;
     onConfirm: () => void;
     onClose: () => void;
 }
 
-export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, title, message, onConfirm, onClose }) => {
+export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ 
+    isOpen, 
+    title, 
+    message, 
+    confirmText,
+    onConfirm, 
+    onClose 
+}) => {
     if (!isOpen) return null;
+
+    const isProcessing = confirmText?.includes('...');
 
     return (
         <div
@@ -27,14 +37,23 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, ti
                     </h2>
                 </header>
                 <div className="p-4 text-gray-300">
-                    <p>{message}</p>
+                    <p className="whitespace-pre-wrap">{message}</p>
                 </div>
                 <footer className="p-4 bg-gray-900/50 rounded-b-lg flex justify-end items-center gap-3">
-                    <Button variant="ghost" className="bg-gray-600 hover:bg-gray-500" onClick={onClose}>
+                    <Button 
+                        variant="ghost" 
+                        className="bg-gray-600 hover:bg-gray-500" 
+                        onClick={onClose}
+                        disabled={isProcessing}
+                    >
                         Cancel
                     </Button>
-                    <Button variant="danger" onClick={onConfirm}>
-                        Confirm
+                    <Button 
+                        variant="danger" 
+                        onClick={onConfirm}
+                        disabled={isProcessing}
+                    >
+                        {confirmText || 'Confirm'}
                     </Button>
                 </footer>
             </div>

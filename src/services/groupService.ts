@@ -40,7 +40,7 @@ function transformGroupRow(row: GroupRow): Group {
  * Fetches all groups with their members from Supabase.
  * Sorted by order_index for stable ordering.
  */
-export async function fetchGroupsFromSupabase(): Promise<Group[]> {
+export async function fetchGroupsFromSupabase(signal?: AbortSignal): Promise<Group[]> {
   const { data, error } = await supabase
     .from('groups')
     .select(`
@@ -56,9 +56,16 @@ export async function fetchGroupsFromSupabase(): Promise<Group[]> {
       )
     `)
     .order('order_index', { ascending: true })
-    .order('order_index', { foreignTable: 'group_members', ascending: true });
+    .order('order_index', { foreignTable: 'group_members', ascending: true })
+    .abortSignal(signal!);
 
   if (error) {
+    // Re-throw AbortErrors so SyncManager can handle them correctly.
+    if (error.message?.includes('abort')) {
+      const e = new Error('AbortError');
+      e.name = 'AbortError';
+      throw e;
+    }
     console.warn('[groupService] Supabase fetch failed:', error.message);
     return [];
   }
