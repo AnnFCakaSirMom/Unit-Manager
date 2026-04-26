@@ -43,7 +43,18 @@ export const GroupsList = React.memo(({
     }, [dispatch, selectedGroupId, onSelectGroup, setConfirmModal]);
 
     const handleCopyAllGroups = useCallback(() => {
-        const textToCopy = groups.map(group => {
+        const combatGroups = groups.filter(g => {
+            const isMaybe = g.name.toUpperCase().includes('MAYBE');
+            const isEmpty = g.members.length === 0;
+            return !isMaybe && !isEmpty;
+        });
+
+        if (combatGroups.length === 0) {
+            onCopy("No active combat groups to copy.");
+            return;
+        }
+
+        const textToCopy = combatGroups.map(group => {
             let groupHeaderText = `--- ${group.name} ---\n`;
 
             const leader = group.members.find(m => m.playerId === group.leaderId);
@@ -95,7 +106,13 @@ export const GroupsList = React.memo(({
             <div className="flex-grow overflow-y-auto pr-2 -mr-2">
                 {groups.length > 0 ? (
                     <ul className="space-y-1">
-                        {groups.map((group) => (
+                        {[...groups].sort((a, b) => {
+                            const aMaybe = a.name.toUpperCase().includes('MAYBE');
+                            const bMaybe = b.name.toUpperCase().includes('MAYBE');
+                            if (aMaybe && !bMaybe) return 1;
+                            if (!aMaybe && bMaybe) return -1;
+                            return 0;
+                        }).map((group) => (
                             <li key={group.id} className={`p-2 rounded-md transition-all duration-200 flex justify-between items-center group ${selectedGroupId === group.id ? 'bg-green-500/20' : 'bg-gray-700/50'}`}>
                                 {editingGroup.id === group.id ? (
                                     <div className="flex-grow flex items-center gap-2">

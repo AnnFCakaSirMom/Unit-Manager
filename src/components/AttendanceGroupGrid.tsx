@@ -41,7 +41,13 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
 }) => {
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {groups.map(group => {
+            {[...groups].sort((a, b) => {
+                const aMaybe = a.name.toUpperCase().includes('MAYBE');
+                const bMaybe = b.name.toUpperCase().includes('MAYBE');
+                if (aMaybe && !bMaybe) return 1;
+                if (!aMaybe && bMaybe) return -1;
+                return 0;
+            }).map(group => {
                 const isFull = group.members.length >= 5;
 
                 return (

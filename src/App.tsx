@@ -119,7 +119,7 @@ const App: React.FC = () => {
                                 </div>
                             </div>
                         )}
-                        <div className="flex flex-col md:flex-row h-full min-h-screen">
+                        <div className="flex flex-col md:flex-row h-screen overflow-hidden">
                             <Sidebar
                                 selectedPlayerId={selectedPlayerId}
                                 selectedGroupId={selectedGroupId}
@@ -141,7 +141,7 @@ const App: React.FC = () => {
                                 onLogout={handleLogout}
                             />
 
-                            <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow">
+                            <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow h-full overflow-hidden flex flex-col">
                                 {showAdminPanel ? (
                                     <div className="flex-1 overflow-auto p-4 min-w-[300px]">
                                         <AdminPanel

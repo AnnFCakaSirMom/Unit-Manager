@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
     }, []);
 
     return (
-        <aside className="w-full md:w-1/3 lg:w-1/4 bg-gray-800/50 border-r border-gray-700 p-4 flex flex-col">
+        <aside className="w-full md:w-1/3 lg:w-1/4 bg-gray-800/50 border-r border-gray-700 p-4 flex flex-col overflow-y-auto h-full">
             <header className="mb-3">
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-bold text-blue-400">Unit Manager</h1>
