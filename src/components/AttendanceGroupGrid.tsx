@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Group, Player } from '../types';
-import { Shield, Trash2, Plus } from './icons';
+import { Shield, Trash2, Plus, X } from './icons';
 import { Button } from './Button';
 import { cn } from '../utils';
 
@@ -22,7 +22,7 @@ export interface AttendanceGroupGridProps {
     handleDragEnd: () => void;
     handleDropOnMember: (e: React.DragEvent, targetGroupId: string, targetPlayerId: string) => void;
     handleAssignGroup: (playerId: string, targetGroupId: string) => void;
-    handleAddGroup: () => void;
+    handleAddGroup: (isMaybe: boolean) => void;
 }
 
 export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
@@ -39,6 +39,8 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
     handleAssignGroup,
     handleAddGroup
 }) => {
+    const [showCreateMenu, setShowCreateMenu] = React.useState(false);
+
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {[...groups].sort((a, b) => {
@@ -122,15 +124,44 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                 );
             })}
 
-            <div
-                className="bg-gray-800/30 border-2 border-gray-700 border-dashed rounded-lg flex items-center justify-center p-4 min-h-[130px] hover:bg-gray-800/50 transition-colors cursor-pointer"
-                onClick={handleAddGroup}
-            >
-                <div className="text-gray-400 flex flex-col items-center gap-2">
-                    <div className="bg-gray-700 p-2 rounded-full"><Plus size={20} /></div>
-                    <span className="font-medium text-xs">Create New Group</span>
+            {!showCreateMenu ? (
+                <div
+                    className="bg-gray-800/30 border-2 border-gray-700 border-dashed rounded-lg flex items-center justify-center p-4 min-h-[130px] hover:bg-gray-800/50 transition-colors cursor-pointer group"
+                    onClick={() => setShowCreateMenu(true)}
+                >
+                    <div className="text-gray-400 flex flex-col items-center gap-2 group-hover:text-blue-400 transition-colors">
+                        <div className="bg-gray-700 p-2 rounded-full group-hover:bg-blue-900/30 transition-colors"><Plus size={20} /></div>
+                        <span className="font-medium text-xs">Create New Group</span>
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div className="bg-gray-800/80 border-2 border-blue-500/50 rounded-lg flex flex-col p-4 min-h-[130px] gap-3 animate-in fade-in zoom-in duration-150">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Select Group Type</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-gray-500" onClick={() => setShowCreateMenu(false)}>
+                            <X size={14} />
+                        </Button>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <Button 
+                            variant="primary" 
+                            className="w-full justify-start gap-3 py-2.5 h-auto text-sm"
+                            onClick={() => { handleAddGroup(false); setShowCreateMenu(false); }}
+                        >
+                            <Shield size={16} className="text-blue-400" />
+                            Standard Group
+                        </Button>
+                        <Button 
+                            variant="secondary" 
+                            className="w-full justify-start gap-3 py-2.5 h-auto text-sm bg-gray-700 hover:bg-gray-600 border-gray-600"
+                            onClick={() => { handleAddGroup(true); setShowCreateMenu(false); }}
+                        >
+                            <Shield size={16} className="text-purple-400" />
+                            Maybe Group
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

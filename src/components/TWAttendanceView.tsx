@@ -48,8 +48,8 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
         alert(`Player "${discordName}" added to Unit Manager!\nPlease import the Raid Helper list again to link them automatically.`);
     };
 
-    const handleAddGroup = () => {
-        dispatch(addGroup());
+    const handleAddGroup = (isMaybe: boolean = false) => {
+        dispatch(addGroup({ isMaybe }));
     };
 
     const handleClearAttendance = () => {

@@ -24,9 +24,29 @@ const groupSlice = createSlice({
       // Wait, clearing TW attendance means groups become empty? The original logic did `return []` for 'CLEAR_TW_ATTENDANCE'.
       state.groups = [];
     },
-    addGroup(state) {
-      const newGroup: Group = { id: crypto.randomUUID(), name: `Group ${state.groups.length + 1}`, leaderId: null, members: [] };
-      state.groups.push(newGroup);
+    addGroup(state, action: PayloadAction<{ isMaybe?: boolean } | undefined>) {
+      const isMaybe = action.payload?.isMaybe ?? false;
+      const groups = state.groups;
+      
+      if (isMaybe) {
+        const maybeCount = groups.filter(g => g.name.toUpperCase().includes('MAYBE')).length;
+        const newGroup: Group = { 
+          id: crypto.randomUUID(), 
+          name: `MAYBE - Group ${maybeCount + 1}`, 
+          leaderId: null, 
+          members: [] 
+        };
+        state.groups.push(newGroup);
+      } else {
+        const standardCount = groups.filter(g => !g.name.toUpperCase().includes('MAYBE')).length;
+        const newGroup: Group = { 
+          id: crypto.randomUUID(), 
+          name: `Group ${standardCount + 1}`, 
+          leaderId: null, 
+          members: [] 
+        };
+        state.groups.push(newGroup);
+      }
     },
     deleteGroup(state, action: PayloadAction<{ groupId: string }>) {
       state.groups = state.groups.filter(g => g.id !== action.payload.groupId);

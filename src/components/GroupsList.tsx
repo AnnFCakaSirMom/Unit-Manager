@@ -87,6 +87,13 @@ export const GroupsList = React.memo(({
     }, [groups, players, onCopy]);
 
 
+    const [showCreateMenu, setShowCreateMenu] = useState(false);
+
+    const handleAddGroup = (isMaybe: boolean) => {
+        dispatch(addGroup({ isMaybe }));
+        setShowCreateMenu(false);
+    };
+
     return (
         <div className="flex-grow flex flex-col mt-3">
             <div className="flex justify-between items-center mb-2">
@@ -94,13 +101,40 @@ export const GroupsList = React.memo(({
                     <Shield size={18} /> Groups ({groups.length})
                     <HelpIcon helpKey="groups" text={HELP_CONTENT.group_management} />
                 </h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 relative">
                     <Button variant="primary" size="sm" onClick={handleCopyAllGroups} title="Copy All Groups" aria-label="Copy All Groups">
                         <Clipboard size={16} /> Copy
                     </Button>
-                    <Button variant="success" size="sm" onClick={() => dispatch(addGroup())} aria-label="Create New Group" title="Create New Group">
-                        <Plus size={16} /> Create
-                    </Button>
+                    <div className="relative">
+                        <Button 
+                            variant="success" 
+                            size="sm" 
+                            onClick={() => setShowCreateMenu(!showCreateMenu)} 
+                            aria-label="Create New Group" 
+                            title="Create New Group"
+                        >
+                            <Plus size={16} /> Create
+                        </Button>
+                        
+                        {showCreateMenu && (
+                            <div className="absolute top-full right-0 mt-1 w-44 bg-gray-800 border border-gray-600 rounded-md shadow-xl z-[100] overflow-hidden animate-in fade-in zoom-in duration-100">
+                                <button 
+                                    onClick={() => handleAddGroup(false)}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-700 transition-colors flex items-center gap-2 border-b border-gray-700/50"
+                                >
+                                    <Shield size={14} className="text-blue-400" />
+                                    Standard Group
+                                </button>
+                                <button 
+                                    onClick={() => handleAddGroup(true)}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-200 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                                >
+                                    <Shield size={14} className="text-purple-400" />
+                                    Maybe Group
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
             <div className="flex-grow overflow-y-auto pr-2 -mr-2">
