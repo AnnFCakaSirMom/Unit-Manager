@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../services/supabase';
 import { useAppSelector, useAppDispatch } from '../state/store';
 import { mergePlayerId } from '../state/slices/playerSlice';
+import { mergePlayerIdInTW } from '../state/slices/twSlice';
+import { mergePlayerIdInGroups } from '../state/slices/groupSlice';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from './Button';
 import { Select } from './Select';
@@ -195,8 +197,36 @@ export const ProfileMatcher: React.FC = () => {
                 }
             }
 
+            // --- MIGRATION: Move related data in database BEFORE deleting old profile ---
+            
+            // 1. Update TW Attendance (import list)
+            await supabase
+                .from('tw_import_list')
+                .update({ matched_player_id: pendingId })
+                .eq('matched_player_id', localPlayerId);
+
+            // 2. Update TW Statistics (records)
+            await supabase
+                .from('tw_attendance_records')
+                .update({ profile_id: pendingId })
+                .eq('profile_id', localPlayerId);
+
+            // 3. Update Group Memberships
+            await supabase
+                .from('group_members')
+                .update({ profile_id: pendingId })
+                .eq('profile_id', localPlayerId);
+
+            // 4. Update Group Leadership
+            await supabase
+                .from('groups')
+                .update({ leader_id: pendingId })
+                .eq('leader_id', localPlayerId);
+
             // Update local state by replacing all occurrences of localPlayerId with pendingId
             dispatch(mergePlayerId({ oldId: localPlayerId, newId: pendingId }));
+            dispatch(mergePlayerIdInTW({ oldId: localPlayerId, newId: pendingId }));
+            dispatch(mergePlayerIdInGroups({ oldId: localPlayerId, newId: pendingId }));
 
             setMessage({ text: `Successfully linked and upgraded ${localPlayer.name}!`, type: 'success' });
             
