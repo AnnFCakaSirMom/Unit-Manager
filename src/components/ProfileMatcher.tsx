@@ -5,6 +5,7 @@ import { mergePlayerId } from '../state/slices/playerSlice';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from './Button';
 import { Select } from './Select';
+import { ConfirmationModal } from './ConfirmationModal';
 import { Check, UserPlus, Link as LinkIcon, AlertTriangle, Trash2 } from './icons';
 import { washName } from '../utils';
 
@@ -23,6 +24,21 @@ export const ProfileMatcher: React.FC = () => {
     const [selectedMatches, setSelectedMatches] = useState<{ [pendingId: string]: string }>({});
     const [isProcessing, setIsProcessing] = useState(false);
     const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' | 'info' } | null>(null);
+
+    // Confirmation Modal State
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string;
+        message: string;
+        confirmText: string;
+        onConfirm: () => void;
+        variant?: 'danger' | 'primary' | 'secondary';
+    }>({
+        title: '',
+        message: '',
+        confirmText: '',
+        onConfirm: () => {}
+    });
 
     const fetchProfiles = async () => {
         try {
@@ -111,6 +127,7 @@ export const ProfileMatcher: React.FC = () => {
         const localPlayer = players.find(p => p.id === localPlayerId);
         if (!localPlayer) return;
 
+        setIsConfirmOpen(false);
         setIsProcessing(true);
         setMessage(null);
 
@@ -211,6 +228,7 @@ export const ProfileMatcher: React.FC = () => {
     };
 
     const handleCreateNew = async (pendingId: string, discordNick: string) => {
+        setIsConfirmOpen(false);
         setIsProcessing(true);
         setMessage(null);
 
@@ -237,10 +255,7 @@ export const ProfileMatcher: React.FC = () => {
     };
 
     const handleDeny = async (pendingId: string, discordNick: string) => {
-        if (!window.confirm(`Are you sure you want to deny and delete ${discordNick}? They will no longer appear in this list.`)) {
-            return;
-        }
-
+        setIsConfirmOpen(false);
         setIsProcessing(true);
         setMessage(null);
 
@@ -262,6 +277,46 @@ export const ProfileMatcher: React.FC = () => {
         } finally {
             setIsProcessing(false);
         }
+    };
+
+    // Trigger confirmation modal for Link
+    const confirmLink = (pendingId: string, discordNick: string) => {
+        const localPlayerId = selectedMatches[pendingId];
+        const localPlayer = players.find(p => p.id === localPlayerId);
+        if (!localPlayer) return;
+
+        setConfirmConfig({
+            title: "Link Profile",
+            message: `Are you sure you want to link Discord user "${discordNick}" to existing profile "${localPlayer.name}"? This will merge their data.`,
+            confirmText: "Confirm Link",
+            variant: "primary",
+            onConfirm: () => handleLinkProfile(pendingId)
+        });
+        setIsConfirmOpen(true);
+    };
+
+    // Trigger confirmation modal for Create New
+    const confirmCreateNew = (pendingId: string, discordNick: string) => {
+        setConfirmConfig({
+            title: "Create New Member",
+            message: `Are you sure you want to create a brand new profile for "${discordNick}"? They will start with an empty unit list.`,
+            confirmText: "Create Member",
+            variant: "secondary",
+            onConfirm: () => handleCreateNew(pendingId, discordNick)
+        });
+        setIsConfirmOpen(true);
+    };
+
+    // Trigger confirmation modal for Deny
+    const confirmDeny = (pendingId: string, discordNick: string) => {
+        setConfirmConfig({
+            title: "Deny Request",
+            message: `Are you sure you want to deny "${discordNick}"? They will be removed from the queue but can try to log in again later.`,
+            confirmText: "Deny & Delete",
+            variant: "danger",
+            onConfirm: () => handleDeny(pendingId, discordNick)
+        });
+        setIsConfirmOpen(true);
     };
 
     return (
@@ -343,7 +398,7 @@ export const ProfileMatcher: React.FC = () => {
                                     <Button 
                                         variant="primary" 
                                         disabled={isProcessing || !selectedVal}
-                                        onClick={() => handleLinkProfile(pending.id)}
+                                        onClick={() => confirmLink(pending.id, pending.discord_nickname)}
                                         className="w-full whitespace-nowrap bg-blue-600 hover:bg-blue-500 py-1.5 h-auto text-xs"
                                     >
                                         <LinkIcon size={14} /> Link & Upgrade
@@ -352,7 +407,7 @@ export const ProfileMatcher: React.FC = () => {
                                     <Button 
                                         variant="secondary" 
                                         disabled={isProcessing || !!selectedVal}
-                                        onClick={() => handleCreateNew(pending.id, pending.discord_nickname)}
+                                        onClick={() => confirmCreateNew(pending.id, pending.discord_nickname)}
                                         className="w-full whitespace-nowrap py-1.5 h-auto text-xs"
                                     >
                                         <UserPlus size={14} /> Create New
@@ -361,7 +416,7 @@ export const ProfileMatcher: React.FC = () => {
                                     <Button 
                                         variant="ghost" 
                                         disabled={isProcessing}
-                                        onClick={() => handleDeny(pending.id, pending.discord_nickname)}
+                                        onClick={() => confirmDeny(pending.id, pending.discord_nickname)}
                                         className="w-full whitespace-nowrap py-1.5 h-auto text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/20"
                                     >
                                         <Trash2 size={14} /> Deny
@@ -372,6 +427,15 @@ export const ProfileMatcher: React.FC = () => {
                     })}
                 </div>
             )}
+
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                title={confirmConfig.title}
+                message={confirmConfig.message}
+                confirmText={confirmConfig.confirmText}
+                onConfirm={confirmConfig.onConfirm}
+                onClose={() => setIsConfirmOpen(false)}
+            />
         </div>
     );
 };
