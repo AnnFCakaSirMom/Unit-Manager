@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Group, Player } from '../types';
-import { Shield, Trash2, Plus, X } from './icons';
+import type { Group, Player, TWHistoryClipboard } from '../types';
+import { Shield, Trash2, Plus, X, Copy } from './icons';
 import { Button } from './Button';
 import { cn } from '../utils';
 
@@ -23,6 +23,9 @@ export interface AttendanceGroupGridProps {
     handleDropOnMember: (e: React.DragEvent, targetGroupId: string, targetPlayerId: string) => void;
     handleAssignGroup: (playerId: string, targetGroupId: string) => void;
     handleAddGroup: (isMaybe: boolean) => void;
+    clipboard?: TWHistoryClipboard;
+    onPasteIntoGroup?: (targetGroupId: string) => void;
+    onPasteAsNewGroup?: () => void;
 }
 
 export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
@@ -37,7 +40,10 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
     handleDragEnd,
     handleDropOnMember,
     handleAssignGroup,
-    handleAddGroup
+    handleAddGroup,
+    clipboard,
+    onPasteIntoGroup,
+    onPasteAsNewGroup,
 }) => {
     const [showCreateMenu, setShowCreateMenu] = React.useState(false);
 
@@ -67,12 +73,26 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                                 <Shield size={14} className="text-blue-400" />
                                 {group.name}
                             </h4>
-                            <span className={cn(
-                                "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                                isFull ? 'bg-red-500/20 text-red-400' : 'bg-gray-700 text-gray-300'
-                            )}>
-                                {group.members.length} / 5
-                            </span>
+                            <div className="flex items-center gap-1">
+                                {clipboard?.type && onPasteIntoGroup && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-teal-400 hover:text-teal-300 hover:bg-teal-900/20 h-6 text-[10px] gap-0.5 px-1.5"
+                                        onClick={() => onPasteIntoGroup(group.id)}
+                                        title={clipboard.type === 'group' ? 'Paste group here' : 'Paste player here'}
+                                    >
+                                        <Copy size={11} />
+                                        {clipboard.type === 'group' ? 'Paste group' : 'Paste player'}
+                                    </Button>
+                                )}
+                                <span className={cn(
+                                    "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                                    isFull ? 'bg-red-500/20 text-red-400' : 'bg-gray-700 text-gray-300'
+                                )}>
+                                    {group.members.length} / 5
+                                </span>
+                            </div>
                         </div>
                         <div className="p-1.5 flex-grow min-h-[80px] flex flex-col gap-1">
                             {group.members.map(member => {
@@ -125,13 +145,25 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
             })}
 
             {!showCreateMenu ? (
-                <div
-                    className="bg-gray-800/30 border-2 border-gray-700 border-dashed rounded-lg flex items-center justify-center p-4 min-h-[130px] hover:bg-gray-800/50 transition-colors cursor-pointer group"
-                    onClick={() => setShowCreateMenu(true)}
-                >
-                    <div className="text-gray-400 flex flex-col items-center gap-2 group-hover:text-blue-400 transition-colors">
-                        <div className="bg-gray-700 p-2 rounded-full group-hover:bg-blue-900/30 transition-colors"><Plus size={20} /></div>
-                        <span className="font-medium text-xs">Create New Group</span>
+                <div className="bg-gray-800/30 border-2 border-gray-700 border-dashed rounded-lg flex flex-col items-center justify-center p-4 min-h-[130px] gap-2">
+                    {/* Paste as new group button — only shown when a group is in clipboard */}
+                    {clipboard?.type === 'group' && onPasteAsNewGroup && (
+                        <Button
+                            variant="ghost"
+                            className="text-teal-400 hover:text-teal-300 hover:bg-teal-900/20 border border-teal-700/40 w-full justify-center gap-2 py-2 text-sm"
+                            onClick={onPasteAsNewGroup}
+                        >
+                            <Copy size={15} /> Paste as new group
+                        </Button>
+                    )}
+                    <div
+                        className="hover:bg-gray-800/50 transition-colors cursor-pointer group flex flex-col items-center gap-2 w-full py-2 rounded-md"
+                        onClick={() => setShowCreateMenu(true)}
+                    >
+                        <div className="text-gray-400 flex flex-col items-center gap-2 group-hover:text-blue-400 transition-colors">
+                            <div className="bg-gray-700 p-2 rounded-full group-hover:bg-blue-900/30 transition-colors"><Plus size={20} /></div>
+                            <span className="font-medium text-xs">Create New Group</span>
+                        </div>
                     </div>
                 </div>
             ) : (

@@ -5,6 +5,7 @@ import { playerReducer } from './slices/playerSlice';
 import { groupReducer } from './slices/groupSlice';
 import { twReducer } from './slices/twSlice';
 import { uiReducer } from './slices/uiSlice';
+import { historyReducer } from './slices/historySlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     group: groupReducer,
     tw: twReducer,
     ui: uiReducer,
+    history: historyReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware({
     serializableCheck: {

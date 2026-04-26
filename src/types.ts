@@ -103,6 +103,26 @@ export interface TWPlayerRecord {
 
 
 
+export interface TWHistorySnapshotData {
+  groups: Group[];
+  twAttendance: TWAttendancePlayer[];
+}
+
+export interface TWHistorySnapshot {
+  id: string;
+  createdAt: string;
+  savedBy: string | null;
+  name: string;                        // ISO-datum ex. "2026-04-26 23:00"
+  snapshot: TWHistorySnapshotData;
+}
+
+export type TWHistoryClipboardType = 'player' | 'group' | null;
+
+export interface TWHistoryClipboard {
+  type: TWHistoryClipboardType;
+  data: any | null;                    // GroupMember (player) eller Group
+}
+
 export type ConfirmModalInfo = {
   isOpen: boolean;
   title: string;

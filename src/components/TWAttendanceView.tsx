@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ImportIcon, Trash2, CheckSquare, Users, Shield, LoadingSpinnerIcon } from './icons';
+import { ImportIcon, Trash2, CheckSquare, Users, Shield, LoadingSpinnerIcon, History, Save } from './icons';
 import { ImportRaidHelperModal } from './ImportRaidHelperModal';
 import { Button } from './Button';
 import { useAppSelector, useAppDispatch } from '../state/store';
@@ -14,6 +14,15 @@ import { supabase } from '../services/supabase';
 import { clearTWImport } from '../services/twImportService';
 import { HelpIcon } from './HelpIcon';
 import { HELP_CONTENT } from '../helpContent';
+import { TWHistoryModal } from './TWHistoryModal';
+import {
+    saveSnapshot,
+    loadHistory,
+    applyFullHistory,
+    pasteGroupFromClipboard,
+    pastePlayerFromClipboard,
+} from '../state/slices/historySlice';
+import type { TWHistorySnapshot } from '../types';
 
 interface TWAttendanceViewProps {
     onSelectPlayer: (id: string | null) => void;
@@ -25,8 +34,11 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
     const attendance = useAppSelector(state => state.tw.twAttendance);
     const players = useAppSelector(state => state.player.players);
     const groups = useAppSelector(state => state.group.groups);
+    const clipboard = useAppSelector(state => state.history.clipboard);
+    const isSavingSnapshot = useAppSelector(state => state.history.isSaving);
     const dispatch = useAppDispatch();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [isClearing, setIsClearing] = useState(false);
 
     const {
@@ -62,34 +74,85 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
 
                 try {
-                    // Wipe group_members first (safest filter for some DB configs)
+                    // 1. Auto-save snapshot before clearing (only if there is something to save)
+                    const hasMembers = groups.some(g => g.members.length > 0);
+                    if (hasMembers) {
+                        try {
+                            await dispatch(saveSnapshot()).unwrap();
+                        } catch (saveErr) {
+                            console.error('Auto-save failed before wipe:', saveErr);
+                            // We continue anyway, or should we stop? Let's continue but log it.
+                        }
+                    }
+
+                    // 2. Wipe group_members first
                     const { error: membersError } = await supabase
                         .from('group_members')
                         .delete()
-                        .neq('profile_id', '00000000-0000-0000-0000-000000000000');
+                        .not('profile_id', 'is', null); // Alternative "delete all" filter
                     
-                    if (membersError) throw membersError;
+                    if (membersError) {
+                        console.error('Members wipe error:', membersError);
+                        throw new Error(`Members wipe failed: ${membersError.message}`);
+                    }
 
-                    // Wipe groups
+                    // 3. Wipe groups
                     const { error: groupsError } = await supabase
                         .from('groups')
                         .delete()
-                        .neq('id', '00000000-0000-0000-0000-000000000000');
+                        .not('id', 'is', null);
 
-                    if (groupsError) throw groupsError;
+                    if (groupsError) {
+                        console.error('Groups wipe error:', groupsError);
+                        throw new Error(`Groups wipe failed: ${groupsError.message}`);
+                    }
 
-                    // Wipe temporary import list
-                    await clearTWImport();
+                    // 4. Wipe temporary import list
+                    try {
+                        await clearTWImport();
+                    } catch (importErr: any) {
+                        console.error('Import wipe error:', importErr);
+                        // Non-critical, but good to know
+                    }
 
-                    // Local clear
+                    // 5. Local clear
                     dispatch(clearTWAttendance());
                     setStatusMessage('TW data successfully cleared.');
                 } catch (err: any) {
                     console.error('Failed to wipe TW data:', err);
-                    setStatusMessage(`Error: ${err.message || 'Failed to wipe database'}`);
+                    const errorMsg = err instanceof Error ? err.message : (err.message || JSON.stringify(err));
+                    setStatusMessage(`Error: ${errorMsg}`);
                 } finally {
                     setIsClearing(false);
                 }
+            }
+        });
+    };
+
+    const handleManualSave = async () => {
+        try {
+            await dispatch(saveSnapshot()).unwrap();
+            setStatusMessage('Planning saved to history!');
+        } catch (err: any) {
+            setStatusMessage(`Error: ${err.message || 'Could not save snapshot'}`);
+        }
+    };
+
+    const handleOpenHistory = () => {
+        dispatch(loadHistory());
+        setIsHistoryOpen(true);
+    };
+
+    const handleConfirmRestore = (snapshot: TWHistorySnapshot) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Restore from history',
+            message: `This will replace your current planning with the history from "${snapshot.name}". Do you want to continue?`,
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                await dispatch(applyFullHistory({ snapshot }));
+                setIsHistoryOpen(false);
+                setStatusMessage(`Planning restored from ${snapshot.name}`);
             }
         });
     };
@@ -113,20 +176,41 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
+                        onClick={handleOpenHistory}
+                        variant="secondary"
+                        title="View and restore from history"
+                    >
+                        <History size={16} /> History
+                    </Button>
+                    <Button
                         onClick={() => setIsModalOpen(true)}
                         variant="primary"
                     >
                         <ImportIcon size={16} /> Import Raid Helper
                     </Button>
                     {attendance.length > 0 && (
-                        <Button
-                            onClick={handleClearAttendance}
-                            variant="danger"
-                            disabled={isClearing}
-                        >
-                            {isClearing ? <LoadingSpinnerIcon size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                            <span>{isClearing ? 'Clearing...' : 'Clear List'}</span>
-                        </Button>
+                        <>
+                            <Button
+                                onClick={handleManualSave}
+                                variant="ghost"
+                                disabled={isSavingSnapshot}
+                                title="Save current planning to history"
+                                className="text-green-400 hover:text-green-300 border border-green-700/40 hover:bg-green-900/20"
+                            >
+                                {isSavingSnapshot
+                                    ? <LoadingSpinnerIcon size={16} className="animate-spin" />
+                                    : <Save size={16} />}
+                                <span>{isSavingSnapshot ? 'Saving...' : 'Save'}</span>
+                            </Button>
+                            <Button
+                                onClick={handleClearAttendance}
+                                variant="danger"
+                                disabled={isClearing}
+                            >
+                                {isClearing ? <LoadingSpinnerIcon size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                <span>{isClearing ? 'Clearing...' : 'Clear List'}</span>
+                            </Button>
+                        </>
                     )}
                 </div>
             </div>
@@ -196,6 +280,15 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                             handleDropOnMember={handleDropOnMember}
                             handleAssignGroup={handleAssignGroup}
                             handleAddGroup={handleAddGroup}
+                            clipboard={clipboard}
+                            onPasteIntoGroup={(targetGroupId) => {
+                                if (clipboard.type === 'group') {
+                                    dispatch(pasteGroupFromClipboard({ targetGroupId }));
+                                } else if (clipboard.type === 'player') {
+                                    dispatch(pastePlayerFromClipboard({ targetGroupId }));
+                                }
+                            }}
+                            onPasteAsNewGroup={() => dispatch(pasteGroupFromClipboard({ targetGroupId: null }))}
                         />
                     </div>
                 </div>
@@ -205,6 +298,12 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onImport={handleImportAttendance}
+            />
+
+            <TWHistoryModal
+                isOpen={isHistoryOpen}
+                onClose={() => setIsHistoryOpen(false)}
+                onConfirmRestore={handleConfirmRestore}
             />
         </div>
     );
