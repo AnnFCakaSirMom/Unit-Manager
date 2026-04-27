@@ -25,13 +25,15 @@ export const useAuth = () => {
                         dispatch(setAuthSession({
                             userId: session.user.id,
                             role: 'NoProfile' as any,
-                            discordNickname: session.user.user_metadata?.full_name || ''
+                            discordNickname: session.user.user_metadata?.full_name || '',
+                            avatarUrl: session.user.user_metadata?.avatar_url ?? null,
                         }));
                     } else {
                         dispatch(setAuthSession({ 
                             userId: profile.id,
                             role: profile.role || 'Pending',
-                            discordNickname: profile.discord_nickname || ''
+                            discordNickname: profile.discord_nickname || '',
+                            avatarUrl: session.user.user_metadata?.avatar_url ?? null,
                         }));
                     }
                 } catch (err: any) {

@@ -211,36 +211,36 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         </div>
                     )}
 
-                    {/* Column 3: Metadata (Leadership & Dates) */}
-                    <div className="flex flex-col gap-3 order-2">
-                        <div>
-                            <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-0.5">Total Leadership</label>
-                            <p className="text-[10px] text-gray-500 mb-1.5 leading-tight italic">Total Leadership on your armor that you use for TW</p>
-                            <Input
-                                id="playerLeadership"
-                                type="number"
-                                value={leadership}
-                                onChange={(e) => setLeadership(e.target.value)}
-                                onBlur={handleLeadershipSave}
-                                readOnly={!canEditOthersUnits && userId !== player.id}
-                                placeholder="e.g. 700"
-                                className={cn("w-full p-2", (!canEditOthersUnits && userId !== player.id) && "opacity-75 cursor-not-allowed bg-gray-800")}
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
+                    {/* Column 3: Metadata (Leadership & Dates) — Officers only, Members see this in the Profile Rail */}
+                    {isOfficerPlus && (
+                        <div className="flex flex-col gap-3 order-2">
                             <div>
-                                <label htmlFor="joinedDate" className="block text-sm font-medium text-gray-300 mb-1">Joined Date</label>
+                                <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-0.5">Total Leadership</label>
+                                <p className="text-[10px] text-gray-500 mb-1.5 leading-tight italic">Total Leadership on your armor that you use for TW</p>
                                 <Input
-                                    id="joinedDate"
-                                    type="date"
-                                    value={joinedDate}
-                                    onChange={(e) => setJoinedDate(e.target.value)}
-                                    onBlur={() => handleProfileSave()}
-                                    readOnly={!isOfficerPlus}
-                                    className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
+                                    id="playerLeadership"
+                                    type="number"
+                                    value={leadership}
+                                    onChange={(e) => setLeadership(e.target.value)}
+                                    onBlur={handleLeadershipSave}
+                                    readOnly={!canEditOthersUnits && userId !== player.id}
+                                    placeholder="e.g. 700"
+                                    className={cn("w-full p-2", (!canEditOthersUnits && userId !== player.id) && "opacity-75 cursor-not-allowed bg-gray-800")}
                                 />
                             </div>
-                            {isOfficerPlus && (
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label htmlFor="joinedDate" className="block text-sm font-medium text-gray-300 mb-1">Joined Date</label>
+                                    <Input
+                                        id="joinedDate"
+                                        type="date"
+                                        value={joinedDate}
+                                        onChange={(e) => setJoinedDate(e.target.value)}
+                                        onBlur={() => handleProfileSave()}
+                                        readOnly={!isOfficerPlus}
+                                        className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
+                                    />
+                                </div>
                                 <div>
                                     <label htmlFor="inactiveDate" className="block text-sm font-medium text-gray-300 mb-1">Inactive Date</label>
                                     <Input
@@ -253,9 +253,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                         className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
                                     />
                                 </div>
-                            )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {isOfficerPlus && (

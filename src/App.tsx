@@ -5,6 +5,8 @@ import { useFileHandler } from './hooks/useFileHandler';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { useCloudSync } from './hooks/useCloudSync';
 import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Header';
+import { MemberProfileRail } from './components/MemberProfileRail';
 import { PlayerUnitView } from './components/PlayerUnitView';
 import { GroupView } from './components/GroupView';
 import { TWAttendanceView } from './components/TWAttendanceView';
@@ -13,7 +15,7 @@ import { ProfileMatcher } from './components/ProfileMatcher';
 import { AdminPanel } from './components/AdminPanel';
 import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
-import { UploadCloud, LogOut } from './components/icons';
+import { UploadCloud } from './components/icons';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { supabase } from './services/supabase';
@@ -23,7 +25,6 @@ import { RootState, AppDispatch } from './state/store';
 import { useAuth } from './hooks/useAuth';
 import { useNavigationState } from './hooks/useNavigationState';
 import { useDatabaseSync } from './hooks/useDatabaseSync';
-import { cn } from './utils';
 
 declare global {
     interface Window {
@@ -56,8 +57,6 @@ const App: React.FC = () => {
         // Fetch units from Supabase at startup
         reduxDispatch(fetchUnitsFromSupabase());
     }, [reduxDispatch]);
-
-
 
     // Fetch pending approvals count for Sidebar badge
     useEffect(() => {
@@ -111,7 +110,7 @@ const App: React.FC = () => {
 
     return (
         <AuthGuard>
-            <div className="bg-gray-900 text-gray-200 min-h-screen font-sans" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+            <div className="bg-gray-900 text-gray-200 min-h-screen font-sans flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                         {isDragging && (
                             <div className="drag-over-overlay">
                                 <div className="text-center text-white">
@@ -120,8 +119,11 @@ const App: React.FC = () => {
                                 </div>
                             </div>
                         )}
-                        <div className="flex flex-col md:flex-row h-screen overflow-hidden">
-                            {isOfficerPlus && (
+                        {/* Global Header */}
+                        <Header onLogout={handleLogout} />
+
+                        <div className="flex flex-row flex-1 overflow-hidden">
+                            {isOfficerPlus ? (
                                 <Sidebar
                                     selectedPlayerId={selectedPlayerId}
                                     selectedGroupId={selectedGroupId}
@@ -142,25 +144,11 @@ const App: React.FC = () => {
                                     onTogglePlayerList={handleTogglePlayerList}
                                     onLogout={handleLogout}
                                 />
+                            ) : (
+                                <MemberProfileRail setStatusMessage={setStatusMessage} />
                             )}
 
-                            <main className={cn(
-                                "p-4 md:p-6 flex-grow h-full overflow-hidden flex flex-col",
-                                isOfficerPlus ? "w-full md:w-2/3 lg:w-3/4" : "w-full"
-                            )}>
-                                {!isOfficerPlus && (
-                                    <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
-                                        <h1 className="text-xl font-bold text-blue-400">Unit Manager</h1>
-                                        <button
-                                            onClick={handleLogout}
-                                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold text-gray-500 hover:text-gray-300 bg-gray-800/50 border border-gray-700 hover:bg-gray-700 transition-all active:scale-[0.98]"
-                                            title="Log Out"
-                                        >
-                                            <LogOut size={14} />
-                                            <span>LOG OUT</span>
-                                        </button>
-                                    </div>
-                                )}
+                            <main className="p-4 md:p-6 flex-1 overflow-hidden flex flex-col min-w-0">
                                 {showAdminPanel ? (
                                     <div className="flex-1 overflow-auto p-4 min-w-[300px]">
                                         <AdminPanel

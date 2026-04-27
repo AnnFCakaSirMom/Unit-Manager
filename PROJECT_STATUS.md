@@ -1,30 +1,52 @@
-# Projektstatus: Unit Manager (2026-04-27)
+# Project Status: Unit Manager
 
-## 🏗️ Nuvarande Arkitektur
-- **State Management:** Helt migrerat till **Redux Toolkit**. Global state hanteras i `src/state/slices`.
-- **Säkerhet & RLS:** JWT-baserad rollhantering implementerad. Roller synkas via Supabase-trigger till användarens token. Samtliga tabeller är granskade och städade.
-- **Logik:** Affärslogik är utbruten i Custom Hooks (`src/hooks/`) för bättre testbarhet och renare komponenter.
+## 🚀 Översikt
+En webbapplikation för att hantera spelar-units, grupper och Territory War (TW) statistik för Conqueror's Blade. Byggd med React, Redux och Supabase.
 
-## ✅ Nyligen Genomfört
+---
 
-### RLS Security Audit (2026-04-27)
-Genomförde en fullständig granskning av alla RLS-policies. Hittade och åtgärdade att tre generationer av gamla SQL-scripts hade lämnat kvar **motstridiga och för breda policies** på flera tabeller. Problemet var att PostgreSQL:s OR-logik gjorde att de gamla `USING(true)`-policies åsidosatte de nya, restriktiva.
+## ✅ Slutförda Etapper
 
-**Åtgärdat per tabell:**
-- `profiles` — Tog bort 5 gamla policies (inkl. `USING(true)` som lät Members läsa alla profiler)
-- `profile_units` — Tog bort 3 gamla policies (inkl. `USING(true)` som lät Members läsa alla spelares units)
-- `units` — Städade bort 2 gamla policies, lade till korrekta JWT-optimerade policies
-- `tw_history` — Begränsade INSERT/DELETE till Officer+ (var öppet för alla inloggade)
-- `audit_logs` — JWT-optimerade SELECT-policyn (ersatte N+1 EXISTS med `get_my_role_weight()`)
-- Droppade den gamla `get_my_role()`-funktionen (ersatt av `get_my_role_weight()`)
+### 1. Kärnfunktionalitet
+- [x] Hantering av spelar-units (Owned, Prepared, Mastery, Favorite).
+- [x] Grupphantering (Skapa/Redigera grupper för TW).
+- [x] Import/Export av data via JSON.
+- [x] Realtidssynkning mot Supabase för Officerare.
 
-**Slutläge: 14 korrekta policies fördelade på 5 tabeller. Inga gamla kvar.**
+### 2. Säkerhet & RLS (Slutfört April 2026)
+- [x] **Omfattande Säkerhetsaudit:** Rensat upp gamla motstridiga policies.
+- [x] **JWT-baserad RLS:** Alla policies använder nu `get_my_role_weight()` via JWT-claims för maximal prestanda och säkerhet.
+- [x] **Tabellsäkerhet:**
+  - `profiles`: Medlemmar kan endast se sin egen data och uppdatera begränsade fält.
+  - `profile_units`: Strikt begränsat till ägarens egna units.
+  - `audit_logs` & `tw_history`: Endast Officerare+ har läs/skriv-rättigheter.
 
-### Tidigare genomfört
-- **TW Attendance History:** Fullt stöd för att se och hantera historisk närvarodata.
-- **Prestanda-fixar:** O(N²)-loopar i statistikvyn är utbytta mot Map-baserad logik.
-- **Medlemsvy:** Sidebaren döljs för `Member`-rollen. Logout-knapp visas i main-vyn.
+### 3. UI/UX Modernisering (Nuvarande status)
+- [x] **Global Header:** Ny minimalistisk toppmeny med modern logout-knapp och varumärkesprofilering.
+- [x] **Member Dashboard:**
+    - **Profile Rail:** Ny vänsterpanel för medlemmar med Discord-avatar, editable Leadership, och barrack-statistik.
+    - **Adaptive Layout:** Appen känner av rollen och växlar mellan Sidebar (Officer) och Profile Rail (Member).
+- [x] **Performance Polish:** Flyttat metadata (Leadership/Dates) från huvudvyn till Rail för medlemmar för att maximera utrymmet för enhetslistan.
+- [x] **Metadata-spårning:** Lagt till `updated_at` på profiler med automatisk trigger för att visa "Senast uppdaterad".
 
-## 📋 Aktuella Uppgifter & Fokusområden
-- **UX Polering:** Design och responsivitet för Membervy, mobiloptimering.
-- **UI-enhetlighet:** Se över att alla vyer (Group, Player, Stats) följer samma designmönster.
+---
+
+## 🛠 Pågående / Planerat
+
+### Design & Grafik
+- [ ] **Medieval Theme:** Planer på att byta ut den nuvarande "Stilrena" designen mot ett mer medeltidstema (Conqueror's Blade-estetik).
+- [ ] **Ikon-paket:** Byta ut standardikoner mot anpassade grafiska element som matchar spelet.
+
+### Funktioner
+- [ ] **TW-planeringsverktyg:** Förbättringar i gruppvyn för att lättare se synergier mellan enheter.
+- [ ] **Discord-integration:** Möjlighet att skicka grupplistor direkt till en Discord-kanal.
+
+---
+
+## 🏗 Teknisk Stack
+- **Frontend:** React (Vite), Redux Toolkit, Tailwind CSS.
+- **Backend:** Supabase (Auth, PostgreSQL, Realtime).
+- **Säkerhet:** Row Level Security (RLS) med hierarkiska vikter.
+- **Hosting:** (Information saknas - redo för deployment).
+
+*Senast uppdaterad: 2026-04-27*
