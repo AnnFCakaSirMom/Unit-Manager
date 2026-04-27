@@ -13,7 +13,7 @@ import { ProfileMatcher } from './components/ProfileMatcher';
 import { AdminPanel } from './components/AdminPanel';
 import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
-import { UploadCloud } from './components/icons';
+import { UploadCloud, LogOut } from './components/icons';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { supabase } from './services/supabase';
@@ -23,6 +23,7 @@ import { RootState, AppDispatch } from './state/store';
 import { useAuth } from './hooks/useAuth';
 import { useNavigationState } from './hooks/useNavigationState';
 import { useDatabaseSync } from './hooks/useDatabaseSync';
+import { cn } from './utils';
 
 declare global {
     interface Window {
@@ -120,28 +121,46 @@ const App: React.FC = () => {
                             </div>
                         )}
                         <div className="flex flex-col md:flex-row h-screen overflow-hidden">
-                            <Sidebar
-                                selectedPlayerId={selectedPlayerId}
-                                selectedGroupId={selectedGroupId}
-                                onSelectPlayer={handleSelectPlayer}
-                                onSelectGroup={handleSelectGroup}
-                                onSave={handleSaveData}
-                                onLoad={handleModernOpenFile}
-                                onOpenUnitManager={() => setIsMgmtModalOpen(true)}
-                                onOpenAttendance={handleOpenAttendance}
-                                onOpenTWStatistics={handleOpenTWStatistics}
-                                onOpenProfileMatcher={handleOpenProfileMatcher}
-                                onOpenAdminPanel={handleOpenAdminPanel}
-                                pendingApprovalsCount={pendingApprovalsCount}
-                                hasUnsavedChanges={false}
-                                statusMessage={statusMessage}
-                                setConfirmModal={setConfirmModal}
-                                isPlayerListOpen={isPlayerListOpen}
-                                onTogglePlayerList={handleTogglePlayerList}
-                                onLogout={handleLogout}
-                            />
+                            {isOfficerPlus && (
+                                <Sidebar
+                                    selectedPlayerId={selectedPlayerId}
+                                    selectedGroupId={selectedGroupId}
+                                    onSelectPlayer={handleSelectPlayer}
+                                    onSelectGroup={handleSelectGroup}
+                                    onSave={handleSaveData}
+                                    onLoad={handleModernOpenFile}
+                                    onOpenUnitManager={() => setIsMgmtModalOpen(true)}
+                                    onOpenAttendance={handleOpenAttendance}
+                                    onOpenTWStatistics={handleOpenTWStatistics}
+                                    onOpenProfileMatcher={handleOpenProfileMatcher}
+                                    onOpenAdminPanel={handleOpenAdminPanel}
+                                    pendingApprovalsCount={pendingApprovalsCount}
+                                    hasUnsavedChanges={false}
+                                    statusMessage={statusMessage}
+                                    setConfirmModal={setConfirmModal}
+                                    isPlayerListOpen={isPlayerListOpen}
+                                    onTogglePlayerList={handleTogglePlayerList}
+                                    onLogout={handleLogout}
+                                />
+                            )}
 
-                            <main className="w-full md:w-2/3 lg:w-3/4 p-4 md:p-6 flex-grow h-full overflow-hidden flex flex-col">
+                            <main className={cn(
+                                "p-4 md:p-6 flex-grow h-full overflow-hidden flex flex-col",
+                                isOfficerPlus ? "w-full md:w-2/3 lg:w-3/4" : "w-full"
+                            )}>
+                                {!isOfficerPlus && (
+                                    <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-800">
+                                        <h1 className="text-xl font-bold text-blue-400">Unit Manager</h1>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold text-gray-500 hover:text-gray-300 bg-gray-800/50 border border-gray-700 hover:bg-gray-700 transition-all active:scale-[0.98]"
+                                            title="Log Out"
+                                        >
+                                            <LogOut size={14} />
+                                            <span>LOG OUT</span>
+                                        </button>
+                                    </div>
+                                )}
                                 {showAdminPanel ? (
                                     <div className="flex-1 overflow-auto p-4 min-w-[300px]">
                                         <AdminPanel
