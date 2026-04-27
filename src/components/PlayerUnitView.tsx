@@ -258,19 +258,21 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                     </div>
                 </div>
 
-                <div className="mb-3">
-                    <label htmlFor="aliases" className="block text-sm font-medium text-gray-300 mb-1">Discord Aliases (comma separated)</label>
-                    <Input
-                        id="aliases"
-                        type="text"
-                        value={aliasesText}
-                        onChange={(e) => setAliasesText(e.target.value)}
-                        onBlur={() => handleProfileSave()}
-                        readOnly={!isOfficerPlus}
-                        placeholder="e.g. KalleRox, Kalle_99"
-                        className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
-                    />
-                </div>
+                {isOfficerPlus && (
+                    <div className="mb-3">
+                        <label htmlFor="aliases" className="block text-sm font-medium text-gray-300 mb-1">Discord Aliases (comma separated)</label>
+                        <Input
+                            id="aliases"
+                            type="text"
+                            value={aliasesText}
+                            onChange={(e) => setAliasesText(e.target.value)}
+                            onBlur={() => handleProfileSave()}
+                            readOnly={!isOfficerPlus}
+                            placeholder="e.g. KalleRox, Kalle_99"
+                            className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
+                        />
+                    </div>
+                )}
 
 
                 <div className="mb-3">
