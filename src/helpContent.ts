@@ -95,5 +95,14 @@ export const HELP_CONTENT = {
     approval_manual: {
         title: "User Approval Process",
         content: "New users appear as 'Pending' after logging in via Discord. They are prompted to enter their In-Game Name (IGN) to help you identify them. Use the 'Link & Upgrade' button to merge their login with an existing manual profile or create a fresh one. If an unauthorized user attempts to gain access, use the 'Deny' button to permanently remove their request from the queue."
+    },
+
+    // TW History
+    tw_history: {
+        title: "TW History & Snapshots",
+        content: "Every time you clear your attendance list, a 'snapshot' is automatically created in the history. You can also save your current planning manually using the 'Save' button in the TW Attendance view.",
+        restore: "Restoring a full snapshot will replace your current planning with the saved data.",
+        copy_paste: "To transfer specific groups or players, use the 'Copy' buttons in the history view. After closing the history modal, 'Paste' buttons will appear in your current planning view.",
+        units: "Player unit selections are preserved exactly as they were when the snapshot was taken. If a player has since removed a unit from their profile, it will be marked with a warning icon but can still be copied."
     }
 };

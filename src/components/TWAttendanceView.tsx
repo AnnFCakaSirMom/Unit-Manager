@@ -175,13 +175,16 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                     <p className="text-gray-400 text-sm">Drag and drop players, or use the dropdown menus</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button
-                        onClick={handleOpenHistory}
-                        variant="secondary"
-                        title="View and restore from history"
-                    >
-                        <History size={16} /> History
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            onClick={handleOpenHistory}
+                            variant="secondary"
+                            title="View and restore from history"
+                        >
+                            <History size={16} /> History
+                        </Button>
+                        <HelpIcon helpKey="tw-history" text={HELP_CONTENT.tw_history} />
+                    </div>
                     <Button
                         onClick={() => setIsModalOpen(true)}
                         variant="primary"

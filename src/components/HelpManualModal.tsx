@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from './Button';
-import { Info, X, Book, Users, Star, Layout, BarChart, Shield, History, Lock, UserCheck } from './icons';
+import { Info, X, Book, Users, Star, Layout, BarChart, Shield, History, Lock, UserCheck, RefreshCcw, Copy } from './icons';
 import { HELP_CONTENT } from '../helpContent';
 import { usePermission } from '../hooks/usePermission';
 
@@ -9,7 +9,7 @@ interface HelpManualModalProps {
     onClose: () => void;
 }
 
-type Section = 'getting-started' | 'members' | 'units' | 'groups' | 'statistics' | 'admin' | 'audit-logs' | 'roles' | 'approvals';
+type Section = 'getting-started' | 'members' | 'units' | 'groups' | 'history' | 'statistics' | 'admin' | 'audit-logs' | 'roles' | 'approvals';
 
 export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClose }) => {
     const { isGatekeeperPlus } = usePermission();
@@ -22,6 +22,7 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
         { id: 'members', label: 'Member Management', icon: <Users size={18} /> },
         { id: 'units', label: 'Unit Tracking', icon: <Star size={18} /> },
         { id: 'groups', label: 'Groups & Formations', icon: <Layout size={18} /> },
+        { id: 'history', label: 'TW History', icon: <History size={18} /> },
         { id: 'statistics', label: 'TW Statistics', icon: <BarChart size={18} /> },
         { id: 'admin', label: 'Admin Tools', icon: <Shield size={18} /> },
         // Protected Admin Manuals
@@ -160,6 +161,44 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                                     <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-600 mt-4">
                                         <h5 className="text-gray-200 font-bold mb-2">Exporting for Discord</h5>
                                         <p>{HELP_CONTENT.discord_export.content}</p>
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+
+                        {activeSection === 'history' && (
+                            <section className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <h3 className="text-2xl font-bold text-white mb-4 border-b border-blue-500/30 pb-2">TW History & Snapshots</h3>
+                                <div className="space-y-4 text-gray-300 leading-relaxed text-sm lg:text-base">
+                                    <h4 className="text-white font-bold">{HELP_CONTENT.tw_history.title}</h4>
+                                    <p>{HELP_CONTENT.tw_history.content}</p>
+                                    
+                                    <div className="bg-indigo-900/20 p-4 rounded-lg border border-indigo-500/30">
+                                        <h5 className="text-indigo-300 font-bold mb-2">Restoring vs. Copying</h5>
+                                        <p className="mb-3">There are two ways to use your history:</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                            <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
+                                                <h6 className="text-white font-bold mb-1 flex items-center gap-2">
+                                                    <RefreshCcw size={14} className="text-indigo-400" /> Restore All
+                                                </h6>
+                                                <p>{HELP_CONTENT.tw_history.restore}</p>
+                                            </div>
+                                            <div className="bg-gray-800/50 p-3 rounded border border-gray-700">
+                                                <h6 className="text-white font-bold mb-1 flex items-center gap-2">
+                                                    <Copy size={14} className="text-teal-400" /> Copy & Paste
+                                                </h6>
+                                                <p>{HELP_CONTENT.tw_history.copy_paste}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-800/40 p-4 rounded-lg border border-gray-600 mt-4">
+                                        <h5 className="text-gray-200 font-bold mb-2">Unit Persistence</h5>
+                                        <p>{HELP_CONTENT.tw_history.units}</p>
+                                        <div className="mt-3 flex items-center gap-2 text-xs text-red-400 bg-red-900/10 p-2 rounded border border-red-900/30">
+                                            <History size={14} />
+                                            <span>Note: A maximum of 5 snapshots are kept. The oldest is automatically deleted when a new one is saved.</span>
+                                        </div>
                                     </div>
                                 </div>
                             </section>

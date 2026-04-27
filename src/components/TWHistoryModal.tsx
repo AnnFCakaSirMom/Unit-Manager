@@ -5,9 +5,11 @@ import {
     copyPlayerToClipboard,
 } from '../state/slices/historySlice';
 import { Button } from './Button';
-import { History, X, Copy, Shield, ChevronDown, ChevronRight, RefreshCcw, AlertTriangle } from './icons';
+import { History, X, Copy, Shield, ChevronDown, ChevronRight, RefreshCcw, AlertTriangle, Info } from './icons';
 import type { TWHistorySnapshot, Group, GroupMember } from '../types';
 import { cn } from '../utils';
+import { HelpIcon } from './HelpIcon';
+import { HELP_CONTENT } from '../helpContent';
 
 interface TWHistoryModalProps {
     isOpen: boolean;
@@ -44,7 +46,7 @@ const GroupDetail: React.FC<GroupDetailProps> = ({ group, players, currentPlayer
                     size="sm"
                     className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/20 h-6 text-xs gap-1"
                     onClick={(e) => { e.stopPropagation(); onCopyGroup(group); }}
-                    title="Copy entire group"
+                    title="Copy this entire group and its units to clipboard"
                 >
                     <Copy size={12} /> Copy group
                 </Button>
@@ -78,7 +80,7 @@ const GroupDetail: React.FC<GroupDetailProps> = ({ group, players, currentPlayer
                                     size="sm"
                                     className="text-teal-400 hover:text-teal-300 hover:bg-teal-900/20 h-6 text-xs gap-1 shrink-0 ml-2"
                                     onClick={() => onCopyPlayer(member, playerName)}
-                                    title="Copy player"
+                                    title="Copy this player and their selected units to clipboard"
                                 >
                                     <Copy size={12} /> Copy
                                 </Button>
@@ -164,6 +166,20 @@ export const TWHistoryModal: React.FC<TWHistoryModalProps> = ({ isOpen, onClose,
 
                 {/* Content */}
                 <div className="overflow-y-auto min-h-0 flex-grow p-4 flex flex-col gap-3 custom-scrollbar">
+                    {/* Info Box */}
+                    {snapshots.length > 0 && (
+                        <div className="bg-blue-950/20 border border-blue-800/50 rounded-lg p-3 flex gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <Info size={18} className="text-blue-400 shrink-0 mt-0.5" />
+                            <div className="flex flex-col gap-1">
+                                <p className="text-xs font-semibold text-blue-300">How to Copy & Paste</p>
+                                <p className="text-[11px] text-gray-400 leading-relaxed">
+                                    Click <span className="text-indigo-400 font-medium">Copy group</span> or <span className="text-teal-400 font-medium">Copy</span> on a player. 
+                                    Then close this window and use the <span className="text-indigo-400 font-medium">Paste</span> buttons that appear in your current planning view.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {snapshots.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-16 text-gray-500">
                             <History size={40} className="mb-3 opacity-30" />
@@ -214,10 +230,17 @@ export const TWHistoryModal: React.FC<TWHistoryModalProps> = ({ isOpen, onClose,
                                             size="sm"
                                             className="gap-1.5 h-7 text-xs bg-indigo-700 hover:bg-indigo-600"
                                             onClick={() => onConfirmRestore(snap)}
-                                            title="Restore entire planning from this snapshot"
+                                            title="Replace your current planning with this entire snapshot"
                                         >
                                             <RefreshCcw size={12} /> Restore All
                                         </Button>
+                                        <HelpIcon 
+                                            helpKey="tw-history-restore" 
+                                            text={{ 
+                                                title: HELP_CONTENT.tw_history.title, 
+                                                content: HELP_CONTENT.tw_history.restore 
+                                            }} 
+                                        />
                                     </div>
                                 </div>
 
