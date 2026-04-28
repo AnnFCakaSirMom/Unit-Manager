@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import type { ConfirmModalInfo } from '../types';
-import { Settings, UserPlus, Users, ChevronUp, ChevronDown, Shield, LogOut } from './icons';
+import { Settings, UserPlus, Users, ChevronUp, ChevronDown, Shield } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import { UnitSearch } from './UnitSearch';
@@ -29,7 +29,6 @@ interface SidebarProps {
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
     isPlayerListOpen: boolean;
     onTogglePlayerList: () => void;
-    onLogout: () => void;
 }
 
 import { useAppSelector, useAppDispatch } from '../state/store';
@@ -60,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
         selectedPlayerId, selectedGroupId,
         onSelectPlayer, onSelectGroup, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher, onOpenAdminPanel,
         pendingApprovalsCount, statusMessage, setConfirmModal, isPlayerListOpen,
-        onTogglePlayerList, onLogout
+        onTogglePlayerList
     } = props;
 
     const [newPlayerName, setNewPlayerName] = useState("");
@@ -246,16 +245,6 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 />
             )}
 
-            <div className="mt-8 pt-4 border-t border-gray-700/50 flex justify-center">
-                <button
-                    onClick={onLogout}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold text-gray-500 hover:text-gray-300 bg-gray-800/50 border border-gray-700 hover:bg-gray-700 transition-all active:scale-[0.98]"
-                    title="Log Out"
-                >
-                    <LogOut size={14} />
-                    <span>LOG OUT</span>
-                </button>
-            </div>
         </aside>
     );
 };

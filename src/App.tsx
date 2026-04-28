@@ -142,7 +142,6 @@ const App: React.FC = () => {
                                     setConfirmModal={setConfirmModal}
                                     isPlayerListOpen={isPlayerListOpen}
                                     onTogglePlayerList={handleTogglePlayerList}
-                                    onLogout={handleLogout}
                                 />
                             ) : (
                                 <MemberProfileRail setStatusMessage={setStatusMessage} />
