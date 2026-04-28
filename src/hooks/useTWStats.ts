@@ -17,6 +17,7 @@ export const useTWStats = () => {
     const [showAwol, setShowAwol] = useState(true);
     const [showInactive, setShowInactive] = useState(false);
     const [isNitroMode, setIsNitroMode] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const [sortKey, setSortKey] = useState<SortKey>('percentage');
     const [sortAsc, setSortAsc] = useState(false);
@@ -81,7 +82,23 @@ export const useTWStats = () => {
     }, [activeSeason, activeEvents, twRecords, players, showInactive]);
 
     const sortedStats = useMemo(() => {
-        return [...playerStats].sort((a, b) => {
+        let stats = [...playerStats];
+
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            stats = stats.filter(s => s.player.name.toLowerCase().includes(query));
+        }
+
+        return stats.sort((a, b) => {
+            if (searchQuery.trim()) {
+                const query = searchQuery.toLowerCase().trim();
+                const startsA = a.player.name.toLowerCase().startsWith(query);
+                const startsB = b.player.name.toLowerCase().startsWith(query);
+
+                if (startsA && !startsB) return -1;
+                if (!startsA && startsB) return 1;
+            }
+
             let valA: string | number;
             let valB: string | number;
 
@@ -98,7 +115,7 @@ export const useTWStats = () => {
             if (valA > valB) return sortAsc ? 1 : -1;
             return 0;
         });
-    }, [playerStats, sortKey, sortAsc]);
+    }, [playerStats, sortKey, sortAsc, searchQuery]);
 
     const handleSort = (key: SortKey) => {
         if (sortKey === key) {
@@ -130,6 +147,8 @@ export const useTWStats = () => {
         handleSort,
         activeSeason,
         activeEvents,
+        searchQuery,
+        setSearchQuery,
         sortedStats
     };
 };

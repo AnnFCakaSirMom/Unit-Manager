@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppSelector } from '../state/store';
 
 import { Button } from './Button';
-import { Clipboard as Copy, ImportIcon, Settings, Plus, CheckSquare, Square, ChevronUp, ChevronDown } from './icons';
+import { Clipboard as Copy, ImportIcon, Settings, Plus, CheckSquare, Square, ChevronUp, ChevronDown, Search } from './icons';
 import { SeasonManagementModal } from './SeasonManagementModal';
 import { ImportTWStatsModal } from './ImportTWStatsModal';
 import { EditTWAttendanceModal } from './EditTWAttendanceModal';
@@ -28,7 +28,9 @@ export const TWStatisticsView: React.FC = () => {
         showInactive, setShowInactive,
         isNitroMode, setIsNitroMode,
         sortKey, sortAsc, handleSort,
-        activeSeason, activeEvents, sortedStats
+        activeSeason, activeEvents,
+        searchQuery, setSearchQuery,
+        sortedStats
     } = useTWStats();
 
     const [isSeasonModalOpen, setIsSeasonModalOpen] = useState(false);
@@ -202,6 +204,30 @@ export const TWStatisticsView: React.FC = () => {
 
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 mb-3 bg-gray-800/60 p-2 rounded-lg border border-gray-700">
+                {/* Search Field */}
+                <div className="relative group flex-grow sm:flex-grow-0 sm:min-w-[200px]">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-400 transition-colors">
+                        <Search size={16} />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search player..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="block w-full pl-10 pr-3 py-1.5 bg-gray-900/50 border border-gray-700 rounded-md leading-5 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-500 hover:text-gray-300"
+                        >
+                            <span className="text-xs">×</span>
+                        </button>
+                    )}
+                </div>
+
+                <div className="w-px h-6 bg-gray-700 mx-1 hidden sm:block"></div>
+
                 <span className="text-sm font-semibold text-gray-300 mr-1">Filters:</span>
                 <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                     <input type="checkbox" className="hidden" checked={showAttendance} onChange={() => setShowAttendance(!showAttendance)} />
@@ -222,7 +248,7 @@ export const TWStatisticsView: React.FC = () => {
                 <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                     <input type="checkbox" className="hidden" checked={showInactive} onChange={() => setShowInactive(!showInactive)} />
                     {showInactive ? <CheckSquare size={16} className="text-yellow-400" /> : <Square size={16} />}
-                    Include Inactive & Zero-Event Players
+                    Include Inactive
                 </label>
                 <div className="w-px h-6 bg-gray-600 mx-2 hidden sm:block"></div>
                 <label className="flex items-center gap-2 text-sm text-blue-300 cursor-pointer hover:text-blue-200" title="Increases message character limit to 4000 for Discord Nitro users.">
