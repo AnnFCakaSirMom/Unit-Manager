@@ -90,26 +90,27 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
     return (
         <aside className="w-full md:w-1/3 lg:w-1/4 bg-gray-800/50 border-r border-gray-700 p-4 flex flex-col overflow-y-auto h-full">
-            <header className="mb-3 flex-shrink-0">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-bold text-blue-400">Unit Manager</h1>
-                    {isSyncing ? (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20" title="Syncing with database...">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                            </span>
-                            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-tighter">Syncing</span>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/5 border border-green-500/10" title="Database connected and synced">
-                            <span className="h-1.5 w-1.5 rounded-full bg-green-500/50"></span>
-                            <span className="text-[10px] font-bold text-green-500/40 uppercase tracking-tighter">Synced</span>
-                        </div>
-                    )}
+            <header className="mb-2 flex-shrink-0">
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs text-gray-400 leading-tight">Manage players, units, and groups.</p>
+                    <div className="flex-shrink-0">
+                        {isSyncing ? (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20" title="Syncing with database...">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                </span>
+                                <span className="text-[10px] font-bold text-blue-400 uppercase tracking-tighter">Syncing</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/5 border border-green-500/10" title="Database connected and synced">
+                                <span className="h-1.5 w-1.5 rounded-full bg-green-500/50"></span>
+                                <span className="text-[10px] font-bold text-green-500/40 uppercase tracking-tighter">Synced</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <p className="text-sm text-gray-400">Manage players, units, and groups.</p>
-                <div className="flex flex-col gap-1.5 mt-3">
+                <div className="flex flex-col gap-1.5 mt-2">
 
                     {canViewAttendance && (
                         <Button variant="primary" className="bg-purple-600 hover:bg-purple-700" onClick={onOpenAttendance}>
