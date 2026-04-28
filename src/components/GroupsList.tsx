@@ -95,7 +95,7 @@ export const GroupsList = React.memo(({
     };
 
     return (
-        <div className="flex-grow flex flex-col mt-3">
+        <div className="flex flex-col mt-3">
             <div className="flex justify-between items-center mb-2">
                 <h2 className="text-base font-semibold text-gray-300 flex items-center gap-1">
                     <Shield size={18} /> Groups ({groups.length})
@@ -137,7 +137,7 @@ export const GroupsList = React.memo(({
                     </div>
                 </div>
             </div>
-            <div className="flex-grow overflow-y-auto pr-2 -mr-2">
+            <div className="overflow-y-auto max-h-80 pr-2 -mr-2">
                 {groups.length > 0 ? (
                     <ul className="space-y-1">
                         {[...groups].sort((a, b) => {

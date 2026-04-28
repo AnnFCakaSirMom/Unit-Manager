@@ -90,7 +90,7 @@ export const PlayerList = React.memo(({
                     <span>Inactive</span>
                 </label>
             </div>
-            <div className="flex-grow overflow-y-auto pr-2 -mr-2 max-h-64">
+            <div className="overflow-y-auto max-h-64 pr-2 -mr-2">
                 {filteredPlayers.length > 0 ? (
                     <ul className="space-y-1">
                         {filteredPlayers.map((player) => (

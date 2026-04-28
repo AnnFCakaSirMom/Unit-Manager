@@ -224,10 +224,10 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                     <p>Click "Import Raid Helper" to paste your JSON export.</p>
                 </div>
             ) : (
-                <div className="flex-grow flex flex-col lg:flex-row gap-6 overflow-hidden">
+                <div className="flex-grow flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0">
                     {/* Left Panel: Players Lists */}
                     <div
-                        className="w-full lg:w-1/3 flex flex-col bg-gray-900/40 rounded-lg p-4 overflow-y-auto border border-gray-800"
+                        className="w-full lg:w-1/3 flex flex-col bg-gray-900/40 rounded-lg p-4 overflow-y-auto border border-gray-800 min-h-0"
                         onDragOver={handleDragOver}
                         onDrop={handleDropOnList}
                     >
@@ -263,7 +263,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                     </div>
 
                     {/* Right Panel: Group Editor Grid */}
-                    <div className="w-full lg:w-2/3 flex flex-col bg-gray-900/40 rounded-lg p-4 overflow-y-auto border border-gray-800">
+                    <div className="w-full lg:w-2/3 flex flex-col bg-gray-900/40 rounded-lg p-4 overflow-y-auto border border-gray-800 min-h-0">
                         <div className="flex justify-between items-center mb-4 border-b-2 border-gray-700 pb-2">
                             <h3 className="text-lg font-bold flex items-center gap-2 text-gray-200">
                                 <Shield size={20} className="text-indigo-400" /> Group Placements

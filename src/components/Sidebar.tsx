@@ -91,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
     return (
         <aside className="w-full md:w-1/3 lg:w-1/4 bg-gray-800/50 border-r border-gray-700 p-4 flex flex-col overflow-y-auto h-full">
-            <header className="mb-3">
+            <header className="mb-3 flex-shrink-0">
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-bold text-blue-400">Unit Manager</h1>
                     {isSyncing ? (
@@ -111,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 </div>
                 <p className="text-sm text-gray-400">Manage players, units, and groups.</p>
                 <div className="flex flex-col gap-1.5 mt-3">
-                    
+
                     {canViewAttendance && (
                         <Button variant="primary" className="bg-purple-600 hover:bg-purple-700" onClick={onOpenAttendance}>
                             <Users size={16} />
@@ -162,15 +162,15 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                         </div>
                     )}
                 </div>
-                
+
                 {canViewHelp && (
                     <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-gray-700/50">
-                        <button 
+                        <button
                             onClick={() => dispatch(toggleHelpMode())}
                             className={cn(
                                 "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border",
-                                showHelpMode 
-                                    ? "bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]" 
+                                showHelpMode
+                                    ? "bg-blue-500/20 border-blue-500/50 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
                                     : "bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300"
                             )}
                             title="Toggle Detailed Help Mode (ⓘ icons)"
@@ -179,7 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                             <span>HELP MODE: {showHelpMode ? 'ON' : 'OFF'}</span>
                         </button>
 
-                        <button 
+                        <button
                             onClick={() => setIsManualOpen(true)}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold bg-gray-800/80 border border-gray-700 text-gray-300 hover:bg-gray-700 transition-colors"
                             title="Open Information Manual"
@@ -198,7 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
             <HelpManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
 
             {canAddPlayers && (
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-3 flex-shrink-0">
                     <Input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleAddPlayer()} placeholder="New player name..." className="flex-grow px-2 py-1.5 text-sm" aria-label="New Player Name Input" />
                     <Button variant="primary" size="icon" className="p-1.5" onClick={handleAddPlayer} disabled={!newPlayerName.trim()} title="Add Player" aria-label="Add Player"><UserPlus size={18} /></Button>
                 </div>
@@ -246,7 +246,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 />
             )}
 
-            <div className="mt-auto pt-4 border-t border-gray-700/50 flex justify-center">
+            <div className="mt-8 pt-4 border-t border-gray-700/50 flex justify-center">
                 <button
                     onClick={onLogout}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold text-gray-500 hover:text-gray-300 bg-gray-800/50 border border-gray-700 hover:bg-gray-700 transition-all active:scale-[0.98]"

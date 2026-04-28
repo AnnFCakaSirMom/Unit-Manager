@@ -110,7 +110,7 @@ const App: React.FC = () => {
 
     return (
         <AuthGuard>
-            <div className="bg-gray-900 text-gray-200 min-h-screen font-sans flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+            <div className="bg-gray-900 text-gray-200 h-screen overflow-hidden font-sans flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                         {isDragging && (
                             <div className="drag-over-overlay">
                                 <div className="text-center text-white">
@@ -164,7 +164,7 @@ const App: React.FC = () => {
                                 ) : showTWStatisticsView ? (
                                     <TWStatisticsView />
                                 ) : showAttendanceView ? (
-                                    <div className="flex-1 overflow-hidden p-4 min-w-[300px]">
+                                    <div className="flex-1 overflow-hidden p-4 min-w-[300px] flex flex-col">
                                         <TWAttendanceView
                                             onSelectPlayer={handleSelectPlayer}
                                             setConfirmModal={setConfirmModal}
