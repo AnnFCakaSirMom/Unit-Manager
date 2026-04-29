@@ -28,6 +28,15 @@ En webbapplikation för att hantera spelar-units, grupper och Territory War (TW)
     - **Adaptive Layout:** Appen känner av rollen och växlar mellan Sidebar (Officer) och Profile Rail (Member).
 - [x] **Performance Polish:** Flyttat metadata (Leadership/Dates) från huvudvyn till Rail för medlemmar för att maximera utrymmet för enhetslistan.
 - [x] **Metadata-spårning:** Lagt till `updated_at` på profiler med automatisk trigger för att visa "Senast uppdaterad".
+- [x] **UX Polish:** Implementerat oberoende scrollning för Attendance-paneler och Sidebar för bättre navigering i stora datamängder.
+
+### 4. Officer Tools & TW Management (Slutfört April 2026)
+- [x] **TW Historik:** Snapshot-system för att spara, namnge och återställa tidigare grupplaneringar.
+- [x] **Avancerad TW Statistik:**
+    *   Namnbaserad sökning i realtid för att snabbt hitta spelare.
+    *   Intelligent Leaderboard-rankning (Närvaro % -> Antal -> AWOL-straff -> Namn).
+    *   **Discord Nitro Mode:** Stöd för utökad character limit (4000) vid export.
+- [x] **Sidebar Decluttering:** Rensat bort onödiga titlar och flyttat Logout till Header för en renare arbetsyta.
 
 ---
 
@@ -38,8 +47,7 @@ En webbapplikation för att hantera spelar-units, grupper och Territory War (TW)
 - [ ] **Ikon-paket:** Byta ut standardikoner mot anpassade grafiska element som matchar spelet.
 
 ### Funktioner
-- [ ] **TW-planeringsverktyg:** Förbättringar i gruppvyn för att lättare se synergier mellan enheter.
-- [ ] **Discord-integration:** Möjlighet att skicka grupplistor direkt till en Discord-kanal.
+- [ ] **Synergi-verktyg:** Förbättringar i gruppvyn för att lättare se synergier mellan enheter (t.ex. heal-units + shields).
 
 ---
 
@@ -49,4 +57,5 @@ En webbapplikation för att hantera spelar-units, grupper och Territory War (TW)
 - **Säkerhet:** Row Level Security (RLS) med hierarkiska vikter.
 - **Hosting:** (Information saknas - redo för deployment).
 
-*Senast uppdaterad: 2026-04-27*
+*Senast uppdaterad: 2026-04-29*
+
