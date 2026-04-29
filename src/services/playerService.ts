@@ -4,6 +4,7 @@
  * into the Player interface used by the existing app state.
  */
 import { supabase } from './supabase';
+import { handleQuery, handleMutation } from './supabaseUtils';
 import type { Player, UserRole } from '../types';
 
 type ProfileUnitRow = {
@@ -32,10 +33,6 @@ type ProfileRow = {
 /**
  * Transforms a flat Supabase profile row (with nested profile_units)
  * back into the Player interface the app expects.
- *
- * NOTE: A unit can appear in multiple lists simultaneously.
- * E.g. a unit with is_owned=true AND is_favorite=true appears in
- * both `units[]` and `favoriteUnits[]`. This mirrors the original design.
  */
 function transformProfileToPlayer(row: ProfileRow): Player {
   const unitRows = row.profile_units ?? [];
@@ -43,7 +40,6 @@ function transformProfileToPlayer(row: ProfileRow): Player {
   return {
     id: row.id,
     name: row.display_name ?? row.discord_nickname,
-    // Each list is independent — a unit can be in multiple lists at once
     units:        unitRows.filter(u => u.is_owned).map(u => u.unit_name),
     preparedUnits: unitRows.filter(u => u.is_prepared).map(u => u.unit_name),
     masteryUnits:  unitRows.filter(u => u.is_mastery).map(u => u.unit_name),
@@ -61,57 +57,42 @@ function transformProfileToPlayer(row: ProfileRow): Player {
 
 /**
  * Fetches all profiles with their associated units in a single round trip.
- * Returns an empty array (silent fallback) if the request fails,
- * so the app remains functional even when offline.
  */
 export async function fetchPlayersFromSupabase(signal?: AbortSignal): Promise<Player[]> {
   console.log('[playerService] Fetching players from Supabase...');
 
-  // Fetch profiles with units and player_info separately in parallel.
-  // Both queries receive the same AbortSignal so they can both be cancelled
-  // atomically when SyncManager aborts a stale request.
   const [profilesResult, infoResult] = await Promise.all([
-    supabase.from('profiles').select(`
-      *,
-      profile_units (
-        unit_name,
-        is_owned,
-        is_prepared,
-        is_mastery,
-        is_favorite
-      )
-    `).abortSignal(signal!),
-    supabase.from('player_info').select('*').abortSignal(signal!)
+    handleQuery<ProfileRow[]>(
+      supabase.from('profiles').select(`
+        *,
+        profile_units (
+          unit_name,
+          is_owned,
+          is_prepared,
+          is_mastery,
+          is_favorite
+        )
+      `).abortSignal(signal!),
+      { service: 'playerService', op: 'fetchProfiles' },
+      []
+    ),
+    handleQuery<any[]>(
+      supabase.from('player_info').select('*').abortSignal(signal!),
+      { service: 'playerService', op: 'fetchPlayerInfo' },
+      []
+    )
   ]);
 
-  if (profilesResult.error) {
-    // Re-throw AbortErrors so SyncManager can handle them correctly.
-    if (profilesResult.error.message?.includes('abort')) {
-      const e = new Error('AbortError');
-      e.name = 'AbortError';
-      throw e;
-    }
-    console.error('[playerService] Profiles fetch failed:', profilesResult.error.message);
-    return [];
-  }
-
-  const joinData = profilesResult.data || [];
-  const playerInfos = infoResult.data || [];
-
-  if (joinData.length === 0) {
+  if (profilesResult.length === 0) {
     console.warn('[playerService] No profiles found.');
     return [];
   }
 
-  console.log(`[playerService] Fetched ${joinData.length} profiles and ${playerInfos.length} info rows.`);
-
   // Create a map for quick lookup of info by player_id
-  const infoMap = new Map(playerInfos.map(info => [info.player_id, info.internal_notes]));
+  const infoMap = new Map(infoResult.map(info => [info.player_id, info.internal_notes]));
 
-  return (joinData as ProfileRow[]).map(row => {
-    // Find info from our separate fetch (more reliable due to naming inconsistencies in Supabase)
+  return profilesResult.map(row => {
     const manualInfo = infoMap.get(row.id);
-    
     return transformProfileToPlayer({
       ...row,
       player_info: manualInfo ? [{ internal_notes: manualInfo }] : (row.player_info || [])
@@ -127,38 +108,30 @@ export async function upsertPlayer(player: Player): Promise<boolean> {
   console.log(`[playerService] Upserting player ${player.id} to Supabase...`);
 
   // 1. Upsert Profile
-  const profileData = {
-    id: player.id,
-    discord_nickname: player.name, // Local display name override mapped back
-    display_name: player.name,
-    total_leadership: player.totalLeadership ?? 0,
-    joined_date: player.joinedDate ?? null,
-    inactive_date: player.inactiveDate ?? null,
-    not_in_house: player.notInHouse,
-    role: player.role ?? 'Member',
-    discord_aliases: player.aliases ?? [],
-  };
+  const profileSuccess = await handleMutation(
+    supabase.from('profiles').upsert({
+      id: player.id,
+      discord_nickname: player.name,
+      display_name: player.name,
+      total_leadership: player.totalLeadership ?? 0,
+      joined_date: player.joinedDate ?? null,
+      inactive_date: player.inactiveDate ?? null,
+      not_in_house: player.notInHouse,
+      role: player.role ?? 'Member',
+      discord_aliases: player.aliases ?? [],
+    }),
+    { service: 'playerService', op: `upsertProfile ${player.id}` }
+  );
 
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .upsert(profileData);
+  if (!profileSuccess) return false;
 
-  if (profileError) {
-    console.error(`[playerService] Profile upsert failed for ${player.id}:`, profileError.message);
-    return false;
-  }
-
-  // 2. Upsert Player Info (if any)
+  // 2. Upsert Player Info (Optional - don't fail the whole process)
   const info = player.player_info?.[0]?.internal_notes || player.info || '';
   if (info !== undefined || player.player_info !== undefined) {
-    const { error: infoError } = await supabase
-      .from('player_info')
-      .upsert({ player_id: player.id, internal_notes: info });
-    
-    if (infoError) {
-      console.error(`[playerService] Player info upsert failed for ${player.id}:`, infoError.message);
-      // We don't fail the whole operation just for notes
-    }
+    await handleMutation(
+      supabase.from('player_info').upsert({ player_id: player.id, internal_notes: info }),
+      { service: 'playerService', op: `upsertPlayerInfo ${player.id}` }
+    );
   }
 
   // 3. Upsert Profile Units
@@ -179,25 +152,18 @@ export async function upsertPlayer(player: Player): Promise<boolean> {
   }));
 
   // Delete existing units first
-  const { error: deleteUnitsError } = await supabase
-    .from('profile_units')
-    .delete()
-    .eq('profile_id', player.id);
+  const deleteUnitsSuccess = await handleMutation(
+    supabase.from('profile_units').delete().eq('profile_id', player.id),
+    { service: 'playerService', op: `clearUnits ${player.id}` }
+  );
 
-  if (deleteUnitsError) {
-    console.error(`[playerService] Failed to clear old units for ${player.id}:`, deleteUnitsError.message);
-    return false;
-  }
+  if (!deleteUnitsSuccess) return false;
 
   if (unitsToInsert.length > 0) {
-    const { error: insertUnitsError } = await supabase
-      .from('profile_units')
-      .insert(unitsToInsert);
-
-    if (insertUnitsError) {
-      console.error(`[playerService] Units insert failed for ${player.id}:`, insertUnitsError.message);
-      return false;
-    }
+    return handleMutation(
+      supabase.from('profile_units').insert(unitsToInsert),
+      { service: 'playerService', op: `insertUnits ${player.id}` }
+    );
   }
 
   return true;
@@ -207,18 +173,11 @@ export async function upsertPlayer(player: Player): Promise<boolean> {
  * Deletes a player from Supabase.
  */
 export async function deletePlayer(playerId: string): Promise<boolean> {
-  console.log(`[playerService] Deleting player ${playerId} from Supabase...`);
-  
-  const { error } = await supabase
-    .from('profiles')
-    .delete()
-    .eq('id', playerId);
-
-  if (error) {
-    console.error(`[playerService] Profile delete failed for ${playerId}:`, error.message);
-    return false;
-  }
-  return true;
+  return handleMutation(
+    supabase.from('profiles').delete().eq('id', playerId),
+    { service: 'playerService', op: `deletePlayer ${playerId}` }
+  );
 }
+
 
 

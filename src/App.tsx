@@ -69,10 +69,6 @@ const App: React.FC = () => {
             .then(({ count }) => setPendingApprovalsCount(count ?? 0));
     }, [role]);
 
-
-
-
-
     const handleLogout = useCallback(async () => {
         const { error } = await supabase.auth.signOut();
         if (error) {
@@ -83,7 +79,6 @@ const App: React.FC = () => {
         }
     }, []);
 
-
     useEffect(() => {
         if (statusMessage) {
             const timer = setTimeout(() => setStatusMessage(""), 4000);
@@ -91,7 +86,7 @@ const App: React.FC = () => {
         }
     }, [statusMessage]);
 
-    useCloudSync(setStatusMessage);
+    const { status } = useCloudSync(setStatusMessage);
 
     const players = useSelector((state: RootState) => state.player.players);
     const groups = useSelector((state: RootState) => state.group.groups);
@@ -120,7 +115,7 @@ const App: React.FC = () => {
                             </div>
                         )}
                         {/* Global Header */}
-                        <Header onLogout={handleLogout} />
+                        <Header onLogout={handleLogout} syncStatus={status} />
 
                         <div className="flex flex-row flex-1 overflow-hidden">
                             {isOfficerPlus ? (
@@ -137,7 +132,6 @@ const App: React.FC = () => {
                                     onOpenProfileMatcher={handleOpenProfileMatcher}
                                     onOpenAdminPanel={handleOpenAdminPanel}
                                     pendingApprovalsCount={pendingApprovalsCount}
-                                    hasUnsavedChanges={false}
                                     statusMessage={statusMessage}
                                     setConfirmModal={setConfirmModal}
                                     isPlayerListOpen={isPlayerListOpen}

@@ -4,6 +4,7 @@
  * into the Group interface used by the app state.
  */
 import { supabase } from './supabase';
+import { handleQuery, handleMutation } from './supabaseUtils';
 import type { Group, GroupMember } from '../types';
 
 type GroupMemberRow = {
@@ -41,7 +42,7 @@ function transformGroupRow(row: GroupRow): Group {
  * Sorted by order_index for stable ordering.
  */
 export async function fetchGroupsFromSupabase(signal?: AbortSignal): Promise<Group[]> {
-  const { data, error } = await supabase
+  const query = supabase
     .from('groups')
     .select(`
       id,
@@ -59,20 +60,13 @@ export async function fetchGroupsFromSupabase(signal?: AbortSignal): Promise<Gro
     .order('order_index', { foreignTable: 'group_members', ascending: true })
     .abortSignal(signal!);
 
-  if (error) {
-    // Re-throw AbortErrors so SyncManager can handle them correctly.
-    if (error.message?.includes('abort')) {
-      const e = new Error('AbortError');
-      e.name = 'AbortError';
-      throw e;
-    }
-    console.warn('[groupService] Supabase fetch failed:', error.message);
-    return [];
-  }
+  const data = await handleQuery<GroupRow[]>(
+    query,
+    { service: 'groupService', op: 'fetchGroups' },
+    []
+  );
 
-  if (!data) return [];
-
-  return (data as GroupRow[]).map(transformGroupRow);
+  return data.map(transformGroupRow);
 }
 
 /**
@@ -82,32 +76,25 @@ export async function upsertGroup(group: Group, orderIndex: number): Promise<boo
   console.log(`[groupService] Upserting group ${group.id} to Supabase...`);
 
   // 1. Upsert Group
-  const groupData = {
-    id: group.id,
-    name: group.name,
-    leader_id: group.leaderId || null,
-    order_index: orderIndex,
-  };
+  const success = await handleMutation(
+    supabase.from('groups').upsert({
+      id: group.id,
+      name: group.name,
+      leader_id: group.leaderId || null,
+      order_index: orderIndex,
+    }),
+    { service: 'groupService', op: `upsertGroup ${group.id}` }
+  );
 
-  const { error: groupError } = await supabase
-    .from('groups')
-    .upsert(groupData);
-
-  if (groupError) {
-    console.error(`[groupService] Group upsert failed for ${group.id}:`, groupError.message);
-    return false;
-  }
+  if (!success) return false;
 
   // 2. Clear old members to handle removals correctly
-  const { error: deleteMembersError } = await supabase
-    .from('group_members')
-    .delete()
-    .eq('group_id', group.id);
+  const deleteSuccess = await handleMutation(
+    supabase.from('group_members').delete().eq('group_id', group.id),
+    { service: 'groupService', op: `clearMembers ${group.id}` }
+  );
 
-  if (deleteMembersError) {
-    console.error(`[groupService] Failed to clear members for group ${group.id}:`, deleteMembersError.message);
-    return false;
-  }
+  if (!deleteSuccess) return false;
 
   // 3. Insert new members
   const membersToInsert = group.members.map((m, index) => ({
@@ -119,14 +106,10 @@ export async function upsertGroup(group: Group, orderIndex: number): Promise<boo
   }));
 
   if (membersToInsert.length > 0) {
-    const { error: insertMembersError } = await supabase
-      .from('group_members')
-      .insert(membersToInsert);
-
-    if (insertMembersError) {
-      console.error(`[groupService] Group members insert failed for ${group.id}:`, insertMembersError.message);
-      return false;
-    }
+    return handleMutation(
+      supabase.from('group_members').insert(membersToInsert),
+      { service: 'groupService', op: `insertMembers ${group.id}` }
+    );
   }
 
   return true;
@@ -136,16 +119,9 @@ export async function upsertGroup(group: Group, orderIndex: number): Promise<boo
  * Deletes a group from Supabase.
  */
 export async function deleteGroup(groupId: string): Promise<boolean> {
-  console.log(`[groupService] Deleting group ${groupId} from Supabase...`);
-  
-  const { error } = await supabase
-    .from('groups')
-    .delete()
-    .eq('id', groupId);
-
-  if (error) {
-    console.error(`[groupService] Group delete failed:`, error.message);
-    return false;
-  }
-  return true;
+  return handleMutation(
+    supabase.from('groups').delete().eq('id', groupId),
+    { service: 'groupService', op: `deleteGroup ${groupId}` }
+  );
 }
+

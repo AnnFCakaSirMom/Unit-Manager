@@ -58,3 +58,6 @@ export const LogOut: React.FC<IconProps> = (props) => <Icon {...props}><path d="
 export const History: React.FC<IconProps> = (props) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></Icon>;
 export const UserCheck: React.FC<IconProps> = (props) => <Icon {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><polyline points="16 11 18 13 22 9" /></Icon>;
 export const RefreshCcw: React.FC<IconProps> = (props) => <Icon {...props}><path d="M1 4v6h6" /><path d="M3.35 15a9 9 0 1 1 2.82-5.32L1 10" /></Icon>;
+export const Cloud: React.FC<IconProps> = (props) => <Icon {...props}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /></Icon>;
+export const CloudOff: React.FC<IconProps> = (props) => <Icon {...props}><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3" /><path d="m2 2 20 20" /></Icon>;
+export const CloudAlert: React.FC<IconProps> = (props) => <Icon {...props}><path d="M12 12v4" /><path d="M12 20h.01" /><path d="M17 18h1a4 4 0 1 0-2-7.66 7 7 0 1 0-11.71 6.32" /></Icon>;

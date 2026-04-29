@@ -5,10 +5,12 @@ import { upsertGroup, deleteGroup } from '../services/groupService';
 import { upsertTWImport, deleteTWImportEntry } from '../services/twImportService';
 import { auditService } from '../services/auditService';
 
+export type SyncStatus = 'Syncing' | 'Synced' | 'Error' | 'PermanentError';
+
 export function useCloudSync(
   setStatusMessage: (msg: string) => void
 ) {
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [status, setStatus] = useState<SyncStatus>('Synced');
   const { userId: actorId, discordNickname: actorNickname } = useAppSelector(state => state.auth);
   
   const players = useAppSelector(state => state.player.players);
@@ -21,12 +23,14 @@ export function useCloudSync(
   const prevTWAttendanceRef = useRef(twAttendance);
   const isInitialized = useRef(false);
 
+  // Track retry attempts per object ID to prevent infinite loops
+  const retryCountsRef = useRef<Map<string, number>>(new Map());
+
   useEffect(() => {
     const currentPlayers = players;
     const currentGroups = groups;
     const currentTWAttendance = twAttendance;
     
-    // Skip deep comparison if we are still waiting for initial data
     if (!isInitialized.current && currentPlayers.length === 0 && currentGroups.length === 0) {
         return;
     }
@@ -42,27 +46,21 @@ export function useCloudSync(
     const timer = setTimeout(async () => {
       if (!actorId) return;
 
-      // 1. Initial hydration guard (Debounced):
-      // By initializing here, we ensure that all initial data fetches from Supabase
-      // have settled before we start tracking diffs for the Audit Log.
       if (!isInitialized.current) {
           prevPlayersRef.current = currentPlayers;
           prevGroupsRef.current = currentGroups;
           prevTWAttendanceRef.current = currentTWAttendance;
           isInitialized.current = true;
-          console.log('[useCloudSync] System initialized (debounced). Skipping initial sync logs.');
+          console.log('[useCloudSync] System initialized. Skipping initial sync logs.');
           return;
       }
 
-      setIsSyncing(true);
+      setStatus('Syncing');
       setStatusMessage("Saving to cloud...");
 
-      const prevPlayers = prevPlayersRef.current;
-      const prevGroups = prevGroupsRef.current;
-      const prevTWAttendance = prevTWAttendanceRef.current;
-
-      const prevPlayersMap = new Map(prevPlayers.map(p => [p.id, p]));
-      const prevGroupsMap = new Map(prevGroups.map(g => [g.id, g]));
+      const prevPlayersMap = new Map(prevPlayersRef.current.map(p => [p.id, p]));
+      const prevGroupsMap = new Map(prevGroupsRef.current.map(g => [g.id, g]));
+      const prevTWMap = new Map(prevTWAttendanceRef.current.map(p => [p.discordName, p]));
 
       // 1. Diffs for Players
       const changedPlayers = currentPlayers.filter(p => {
@@ -70,7 +68,7 @@ export function useCloudSync(
         return !prev || JSON.stringify(prev) !== JSON.stringify(p);
       });
       const currentPlayerIds = new Set(currentPlayers.map(p => p.id));
-      const deletedPlayers = prevPlayers.filter(p => !currentPlayerIds.has(p.id));
+      const deletedPlayers = prevPlayersRef.current.filter(p => !currentPlayerIds.has(p.id));
 
       // 2. Diffs for Groups
       const changedGroups = currentGroups.filter(g => {
@@ -78,33 +76,56 @@ export function useCloudSync(
         return !prev || JSON.stringify(prev) !== JSON.stringify(g);
       });
       const currentGroupIds = new Set(currentGroups.map(g => g.id));
-      const deletedGroups = prevGroups.filter(g => !currentGroupIds.has(g.id));
+      const deletedGroups = prevGroupsRef.current.filter(g => !currentGroupIds.has(g.id));
 
       let hasErrors = false;
+      let hasPermanentErrors = false;
 
-      // Execute & Log Player Deletions
+      const handleResult = (id: string, success: boolean, serviceName: string) => {
+        if (success) {
+          retryCountsRef.current.delete(id);
+          return true;
+        } else {
+          const count = (retryCountsRef.current.get(id) || 0) + 1;
+          retryCountsRef.current.set(id, count);
+          if (count >= 5) {
+            console.error(`[useCloudSync] PERMANENT FAILURE for ${serviceName} ID: ${id}. Attempt limit reached.`);
+            hasPermanentErrors = true;
+            return true; // Return true to update Ref anyway and stop retrying
+          }
+          hasErrors = true;
+          return false;
+        }
+      };
+
+      // Execute Player Deletions
       for (const p of deletedPlayers) {
         const success = await deletePlayer(p.id);
-        if (success) {
+        if (handleResult(p.id, success, 'playerService.delete')) {
+          prevPlayersMap.delete(p.id);
+          if (success) {
             await auditService.logAction({
-                actor_id: actorId,
-                actor_nickname: actorNickname || 'Unknown',
-                action_type: 'MAJOR_CHANGE',
-                action_detail: `Deleted player ${p.name}`,
-                target_id: p.id,
-                target_name: p.name,
-                old_data: p,
-                is_suspicious: true
+              actor_id: actorId,
+              actor_nickname: actorNickname || 'Unknown',
+              action_type: 'MAJOR_CHANGE',
+              action_detail: `Deleted player ${p.name}`,
+              target_id: p.id,
+              target_name: p.name,
+              old_data: p,
+              is_suspicious: true
             });
-        } else hasErrors = true;
+          }
+        }
       }
 
-      // Execute & Log Player Upserts
+      // Execute Player Upserts
       for (const player of changedPlayers) {
         const prev = prevPlayersMap.get(player.id);
         const success = await upsertPlayer(player);
         
-        if (success) {
+        if (handleResult(player.id, success, 'playerService.upsert')) {
+          prevPlayersMap.set(player.id, player);
+          if (success) {
             const isSelf = actorId === player.id;
             let actionType: 'SMALL_CHANGE' | 'MAJOR_CHANGE' = 'SMALL_CHANGE';
             let detail = isSelf ? 'Updated their profile' : `Updated units for ${player.name}`;
@@ -117,7 +138,6 @@ export function useCloudSync(
                 if (prev.role !== player.role) {
                     actionType = 'MAJOR_CHANGE';
                     detail = `Changed role for ${player.name}: ${prev.role} -> ${player.role}`;
-                    // Flag if upgrading to a high-power role
                     if (['Admin', 'Owner', 'Gatekeeper'].includes(player.role || '')) {
                         isSuspicious = true;
                     }
@@ -138,51 +158,69 @@ export function useCloudSync(
                 new_data: player,
                 is_suspicious: isSuspicious
             });
-        } else hasErrors = true;
-      }
-
-      // Execute & Log Group Deletions
-      for (const g of deletedGroups) {
-        const success = await deleteGroup(g.id);
-        if (!success) hasErrors = true;
-      }
-
-      // Execute & Log Group Upserts
-      for (let i = 0; i < currentGroups.length; i++) {
-        const group = currentGroups[i];
-        const prevIndex = prevGroups.findIndex(g => g.id === group.id);
-        
-        if (changedGroups.includes(group) || prevIndex !== i) {
-          const success = await upsertGroup(group, i);
-          if (!success) hasErrors = true;
+          }
         }
       }
 
-      // ... (TW logic remains same, but without specific audit logs as requested)
-      const prevTWAttendanceMap = new Map(prevTWAttendance.map(p => [p.discordName, p]));
+      // Execute Group Deletions
+      for (const g of deletedGroups) {
+        const success = await deleteGroup(g.id);
+        if (handleResult(g.id, success, 'groupService.delete')) {
+          prevGroupsMap.delete(g.id);
+        }
+      }
+
+      // Execute Group Upserts (Handling order changes)
+      const currentGroupsWithCorrectOrder = [...currentGroups];
+      for (let i = 0; i < currentGroupsWithCorrectOrder.length; i++) {
+        const group = currentGroupsWithCorrectOrder[i];
+        const prevIndex = prevGroupsRef.current.findIndex(g => g.id === group.id);
+        
+        if (changedGroups.includes(group) || prevIndex !== i) {
+          const success = await upsertGroup(group, i);
+          if (handleResult(group.id, success, 'groupService.upsert')) {
+            prevGroupsMap.set(group.id, group);
+          }
+        }
+      }
+
+      // TW Attendance Sync
       const changedTW = currentTWAttendance.filter(p => {
-        const prev = prevTWAttendanceMap.get(p.discordName);
+        const prev = prevTWMap.get(p.discordName);
         return !prev || JSON.stringify(prev) !== JSON.stringify(p);
       });
       const currentTWNames = new Set(currentTWAttendance.map(p => p.discordName));
-      const deletedTWNames = prevTWAttendance.filter(p => !currentTWNames.has(p.discordName)).map(p => p.discordName);
+      const deletedTWNames = prevTWAttendanceRef.current.filter(p => !currentTWNames.has(p.discordName)).map(p => p.discordName);
 
       for (const name of deletedTWNames) {
         const success = await deleteTWImportEntry(name);
-        if (!success) hasErrors = true;
+        if (handleResult(name, success, 'twService.delete')) {
+          prevTWMap.delete(name);
+        }
       }
       for (const entry of changedTW) {
         const success = await upsertTWImport(entry);
-        if (!success) hasErrors = true;
+        if (handleResult(entry.discordName, success, 'twService.upsert')) {
+          prevTWMap.set(entry.discordName, entry);
+        }
       }
 
-      // Update refs
-      prevPlayersRef.current = currentPlayers;
-      prevGroupsRef.current = currentGroups;
-      prevTWAttendanceRef.current = currentTWAttendance;
+      // Update refs with what was successfully synced (or permanently failed)
+      prevPlayersRef.current = currentPlayers.filter(p => prevPlayersMap.has(p.id));
+      // For groups, we need to maintain order as much as possible
+      prevGroupsRef.current = currentGroups.filter(g => prevGroupsMap.has(g.id));
+      prevTWAttendanceRef.current = currentTWAttendance.filter(p => prevTWMap.has(p.discordName));
 
-      setIsSyncing(false);
-      setStatusMessage(hasErrors ? "Cloud save completed with errors." : "Saved to cloud.");
+      if (hasPermanentErrors) {
+        setStatus('PermanentError');
+        setStatusMessage("Cloud save failed permanently for some items.");
+      } else if (hasErrors) {
+        setStatus('Error');
+        setStatusMessage("Cloud save completed with errors. Retrying...");
+      } else {
+        setStatus('Synced');
+        setStatusMessage("Saved to cloud.");
+      }
 
     }, 2000);
 
@@ -190,5 +228,6 @@ export function useCloudSync(
 
   }, [players, groups, twAttendance, setStatusMessage, actorId, actorNickname]);
 
-  return { isSyncing };
+  return { status, isSyncing: status === 'Syncing' };
 }
+
