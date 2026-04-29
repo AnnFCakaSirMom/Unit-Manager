@@ -124,9 +124,6 @@ const App: React.FC = () => {
                                     selectedGroupId={selectedGroupId}
                                     onSelectPlayer={handleSelectPlayer}
                                     onSelectGroup={handleSelectGroup}
-                                    onSave={handleSaveData}
-                                    onLoad={handleModernOpenFile}
-                                    onOpenUnitManager={() => setIsMgmtModalOpen(true)}
                                     onOpenAttendance={handleOpenAttendance}
                                     onOpenTWStatistics={handleOpenTWStatistics}
                                     onOpenProfileMatcher={handleOpenProfileMatcher}
@@ -137,6 +134,7 @@ const App: React.FC = () => {
                                     isPlayerListOpen={isPlayerListOpen}
                                     onTogglePlayerList={handleTogglePlayerList}
                                 />
+
                             ) : (
                                 <MemberProfileRail setStatusMessage={setStatusMessage} />
                             )}

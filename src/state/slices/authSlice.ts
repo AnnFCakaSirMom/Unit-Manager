@@ -38,12 +38,10 @@ const authSlice = createSlice({
       state.avatarUrl = null;
       state.isInitialized = true;
     },
-    setAuthInitialized: (state) => {
-        state.isInitialized = true;
-    }
   },
 });
 
-export const { setAuthSession, clearAuthSession, setAuthInitialized } = authSlice.actions;
+export const { setAuthSession, clearAuthSession } = authSlice.actions;
 
 export const authReducer = authSlice.reducer;
+

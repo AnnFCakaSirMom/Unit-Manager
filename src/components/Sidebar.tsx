@@ -15,9 +15,6 @@ interface SidebarProps {
     selectedGroupId: string | null;
     onSelectPlayer: (id: string | null) => void;
     onSelectGroup: (id: string | null) => void;
-    onSave: () => void;
-    onLoad: () => void;
-    onOpenUnitManager: () => void;
     onOpenAttendance: () => void;
     onOpenTWStatistics: () => void;
     onOpenProfileMatcher: () => void;
@@ -58,6 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
         pendingApprovalsCount, statusMessage, setConfirmModal, isPlayerListOpen,
         onTogglePlayerList
     } = props;
+
 
     const [newPlayerName, setNewPlayerName] = useState("");
     const [notInHouse, setNotInHouse] = useState(false);
