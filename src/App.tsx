@@ -17,11 +17,10 @@ import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { UploadCloud } from './components/icons';
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useAppSelector, useAppDispatch } from './state/store';
 import { supabase } from './services/supabase';
 import { AuthGuard } from './components/AuthGuard';
 import { fetchUnitsFromSupabase } from './state/slices/unitSlice';
-import { RootState, AppDispatch } from './state/store';
 import { useAuth } from './hooks/useAuth';
 import { useNavigationState } from './hooks/useNavigationState';
 import { useDatabaseSync } from './hooks/useDatabaseSync';
@@ -34,7 +33,7 @@ declare global {
 }
 
 const App: React.FC = () => {
-    const reduxDispatch = useDispatch<AppDispatch>();
+    const reduxDispatch = useAppDispatch();
 
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
@@ -113,8 +112,8 @@ const App: React.FC = () => {
 
     const { status } = useCloudSync(setStatusMessage);
 
-    const players = useSelector((state: RootState) => state.player.players);
-    const groups = useSelector((state: RootState) => state.group.groups);
+    const players = useAppSelector(state => state.player.players);
+    const groups = useAppSelector(state => state.group.groups);
 
     const selectedPlayer = useMemo(() => players.find((p: any) => p.id === selectedPlayerId), [players, selectedPlayerId]);
     const selectedGroup = useMemo(() => groups.find((g: any) => g.id === selectedGroupId), [groups, selectedGroupId]);

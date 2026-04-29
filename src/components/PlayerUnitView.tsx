@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import type { Player, Unit, ConfirmModalInfo } from '../types';
+import type { Player, Unit, ConfirmModalInfo, UserRole } from '../types';
 import { CheckSquare, List, Search, Clipboard as Copy, ImportIcon, Star, Trash2 } from './icons';
 import { ParseFormModal } from './ParseFormModal';
 import { Button } from './Button';
@@ -8,10 +8,6 @@ import { Select } from './Select';
 import { UnitTierSection } from './UnitTierSection';
 import { OwnedUnitsView } from './OwnedUnitsView';
 import { cn } from '../utils';
-import { useSelector } from 'react-redux';
-import { RootState } from '../state/store';
-
-import { UserRole } from '../types';
 import { RoleBadge } from './RoleBadge';
 
 
@@ -38,7 +34,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
         canEditDisplayName,
         canManageRole 
     } = usePermission();
-    const { userId } = useSelector((state: RootState) => state.auth);
+    const { userId } = useAppSelector(state => state.auth);
     
     const allUnits = useMemo(() => Object.values(unitConfig.tiers).flat().map(u => u.name), [unitConfig]);
     if (!player) {
@@ -276,12 +272,12 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
 
 
                 <div className="mb-3">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center gap-4">
                         <div className="bg-gray-800/60 rounded-md p-1 flex items-center gap-1 self-start">
                             <Button onClick={() => setUnitViewMode('all')} variant={unitViewMode === 'all' ? 'primary' : 'ghost'} size="sm"><CheckSquare size={16} /> Show All</Button>
                             <Button onClick={() => setUnitViewMode('owned')} variant={unitViewMode === 'owned' ? 'primary' : 'ghost'} size="sm"><List size={16} /> Show Owned</Button>
                         </div>
-                        <div className="relative flex-grow">
+                        <div className="relative flex-grow max-w-md">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                             <Input
                                 type="text"
@@ -291,6 +287,11 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                 className="w-full pl-10 pr-3 py-2"
                             />
                         </div>
+                        {!isOfficerPlus && (
+                            <p className="text-[11px] text-gray-500 italic leading-snug max-w-[200px]">
+                                Click on a unit to mark as Owned. Use the icons to set specific status.
+                            </p>
+                        )}
                     </div>
                     <div className="flex items-center gap-4 text-xs text-gray-400 mt-2">
                         {/* LEGEND FOR STAR/ICONS */}

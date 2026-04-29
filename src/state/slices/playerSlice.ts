@@ -61,12 +61,40 @@ const playerSlice = createSlice({
     togglePlayerUnit(state, action: PayloadAction<{ playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits' }>) {
       const { playerId, unitName, unitType } = action.payload;
       const player = state.players.find(p => p.id === playerId);
-      if (player) {
-        const currentUnits = player[unitType] || [];
-        if (currentUnits.includes(unitName)) {
-          player[unitType] = currentUnits.filter(u => u !== unitName);
-        } else {
-          player[unitType] = [...currentUnits, unitName];
+      if (!player) return;
+
+      const currentList = player[unitType] || [];
+      const isRemoving = currentList.includes(unitName);
+
+      if (isRemoving) {
+        // --- UNCHECKING LOGIC ---
+        player[unitType] = currentList.filter(u => u !== unitName);
+
+        if (unitType === 'units') {
+          // If Owned is removed, clear EVERYTHING
+          player.preparedUnits = (player.preparedUnits || []).filter(u => u !== unitName);
+          player.masteryUnits = (player.masteryUnits || []).filter(u => u !== unitName);
+          player.favoriteUnits = (player.favoriteUnits || []).filter(u => u !== unitName);
+        } else if (unitType === 'preparedUnits') {
+          // If Maxed is removed, clear Mastery
+          player.masteryUnits = (player.masteryUnits || []).filter(u => u !== unitName);
+        }
+      } else {
+        // --- CHECKING LOGIC ---
+        player[unitType] = [...currentList, unitName];
+
+        // Ensure Owned if any status is set
+        if (unitType === 'preparedUnits' || unitType === 'masteryUnits' || unitType === 'favoriteUnits') {
+          if (!player.units.includes(unitName)) {
+            player.units = [...(player.units || []), unitName];
+          }
+        }
+
+        // Ensure Maxed if Mastery is set
+        if (unitType === 'masteryUnits') {
+          if (!player.preparedUnits.includes(unitName)) {
+            player.preparedUnits = [...(player.preparedUnits || []), unitName];
+          }
         }
       }
     },
@@ -91,10 +119,19 @@ const playerSlice = createSlice({
           const unitName = unitNameStr.trim();
 
           if (allUnitNamesSet.has(unitName)) {
-            if (ownedStr.trim().toLowerCase() === 'x') parsedUnits.push(unitName);
-            if (maxedStr.trim().toLowerCase() === 'x') parsedPreparedUnits.push(unitName);
-            if (masteryStr.trim().toLowerCase() === 'x') parsedMasteryUnits.push(unitName);
-            if (favoriteStr && favoriteStr.trim().toLowerCase() === 'x') parsedFavoriteUnits.push(unitName);
+            let isOwned = ownedStr.trim().toLowerCase() === 'x';
+            let isMaxed = maxedStr.trim().toLowerCase() === 'x';
+            let isMastery = masteryStr.trim().toLowerCase() === 'x';
+            let isFavorite = favoriteStr && favoriteStr.trim().toLowerCase() === 'x';
+
+            // Apply Smart Selection Logic during parse
+            if (isMastery) isMaxed = true;
+            if (isMaxed || isMastery || isFavorite) isOwned = true;
+
+            if (isOwned) parsedUnits.push(unitName);
+            if (isMaxed) parsedPreparedUnits.push(unitName);
+            if (isMastery) parsedMasteryUnits.push(unitName);
+            if (isFavorite) parsedFavoriteUnits.push(unitName);
           }
         }
       }

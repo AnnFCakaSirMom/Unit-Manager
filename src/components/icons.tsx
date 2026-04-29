@@ -61,3 +61,4 @@ export const RefreshCcw: React.FC<IconProps> = (props) => <Icon {...props}><path
 export const Cloud: React.FC<IconProps> = (props) => <Icon {...props}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" /></Icon>;
 export const CloudOff: React.FC<IconProps> = (props) => <Icon {...props}><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3" /><path d="m2 2 20 20" /></Icon>;
 export const CloudAlert: React.FC<IconProps> = (props) => <Icon {...props}><path d="M12 12v4" /><path d="M12 20h.01" /><path d="M17 18h1a4 4 0 1 0-2-7.66 7 7 0 1 0-11.71 6.32" /></Icon>;
+export const HelpCircle: React.FC<IconProps> = (props) => <Icon {...props}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" x2="12.01" y1="17" y2="17" /></Icon>;

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '../state/store';
 import { useAppSelector, useAppDispatch } from '../state/store';
 import { updatePlayerLeadership } from '../state/slices/playerSlice';
 import { supabase } from '../services/supabase';
 import { Input } from './Input';
-import { Star, Shield, CheckSquare } from './icons';
+import { Star, Shield, CheckSquare, HelpCircle } from './icons';
+import { MemberHelpModal } from './MemberHelpModal';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -45,9 +44,10 @@ function formatJoinedDate(iso: string | undefined): string {
 
 export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusMessage }) => {
     const dispatch = useAppDispatch();
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
 
     // Auth state
-    const { userId, avatarUrl } = useSelector((state: RootState) => state.auth);
+    const { userId, avatarUrl } = useAppSelector(state => state.auth);
 
     // Player data — the logged-in member's own profile
     const players = useAppSelector(state => state.player.players);
@@ -194,17 +194,19 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
                 </div>
             </div>
 
-            {/* ── Quick Tips ── */}
-            <div className="border border-gray-800 rounded-md p-3 mt-auto">
-                <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Quick Tips
-                </p>
-                <ul className="space-y-1 text-[11px] text-gray-600 leading-relaxed">
-                    <li>⭐ Click the star to favorite a unit</li>
-                    <li>🟡 Yellow background = Full Mastery</li>
-                    <li>🟢 Green ring = Maxed unit</li>
-                </ul>
-            </div>
+            {/* ── Help Button ── */}
+            <button
+                onClick={() => setIsHelpOpen(true)}
+                className="mt-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-gray-400 hover:text-white hover:bg-gray-800 rounded-md border border-gray-800 transition-colors"
+            >
+                <HelpCircle size={14} />
+                How to use the Barrack
+            </button>
+
+            <MemberHelpModal 
+                isOpen={isHelpOpen} 
+                onClose={() => setIsHelpOpen(false)} 
+            />
         </aside>
     );
 };
