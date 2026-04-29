@@ -48,6 +48,14 @@ En webbapplikation för att hantera spelar-units, grupper och Territory War (TW)
 - [x] **Visual Sync Feedback:** Centraliserat synk-indikatorn till Headern med dynamiska ikoner (`Synced`, `Syncing`, `Error`, `PermanentError`) och tooltips.
 - [x] **Kodstädning:** Rensat bort döda props och redundanta Redux-actions (`setAuthInitialized`) för bättre underhållbarhet.
 
+### 6. Performance & Rendering Architecture (Slutfört April 2026)
+- [x] **Avancerad Renderingsisolering:**
+    *   **GroupMemberCard:** Bröt ut `MovePlayerDropdown` för att eliminera tunga Redux-prenumerationer på gruppnivå för varje spelarkort.
+    *   **List-optimering:** Implementerade radvis memoizering (`PlayerListItem`, `AttendancePlayerRow`) och flyttade ner lokal state (t.ex. editing) för att isolera renderingar vid sökning och interaktion.
+- [x] **Beräknings-memoizering:** Optimerat `useTWStats.ts`, `AttendanceGroupGrid.tsx` och `TWStatisticsView.tsx` med strategisk användning av `useMemo` och `useCallback` för att hantera stora array-transformationer effektivt.
+- [x] **Teknisk Dokumentation:** Skapat `TECHNICAL_GUIDE.md` som täcker arkitektur, RLS-säkerhet, synkroniseringsflöden och "Circuit Breaker"-logik för framtida underhåll.
+- [x] **Resursaudit:** Verifierat och säkrat cleanup-funktioner för alla Supabase-kanaler, auth-lyssnare och timers för att förhindra minnesläckor.
+
 ---
 
 ## 🛠 Pågående / Planerat
@@ -67,4 +75,4 @@ En webbapplikation för att hantera spelar-units, grupper och Territory War (TW)
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Säkerhet:** Row Level Security (RLS) med hierarkiska vikter.
 
-*Senast uppdaterad: 2026-04-29 (Kvällspass)*
+*Senast uppdaterad: 2026-04-29 (Sen kväll)*

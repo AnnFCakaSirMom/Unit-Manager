@@ -1,15 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import type { Player, GroupMember } from '../types';
 import { Star, Trash2, ArrowRightLeft, Lock, Unlock, AlertTriangle } from './icons';
 import { Button } from './Button';
 import { cn } from '../utils';
-import { useAppSelector, useAppDispatch } from '../state/store';
-import { movePlayerBetweenGroups, toggleGroupMemberUnit, setGroupMemberUnitRank, setGroupLeader, toggleGroupMemberLock, removePlayerFromGroup } from '../state/slices/groupSlice';
+import { useAppDispatch } from '../state/store';
+import { toggleGroupMemberUnit, setGroupMemberUnitRank, setGroupLeader, toggleGroupMemberLock, removePlayerFromGroup } from '../state/slices/groupSlice';
 import { useGroupMemberStats } from '../hooks/useGroupMemberStats';
 import { LockedMemberView } from './LockedMemberView';
 import { UnlockedMemberView } from './UnlockedMemberView';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './Card';
-import { Select } from './Select';
+import { MovePlayerDropdown } from './MovePlayerDropdown';
 
 export interface GroupMemberCardProps {
     member: GroupMember;
@@ -19,34 +19,38 @@ export interface GroupMemberCardProps {
     unitCostMap: Map<string, number>;
 }
 
-export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, unitCostMap }: GroupMemberCardProps) => {
-    const otherGroupsInner = useAppSelector(state => state.group.groups);
+export const GroupMemberCard = memo(({ member, player, groupId, isLeader, unitCostMap }: GroupMemberCardProps) => {
     const dispatch = useAppDispatch();
     const [isMoving, setIsMoving] = useState(false);
 
-    const otherGroups = useMemo(() => otherGroupsInner.filter(g => g.id !== groupId && g.members.length < 5), [otherGroupsInner, groupId]);
-
     const stats = useGroupMemberStats(member, player, unitCostMap);
 
-    const handleMoveSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const targetGroupId = e.target.value;
-        if (targetGroupId) {
-            dispatch(movePlayerBetweenGroups({ playerId: player.id, sourceGroupId: groupId, targetGroupId }));
-        }
-        setIsMoving(false);
-    };
-
-    const handleAddManualUnit = (unitName: string) => {
+    const handleAddManualUnit = useCallback((unitName: string) => {
         dispatch(toggleGroupMemberUnit({ groupId, playerId: player.id, unitName }));
-    };
+    }, [dispatch, groupId, player.id]);
 
-    const toggleUnit = (unitName: string) => {
+    const toggleUnit = useCallback((unitName: string) => {
         dispatch(toggleGroupMemberUnit({ groupId, playerId: player.id, unitName }));
-    };
+    }, [dispatch, groupId, player.id]);
 
-    const setRank = (unitName: string, rank: string) => {
+    const setRank = useCallback((unitName: string, rank: string) => {
         dispatch(setGroupMemberUnitRank({ groupId, playerId: player.id, unitName, rank: parseInt(rank, 10) || 0 }));
-    };
+    }, [dispatch, groupId, player.id]);
+
+    const handleToggleMoving = useCallback(() => setIsMoving(prev => !prev), []);
+    const handleCloseMoving = useCallback(() => setIsMoving(false), []);
+
+    const handleSetLeader = useCallback(() => {
+        dispatch(setGroupLeader({ groupId, playerId: player.id }));
+    }, [dispatch, groupId, player.id]);
+
+    const handleToggleLock = useCallback(() => {
+        dispatch(toggleGroupMemberLock({ groupId, playerId: player.id }));
+    }, [dispatch, groupId, player.id]);
+
+    const handleRemovePlayer = useCallback(() => {
+        dispatch(removePlayerFromGroup({ groupId, playerId: player.id }));
+    }, [dispatch, groupId, player.id]);
 
     return (
         <Card className="bg-gray-800/30 overflow-visible border-none">
@@ -73,29 +77,24 @@ export const GroupMemberCard = React.memo(({ member, player, groupId, isLeader, 
                 {/* Actions */}
                 <div className="flex items-center gap-1">
                     <div className="relative">
-                        <Button onClick={() => setIsMoving(!isMoving)} variant="ghost" size="icon" className="text-gray-400 hover:text-white" title="Move Player" aria-label="Move Player"><ArrowRightLeft size={18} /></Button>
+                        <Button onClick={handleToggleMoving} variant="ghost" size="icon" className="text-gray-400 hover:text-white" title="Move Player" aria-label="Move Player"><ArrowRightLeft size={18} /></Button>
                         {isMoving && (
-                            <Select
-                                onChange={handleMoveSelect}
-                                onBlur={() => setIsMoving(false)}
-                                className="absolute right-0 top-full mt-1 z-[100] py-1.5 px-3 min-w-[120px]"
-                                defaultValue=""
-                                autoFocus
-                            >
-                                <option value="" disabled>Move to...</option>
-                                {otherGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                            </Select>
+                            <MovePlayerDropdown 
+                                groupId={groupId} 
+                                playerId={player.id} 
+                                onClose={handleCloseMoving} 
+                            />
                         )}
                     </div>
                     {!isLeader && (
-                        <Button onClick={() => dispatch(setGroupLeader({ groupId, playerId: player.id }))} variant="ghost" size="icon" className="text-gray-400 hover:text-yellow-400 hover:bg-transparent" title="Set as Group Lead" aria-label="Set as Group Lead">
+                        <Button onClick={handleSetLeader} variant="ghost" size="icon" className="text-gray-400 hover:text-yellow-400 hover:bg-transparent" title="Set as Group Lead" aria-label="Set as Group Lead">
                             <Star size={18} />
                         </Button>
                     )}
-                    <Button onClick={() => dispatch(toggleGroupMemberLock({ groupId, playerId: player.id }))} variant="ghost" size="icon" className={cn("rounded-full", member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700")} title={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"} aria-label={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"}>
+                    <Button onClick={handleToggleLock} variant="ghost" size="icon" className={cn("rounded-full", member.isLocked ? "text-yellow-400 hover:bg-yellow-400/20" : "text-gray-400 hover:bg-gray-700")} title={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"} aria-label={member.isLocked ? "Unlock Unit Selection" : "Lock Unit Selection"}>
                         {member.isLocked ? <Lock size={18} /> : <Unlock size={18} />}
                     </Button>
-                    <Button onClick={() => dispatch(removePlayerFromGroup({ groupId, playerId: player.id }))} variant="ghost" size="icon" className="text-red-500 hover:bg-gray-700 rounded-full hover:text-red-400" title="Remove Player from Group" aria-label="Remove Player from Group">
+                    <Button onClick={handleRemovePlayer} variant="ghost" size="icon" className="text-red-500 hover:bg-gray-700 rounded-full hover:text-red-400" title="Remove Player from Group" aria-label="Remove Player from Group">
                         <Trash2 size={18} />
                     </Button>
                 </div>

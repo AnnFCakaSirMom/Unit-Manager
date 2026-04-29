@@ -47,15 +47,41 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
 }) => {
     const [showCreateMenu, setShowCreateMenu] = React.useState(false);
 
+    // 1. Memoize player lookup map for O(1) access instead of O(N) .find()
+    const playerMap = React.useMemo(() => {
+        const map = new Map<string, Player>();
+        players.forEach(p => map.set(p.id, p));
+        return map;
+    }, [players]);
+
+    // 2. Memoize group sorting
+    const sortedGroups = React.useMemo(() => {
+        return [...groups].sort((a, b) => {
+            const aMaybe = a.name.toUpperCase().includes('MAYBE');
+            const bMaybe = b.name.toUpperCase().includes('MAYBE');
+            if (aMaybe && !bMaybe) return 1;
+            if (!aMaybe && bMaybe) return -1;
+            return 0;
+        });
+    }, [groups]);
+
+    // 3. Stabilize internal handlers
+    const handleAddStandard = React.useCallback(() => {
+        handleAddGroup(false);
+        setShowCreateMenu(false);
+    }, [handleAddGroup]);
+
+    const handleAddMaybe = React.useCallback(() => {
+        handleAddGroup(true);
+        setShowCreateMenu(false);
+    }, [handleAddGroup]);
+
+    const toggleCreateMenu = React.useCallback(() => setShowCreateMenu(true), []);
+    const hideCreateMenu = React.useCallback(() => setShowCreateMenu(false), []);
+
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {[...groups].sort((a, b) => {
-                const aMaybe = a.name.toUpperCase().includes('MAYBE');
-                const bMaybe = b.name.toUpperCase().includes('MAYBE');
-                if (aMaybe && !bMaybe) return 1;
-                if (!aMaybe && bMaybe) return -1;
-                return 0;
-            }).map(group => {
+            {sortedGroups.map(group => {
                 const isFull = group.members.length >= 5;
 
                 return (
@@ -96,7 +122,7 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                         </div>
                         <div className="p-1.5 flex-grow min-h-[80px] flex flex-col gap-1">
                             {group.members.map(member => {
-                                const player = players.find(p => p.id === member.playerId);
+                                const player = playerMap.get(member.playerId);
                                 if (!player) return null;
 
                                 return (
@@ -158,7 +184,7 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                     )}
                     <div
                         className="hover:bg-gray-800/50 transition-colors cursor-pointer group flex flex-col items-center gap-2 w-full py-2 rounded-md"
-                        onClick={() => setShowCreateMenu(true)}
+                        onClick={toggleCreateMenu}
                     >
                         <div className="text-gray-400 flex flex-col items-center gap-2 group-hover:text-blue-400 transition-colors">
                             <div className="bg-gray-700 p-2 rounded-full group-hover:bg-blue-900/30 transition-colors"><Plus size={20} /></div>
@@ -170,7 +196,7 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                 <div className="bg-gray-800/80 border-2 border-blue-500/50 rounded-lg flex flex-col p-4 min-h-[130px] gap-3 animate-in fade-in zoom-in duration-150">
                     <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Select Group Type</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-gray-500" onClick={() => setShowCreateMenu(false)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 p-0 text-gray-500" onClick={hideCreateMenu}>
                             <X size={14} />
                         </Button>
                     </div>
@@ -178,7 +204,7 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                         <Button 
                             variant="primary" 
                             className="w-full justify-start gap-3 py-2.5 h-auto text-sm"
-                            onClick={() => { handleAddGroup(false); setShowCreateMenu(false); }}
+                            onClick={handleAddStandard}
                         >
                             <Shield size={16} className="text-blue-400" />
                             Standard Group
@@ -186,7 +212,7 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                         <Button 
                             variant="secondary" 
                             className="w-full justify-start gap-3 py-2.5 h-auto text-sm bg-gray-700 hover:bg-gray-600 border-gray-600"
-                            onClick={() => { handleAddGroup(true); setShowCreateMenu(false); }}
+                            onClick={handleAddMaybe}
                         >
                             <Shield size={16} className="text-purple-400" />
                             Maybe Group

@@ -38,11 +38,11 @@ export const TWStatisticsView: React.FC = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-    const handleCopy = () => {
+    const handleCopy = React.useCallback(() => {
         const text = formatTWStatsToDiscord(sortedStats, activeSeason, showAttendance, showDeclined, showAwol);
         navigator.clipboard.writeText(text);
         alert("Statistics copied to clipboard!");
-    };
+    }, [sortedStats, activeSeason, showAttendance, showDeclined, showAwol]);
 
     const handleImportStats = async (eventId: string, jsonString: string) => {
         try {
@@ -92,11 +92,17 @@ export const TWStatisticsView: React.FC = () => {
         }
     };
 
-
-    const renderSortIcon = (key: SortKey) => {
-        if (sortKey !== key) return null;
+    const SortIcon = React.useCallback(({ columnKey }: { columnKey: SortKey }) => {
+        if (sortKey !== columnKey) return null;
         return sortAsc ? <ChevronUp size={14} className="ml-1" /> : <ChevronDown size={14} className="ml-1" />;
-    };
+    }, [sortKey, sortAsc]);
+
+    const toggleAttendance = React.useCallback(() => setShowAttendance(prev => !prev), [setShowAttendance]);
+    const toggleDeclined = React.useCallback(() => setShowDeclined(prev => !prev), [setShowDeclined]);
+    const toggleAwol = React.useCallback(() => setShowAwol(prev => !prev), [setShowAwol]);
+    const toggleInactive = React.useCallback(() => setShowInactive(prev => !prev), [setShowInactive]);
+    const toggleNitro = React.useCallback(() => setIsNitroMode(prev => !prev), [setIsNitroMode]);
+    const clearSearch = React.useCallback(() => setSearchQuery(''), [setSearchQuery]);
 
     if (twSeasons.length === 0) {
         return (
@@ -218,7 +224,7 @@ export const TWStatisticsView: React.FC = () => {
                     />
                     {searchQuery && (
                         <button
-                            onClick={() => setSearchQuery('')}
+                            onClick={clearSearch}
                             className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-500 hover:text-gray-300"
                         >
                             <span className="text-xs">×</span>
@@ -230,29 +236,29 @@ export const TWStatisticsView: React.FC = () => {
 
                 <span className="text-sm font-semibold text-gray-300 mr-1">Filters:</span>
                 <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
-                    <input type="checkbox" className="hidden" checked={showAttendance} onChange={() => setShowAttendance(!showAttendance)} />
+                    <input type="checkbox" className="hidden" checked={showAttendance} onChange={toggleAttendance} />
                     {showAttendance ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
                     Show Attendance
                 </label>
                 <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
-                    <input type="checkbox" className="hidden" checked={showDeclined} onChange={() => setShowDeclined(!showDeclined)} />
+                    <input type="checkbox" className="hidden" checked={showDeclined} onChange={toggleDeclined} />
                     {showDeclined ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
                     Show Declined
                 </label>
                 <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
-                    <input type="checkbox" className="hidden" checked={showAwol} onChange={() => setShowAwol(!showAwol)} />
+                    <input type="checkbox" className="hidden" checked={showAwol} onChange={toggleAwol} />
                     {showAwol ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
                     Show AWOL
                 </label>
                 <div className="w-px h-6 bg-gray-600 mx-2 hidden sm:block"></div>
                 <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
-                    <input type="checkbox" className="hidden" checked={showInactive} onChange={() => setShowInactive(!showInactive)} />
+                    <input type="checkbox" className="hidden" checked={showInactive} onChange={toggleInactive} />
                     {showInactive ? <CheckSquare size={16} className="text-yellow-400" /> : <Square size={16} />}
                     Include Inactive
                 </label>
                 <div className="w-px h-6 bg-gray-600 mx-2 hidden sm:block"></div>
                 <label className="flex items-center gap-2 text-sm text-blue-300 cursor-pointer hover:text-blue-200" title="Increases message character limit to 4000 for Discord Nitro users.">
-                    <input type="checkbox" className="hidden" checked={isNitroMode} onChange={() => setIsNitroMode(!isNitroMode)} />
+                    <input type="checkbox" className="hidden" checked={isNitroMode} onChange={toggleNitro} />
                     {isNitroMode ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
                     🚀 Discord Nitro Mode
                     <HelpIcon helpKey="nitro" text={HELP_CONTENT.nitro_mode} />
@@ -265,26 +271,26 @@ export const TWStatisticsView: React.FC = () => {
                     <thead className="bg-gray-800 sticky top-0 z-10 shadow-sm">
                         <tr>
                             <th className="p-2 text-sm font-semibold text-gray-200 border-b border-gray-700 cursor-pointer hover:bg-gray-700 select-none" onClick={() => handleSort('name')}>
-                                <div className="flex items-center">Player {renderSortIcon('name')}</div>
+                                <div className="flex items-center">Player <SortIcon columnKey="name" /></div>
                             </th>
                             {showAttendance && (
                                 <>
                                     <th className="p-2 text-sm font-semibold text-gray-200 border-b border-gray-700 cursor-pointer hover:bg-gray-700 select-none" onClick={() => handleSort('attendance')}>
-                                        <div className="flex items-center">Attendance {renderSortIcon('attendance')}</div>
+                                        <div className="flex items-center">Attendance <SortIcon columnKey="attendance" /></div>
                                     </th>
                                     <th className="p-2 text-sm font-semibold text-gray-200 border-b border-gray-700 cursor-pointer hover:bg-gray-700 select-none" onClick={() => handleSort('percentage')}>
-                                        <div className="flex items-center">% {renderSortIcon('percentage')}</div>
+                                        <div className="flex items-center">% <SortIcon columnKey="percentage" /></div>
                                     </th>
                                 </>
                             )}
                             {showDeclined && (
                                 <th className="p-2 text-sm font-semibold text-gray-200 border-b border-gray-700 cursor-pointer hover:bg-gray-700 select-none" onClick={() => handleSort('declined')}>
-                                    <div className="flex items-center">Declined {renderSortIcon('declined')}</div>
+                                    <div className="flex items-center">Declined <SortIcon columnKey="declined" /></div>
                                 </th>
                             )}
                             {showAwol && (
                                 <th className="p-2 text-sm font-semibold text-gray-200 border-b border-gray-700 cursor-pointer hover:bg-gray-700 select-none" onClick={() => handleSort('awol')}>
-                                    <div className="flex items-center">AWOL {renderSortIcon('awol')}</div>
+                                    <div className="flex items-center">AWOL <SortIcon columnKey="awol" /></div>
                                 </th>
                             )}
                         </tr>

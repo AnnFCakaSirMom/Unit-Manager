@@ -62,18 +62,24 @@ export const useTWStats = () => {
             const possibleCount = applicableEvents.length;
 
             const playerRecords = recordsByPlayerId.get(p.id) ?? [];
-            const attended = playerRecords.filter(r => r.status === 'Attended').length;
-            const declined = playerRecords.filter(r => r.status === 'Declined').length;
-            const awol = playerRecords.filter(r => r.status === 'AWOL').length;
-            const percentage = possibleCount > 0 ? Math.round((attended / possibleCount) * 100) : 0;
+            
+            // Single pass for counting statuses
+            const counts = playerRecords.reduce((acc, r) => {
+                if (r.status === 'Attended') acc.attended++;
+                else if (r.status === 'Declined') acc.declined++;
+                else if (r.status === 'AWOL') acc.awol++;
+                return acc;
+            }, { attended: 0, declined: 0, awol: 0 });
+
+            const percentage = possibleCount > 0 ? Math.round((counts.attended / possibleCount) * 100) : 0;
 
             return {
                 player: p,
-                attended,
+                attended: counts.attended,
                 possibleCount,
                 percentage,
-                declined,
-                awol
+                declined: counts.declined,
+                awol: counts.awol
             };
         });
 
