@@ -126,7 +126,7 @@ export const auditService = {
 
         const headers = ['Time', 'User', 'Action', 'Target', 'Type', 'Suspicious'];
         const rows = logs.map(log => [
-            log.created_at ? new Date(log.created_at).toLocaleString('sv-SE') : '',
+            log.created_at ? new Date(log.created_at).toLocaleString('en-GB') : '',
             log.actor_nickname,
             log.action_detail,
             log.target_name || '',

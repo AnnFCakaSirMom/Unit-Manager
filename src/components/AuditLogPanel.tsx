@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../services/supabase';
 import { auditService, AuditLog } from '../services/auditService';
 import { restoreService } from '../services/restoreService';
 import { useAppSelector } from '../state/store';
@@ -58,6 +59,23 @@ export const AuditLogPanel: React.FC = () => {
 
     useEffect(() => {
         loadLogs();
+
+        // Subscribe to new audit logs in realtime
+        const channel = supabase
+            .channel('audit-logs-live')
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'audit_logs' 
+            }, () => {
+                // Re-fetch the first page to show the new log
+                loadLogs();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [loadLogs]);
 
     const handleExport = () => {
@@ -174,7 +192,7 @@ export const AuditLogPanel: React.FC = () => {
                                             {expandedLogId === log.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">
-                                            {log.created_at ? new Date(log.created_at).toLocaleString('sv-SE', {
+                                            {log.created_at ? new Date(log.created_at).toLocaleString('en-GB', {
                                                 month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                                             }) : '-'}
                                         </td>

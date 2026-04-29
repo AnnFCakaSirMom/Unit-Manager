@@ -1,78 +1,87 @@
 # Project Status: Unit Manager
 
-## 🚀 Översikt
-En webbapplikation för att hantera spelar-units, grupper och Territory War (TW) statistik för Conqueror's Blade. Byggd med React, Redux och Supabase.
+## 🚀 Overview
+A web application to manage player units, groups, and Territory War (TW) statistics for Conqueror's Blade. Built with React, Redux, and Supabase.
 
 ---
 
-## ✅ Slutförda Etapper
+## ✅ Completed Milestones
 
-### 1. Kärnfunktionalitet
-- [x] Hantering av spelar-units (Owned, Prepared, Mastery, Favorite).
-- [x] Grupphantering (Skapa/Redigera grupper för TW).
-- [x] Import/Export av data via JSON.
-- [x] Realtidssynkning mot Supabase för Officerare.
+### 1. Core Functionality
+- [x] Player unit management (Owned, Prepared, Mastery, Favorite).
+- [x] Group management (Create/Edit groups for TW).
+- [x] Data import/export via JSON.
+- [x] Real-time synchronization with Supabase for Officers.
 
-### 2. Säkerhet & RLS (Slutfört April 2026)
-- [x] **Omfattande Säkerhetsaudit:** Rensat upp gamla motstridiga policies.
-- [x] **JWT-baserad RLS:** Alla policies använder nu `get_my_role_weight()` via JWT-claims för maximal prestanda och säkerhet.
-- [x] **Tabellsäkerhet:**
-  - `profiles`: Medlemmar kan endast se sin egen data och uppdatera begränsade fält.
-  - `profile_units`: Strikt begränsat till ägarens egna units.
-  - `audit_logs` & `tw_history`: Endast Officerare+ har läs/skriv-rättigheter.
-- [x] **RLS Leak Fix:** Åtgärdat en läcka i `tw_history` där medlemmar tidigare kunde läsa snapshots.
+### 2. Security & RLS (Completed April 2026)
+- [x] **Comprehensive Security Audit:** Cleaned up old conflicting policies.
+- [x] **JWT-based RLS:** All policies now use `get_my_role_weight()` via JWT claims for maximum performance and security.
+- [x] **Table Security:**
+  - `profiles`: Members can only see their own data and update limited fields.
+  - `profile_units`: Strictly limited to the owner's own units.
+  - `audit_logs` & `tw_history`: Only Officers+ have read/write permissions.
+- [x] **RLS Leak Fix:** Fixed a leak in `tw_history` where members could previously read snapshots.
 
-
-### 3. UI/UX Modernisering (Nuvarande status)
-- [x] **Global Header:** Ny minimalistisk toppmeny med modern logout-knapp och varumärkesprofilering.
+### 3. UI/UX Modernization (Current status)
+- [x] **Global Header:** New minimalist top menu with modern logout button and branding.
 - [x] **Member Dashboard:**
-    - **Profile Rail:** Ny vänsterpanel för medlemmar med Discord-avatar, editable Leadership, och barrack-statistik.
-    - **Adaptive Layout:** Appen känner av rollen och växlar mellan Sidebar (Officer) och Profile Rail (Member).
-- [x] **Performance Polish:** Flyttat metadata (Leadership/Dates) från huvudvyn till Rail för medlemmar för att maximera utrymmet för enhetslistan.
-- [x] **Metadata-spårning:** Lagt till `updated_at` på profiler med automatisk trigger för att visa "Senast uppdaterad".
-- [x] **UX Polish:** Implementerat oberoende scrollning för Attendance-paneler och Sidebar för bättre navigering i stora datamängder.
+    - **Profile Rail:** New left panel for members with Discord avatar, editable Leadership, and barrack statistics.
+    - **Adaptive Layout:** The app detects roles and switches between Sidebar (Officer) and Profile Rail (Member).
+- [x] **Performance Polish:** Moved metadata (Leadership/Dates) from the main view to the Rail for members to maximize space for the unit list.
+- [x] **Metadata Tracking:** Added `updated_at` to profiles with an automatic trigger to show "Last Updated".
+- [x] **UX Polish:** Implemented independent scrolling for Attendance panels and Sidebar for better navigation in large datasets.
 
-### 4. Officer Tools & TW Management (Slutfört April 2026)
-- [x] **TW Historik:** Snapshot-system för att spara, namnge och återställa tidigare grupplaneringar.
-- [x] **Avancerad TW Statistik:**
-    *   Namnbaserad sökning i realtid för att snabbt hitta spelare.
-    *   Intelligent Leaderboard-rankning (Närvaro % -> Antal -> AWOL-straff -> Namn).
-    *   **Discord Nitro Mode:** Stöd för utökad character limit (4000) vid export.
-- [x] **Sidebar Cleanup:** Flyttat Logout och Synk-indikator till Header för en renare arbetsyta.
+### 4. Officer Tools & TW Management (Completed April 2026)
+- [x] **TW History:** Snapshot system to save, name, and restore previous group plans.
+- [x] **Advanced TW Statistics:**
+    *   Real-time name-based search to quickly find players.
+    *   Intelligent Leaderboard ranking (Attendance % -> Count -> AWOL penalty -> Name).
+    *   **Discord Nitro Mode:** Support for extended character limit (4000) during export.
+- [x] **Sidebar Cleanup:** Moved Logout and Sync indicators to the Header for a cleaner workspace.
 
-### 5. Service Architecture & Sync Reliability (Slutfört April 2026)
-- [x] **Centraliserad Service-logik:** Introducerat `supabaseUtils.ts` för att standardisera alla anrop, felhantering och AbortSignal-mappning.
+### 5. Service Architecture & Sync Reliability (Completed April 2026)
+- [x] **Centralized Service Logic:** Introduced `supabaseUtils.ts` to standardize all calls, error handling, and AbortSignal mapping.
 - [x] **Smart Retry System:**
-    *   Implementerat partiell synk (endast lyckade ändringar markeras som sparade).
-    *   Intelligent retry-logik med en gräns på 5 försök för att undvika oändliga loopar vid permanenta fel.
-- [x] **Visual Sync Feedback:** Centraliserat synk-indikatorn till Headern med dynamiska ikoner (`Synced`, `Syncing`, `Error`, `PermanentError`) och tooltips.
-- [x] **Kodstädning:** Rensat bort döda props och redundanta Redux-actions (`setAuthInitialized`) för bättre underhållbarhet.
+    *   Implemented partial sync (only successful changes are marked as saved).
+    *   Intelligent retry logic with a limit of 5 attempts to avoid infinite loops on permanent errors.
+- [x] **Visual Sync Feedback:** Centralized the sync indicator in the Header with dynamic icons (`Synced`, `Syncing`, `Error`, `PermanentError`) and tooltips.
+- [x] **Code Cleanup:** Removed dead props and redundant Redux actions (`setAuthInitialized`) for better maintainability.
 
-### 6. Performance & Rendering Architecture (Slutfört April 2026)
-- [x] **Avancerad Renderingsisolering:**
-    *   **GroupMemberCard:** Bröt ut `MovePlayerDropdown` för att eliminera tunga Redux-prenumerationer på gruppnivå för varje spelarkort.
-    *   **List-optimering:** Implementerade radvis memoizering (`PlayerListItem`, `AttendancePlayerRow`) och flyttade ner lokal state (t.ex. editing) för att isolera renderingar vid sökning och interaktion.
-- [x] **Beräknings-memoizering:** Optimerat `useTWStats.ts`, `AttendanceGroupGrid.tsx` och `TWStatisticsView.tsx` med strategisk användning av `useMemo` och `useCallback` för att hantera stora array-transformationer effektivt.
-- [x] **Teknisk Dokumentation:** Skapat `TECHNICAL_GUIDE.md` som täcker arkitektur, RLS-säkerhet, synkroniseringsflöden och "Circuit Breaker"-logik för framtida underhåll.
-- [x] **Resursaudit:** Verifierat och säkrat cleanup-funktioner för alla Supabase-kanaler, auth-lyssnare och timers för att förhindra minnesläckor.
+### 6. Performance & Rendering Architecture (Completed April 2026)
+- [x] **Advanced Render Isolation:**
+    *   **GroupMemberCard:** Broke out `MovePlayerDropdown` to eliminate heavy Redux subscriptions at the group level for each player card.
+    *   **List Optimization:** Implemented row-wise memoization (`PlayerListItem`, `AttendancePlayerRow`) and moved down local state (e.g., editing) to isolate renders during searching and interaction.
+- [x] **Computation Memoization:** Optimized `useTWStats.ts`, `AttendanceGroupGrid.tsx`, and `TWStatisticsView.tsx` with strategic use of `useMemo` and `useCallback` to handle large array transformations efficiently.
+- [x] **Technical Documentation:** Created `TECHNICAL_GUIDE.md` covering architecture, RLS security, synchronization flows, and "Circuit Breaker" logic for future maintenance.
+- [x] **Resource Audit:** Verified and secured cleanup functions for all Supabase channels, auth listeners, and timers to prevent memory leaks.
+
+### 7. Realtime Operations & Approval Flow (Completed April 2026)
+- [x] **Full Realtime Synchronization:**
+    - **Approval Badge:** Sidebar notification count for pending approvals now updates live via Supabase Realtime.
+    - **Live Approvals View:** The list of pending users in `ProfileMatcher` updates immediately when new players log in.
+    - **Admin Logs & Badges:** Audit logs and suspicious activity notifications are now fully synced in real-time.
+- [x] **Intelligent Approval UI:**
+    - Fixed "ghost selection" in `ProfileMatcher` where stale suggestions blocked buttons.
+    - Implemented automatic validation of matches against the current player list.
+- [x] **Automated Onboarding:**
+    - "Create New" now automatically sets the correct role (`Member`), fetches names from Discord/Claimed name, sets start date, and resets statistics in a single step.
 
 ---
 
-## 🛠 Pågående / Planerat
+## 🛠 In Progress / Planned
 
-### Design & Grafik
-- [ ] **Medieval Theme:** Planer på att byta ut den nuvarande "Stilrena" designen mot ett mer medeltidstema (Conqueror's Blade-estetik).
-- [ ] **Ikon-paket:** Byta ut standardikoner mot anpassade grafiska element som matchar spelet.
+### Design & Graphics
+- [ ] **Medieval Theme:** Plans to replace the current "Clean" design with a more medieval theme (Conqueror's Blade aesthetic).
+- [ ] **Icon Pack:** Replace standard icons with custom graphic elements that match the game.
 
-### Funktioner
-- [ ] **Synergi-verktyg:** Förbättringar i gruppvyn för att lättare se synergier mellan enheter (t.ex. heal-units + shields).
-
+### Features
+- [ ] **Synergy Tools:** Improvements in the group view to easier see synergies between units (e.g., heal units + shields).
 
 ---
 
-## 🏗 Teknisk Stack
+## 🏗 Technical Stack
 - **Frontend:** React (Vite), Redux Toolkit, Vanilla CSS.
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
-- **Säkerhet:** Row Level Security (RLS) med hierarkiska vikter.
+- **Security:** Row Level Security (RLS) with hierarchical weights.
 
-*Senast uppdaterad: 2026-04-29 (Sen kväll)*
+*Last updated: 2026-04-29 (Midnight)*

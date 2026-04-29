@@ -58,15 +58,40 @@ const App: React.FC = () => {
         reduxDispatch(fetchUnitsFromSupabase());
     }, [reduxDispatch]);
 
-    // Fetch pending approvals count for Sidebar badge
+    // Fetch and subscribe to pending approvals count for Sidebar badge
     useEffect(() => {
         const isGatekeeperPlus = ['Gatekeeper', 'Admin', 'Owner'].includes(role);
-        if (!isGatekeeperPlus) return;
-        supabase
-            .from('profiles')
-            .select('id', { count: 'exact', head: true })
-            .eq('role', 'Pending')
-            .then(({ count }) => setPendingApprovalsCount(count ?? 0));
+        if (!isGatekeeperPlus) {
+            setPendingApprovalsCount(0);
+            return;
+        }
+
+        const fetchCount = async () => {
+            const { count } = await supabase
+                .from('profiles')
+                .select('id', { count: 'exact', head: true })
+                .eq('role', 'Pending');
+            setPendingApprovalsCount(count ?? 0);
+        };
+
+        fetchCount();
+
+        // Subscribe to changes in the profiles table
+        const channel = supabase
+            .channel('pending-approvals-count')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'profiles' 
+            }, () => {
+                // Re-fetch count on any change to profiles
+                fetchCount();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [role]);
 
     const handleLogout = useCallback(async () => {

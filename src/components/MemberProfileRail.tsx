@@ -21,22 +21,22 @@ function formatUpdatedAt(iso: string | null): string {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMinutes = Math.floor(diffMs / 60000);
-    const timeStr = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+    const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-    if (diffMinutes < 1) return 'Just nu';
-    if (diffMinutes < 60) return `${diffMinutes} min sedan`;
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes} min ago`;
 
     const diffDays = Math.floor(diffMs / 86400000);
-    if (diffDays === 0) return `Idag ${timeStr}`;
-    if (diffDays === 1) return `Igår ${timeStr}`;
-    return date.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' }) + ` ${timeStr}`;
+    if (diffDays === 0) return `Today ${timeStr}`;
+    if (diffDays === 1) return `Yesterday ${timeStr}`;
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ` ${timeStr}`;
 }
 
 // ── Helper: Format joined date ───────────────────────────────────────────────
 
 function formatJoinedDate(iso: string | undefined): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('sv-SE', {
+    return new Date(iso).toLocaleDateString('en-GB', {
         year: 'numeric', month: 'short', day: 'numeric'
     });
 }
@@ -87,7 +87,7 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
         const newLeadership = isNaN(value) ? 0 : value;
         if (newLeadership !== (player.totalLeadership || 0)) {
             dispatch(updatePlayerLeadership({ playerId: player.id, leadership: newLeadership }));
-            setStatusMessage('Leadership sparad!');
+            setStatusMessage('Leadership saved!');
             // Refresh updated_at locally after save
             setUpdatedAt(new Date().toISOString());
         }
@@ -137,7 +137,7 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
                     value={leadership}
                     onChange={e => setLeadership(e.target.value)}
                     onBlur={handleLeadershipSave}
-                    placeholder="t.ex. 700"
+                    placeholder="e.g. 700"
                     className="w-full"
                 />
             </div>
@@ -185,11 +185,11 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
             {/* ── Metadata ── */}
             <div className="flex flex-col gap-1.5 border-t border-gray-800 pt-3">
                 <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Gick med</span>
+                    <span className="text-xs text-gray-500">Joined</span>
                     <span className="text-xs text-gray-300">{formatJoinedDate(player?.joinedDate)}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-600">Uppdaterad</span>
+                    <span className="text-[11px] text-gray-600">Updated</span>
                     <span className="text-[11px] text-gray-500">{formatUpdatedAt(updatedAt)}</span>
                 </div>
             </div>
@@ -197,12 +197,12 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
             {/* ── Quick Tips ── */}
             <div className="border border-gray-800 rounded-md p-3 mt-auto">
                 <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Snabbtips
+                    Quick Tips
                 </p>
                 <ul className="space-y-1 text-[11px] text-gray-600 leading-relaxed">
-                    <li>⭐ Klicka på stjärnan för att favoritmarkera en enhet</li>
-                    <li>🟡 Gul bakgrund = Full Mastery</li>
-                    <li>🟢 Grön ring = Maxad enhet</li>
+                    <li>⭐ Click the star to favorite a unit</li>
+                    <li>🟡 Yellow background = Full Mastery</li>
+                    <li>🟢 Green ring = Maxed unit</li>
                 </ul>
             </div>
         </aside>

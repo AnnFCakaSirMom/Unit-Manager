@@ -88,7 +88,7 @@ export const TWStatisticsView: React.FC = () => {
             }
         } catch (err) {
             console.error('Failed to parse or auto-save imported records:', err);
-            alert("Kunde inte importera. Kontrollera JSON-formatet.");
+            alert("Could not import. Please check the JSON format.");
         }
     };
 

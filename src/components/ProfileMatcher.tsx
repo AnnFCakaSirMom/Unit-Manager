@@ -68,6 +68,22 @@ export const ProfileMatcher: React.FC = () => {
 
     useEffect(() => {
         fetchProfiles();
+
+        // Subscribe to changes in the profiles table to update the pending list live
+        const channel = supabase
+            .channel('profile-matcher-changes')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'profiles' 
+            }, () => {
+                fetchProfiles();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     // Unlinked local profiles are those whose IDs are not in the existing linked profiles in Supabase
@@ -114,9 +130,31 @@ export const ProfileMatcher: React.FC = () => {
                     initialSelection[pp.id] = suggestion;
                 }
             });
-            setSelectedMatches(initialSelection);
+            if (Object.keys(initialSelection).length > 0) {
+                setSelectedMatches(initialSelection);
+            }
         }
     }, [pendingProfiles, unlinkedLocalPlayers]);
+
+    // Validation: Clear selected matches that are no longer valid (e.g. if player was linked elsewhere)
+    useEffect(() => {
+        if (Object.keys(selectedMatches).length === 0) return;
+        
+        const validIds = new Set(unlinkedLocalPlayers.map(p => p.id));
+        let hasChanged = false;
+        const newMatches = { ...selectedMatches };
+        
+        Object.entries(selectedMatches).forEach(([pendingId, localId]) => {
+            if (localId && !validIds.has(localId)) {
+                delete newMatches[pendingId];
+                hasChanged = true;
+            }
+        });
+        
+        if (hasChanged) {
+            setSelectedMatches(newMatches);
+        }
+    }, [unlinkedLocalPlayers, selectedMatches]);
 
     const handleSelectChange = (pendingId: string, localProfileId: string) => {
         setSelectedMatches(prev => ({ ...prev, [pendingId]: localProfileId }));
@@ -257,7 +295,7 @@ export const ProfileMatcher: React.FC = () => {
         }
     };
 
-    const handleCreateNew = async (pendingId: string, discordNick: string) => {
+    const handleCreateNew = async (pendingId: string, discordNick: string, claimedName?: string) => {
         setIsConfirmOpen(false);
         setIsProcessing(true);
         setMessage(null);
@@ -269,12 +307,17 @@ export const ProfileMatcher: React.FC = () => {
 
             const { error } = await supabase
                 .from('profiles')
-                .update({ role: 'Member' })
+                .update({ 
+                    role: 'Member',
+                    display_name: claimedName || discordNick,
+                    total_leadership: 0,
+                    joined_date: new Date().toISOString().split('T')[0]
+                })
                 .eq('id', pendingId);
 
             if (error) throw error;
 
-            setMessage({ text: `Created ${discordNick} as a new Member! Note: Changes will appear next time the app loads from Supabase.`, type: 'success' });
+            setMessage({ text: `Created ${claimedName || discordNick} as a new Member!`, type: 'success' });
             
             setPendingProfiles(prev => prev.filter(p => p.id !== pendingId));
         } catch (err: any) {
@@ -326,13 +369,13 @@ export const ProfileMatcher: React.FC = () => {
     };
 
     // Trigger confirmation modal for Create New
-    const confirmCreateNew = (pendingId: string, discordNick: string) => {
+    const confirmCreateNew = (pendingId: string, discordNick: string, claimedName?: string) => {
         setConfirmConfig({
             title: "Create New Member",
-            message: `Are you sure you want to create a brand new profile for "${discordNick}"? They will start with an empty unit list.`,
+            message: `Are you sure you want to create a brand new profile for "${claimedName || discordNick}"? They will start with an empty unit list.`,
             confirmText: "Create Member",
             variant: "secondary",
-            onConfirm: () => handleCreateNew(pendingId, discordNick)
+            onConfirm: () => handleCreateNew(pendingId, discordNick, claimedName)
         });
         setIsConfirmOpen(true);
     };
@@ -437,7 +480,7 @@ export const ProfileMatcher: React.FC = () => {
                                     <Button 
                                         variant="secondary" 
                                         disabled={isProcessing || !!selectedVal}
-                                        onClick={() => confirmCreateNew(pending.id, pending.discord_nickname)}
+                                        onClick={() => confirmCreateNew(pending.id, pending.discord_nickname, pending.claimed_name)}
                                         className="w-full whitespace-nowrap py-1.5 h-auto text-xs"
                                     >
                                         <UserPlus size={14} /> Create New

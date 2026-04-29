@@ -1,55 +1,55 @@
-# Teknisk Guide: Unit Manager
+# Technical Guide: Unit Manager
 
-Denna guide fungerar som en handbok för utvecklare som arbetar med Unit Manager. Målet är att ge en tydlig bild av arkitekturen, säkerhetsmodellen och hur dataflödet hanteras, med fokus på *varför* dessa tekniska beslut har fattats.
+This guide serves as a handbook for developers working on Unit Manager. The goal is to provide a clear picture of the architecture, the security model, and how data flow is handled, focusing on *why* these technical decisions were made.
 
-## 1. Arkitektur och Dataflöde
+## 1. Architecture and Data Flow
 
-Unit Manager använder en frikopplad arkitektur för att säkerställa att användargränssnittet alltid känns snabbt och responsivt ("offline-first"), samtidigt som datan hålls synkroniserad med backend.
+Unit Manager uses a decoupled architecture to ensure the user interface always feels fast and responsive ("offline-first"), while keeping data synchronized with the backend.
 
-**Flödet ser ut som följer:**
-`Supabase (DB)` <-> `Services (API)` <-> `Hooks (Orkestrering)` <-> `Redux (State)` <-> `React (UI)`
+**The flow is as follows:**
+`Supabase (DB)` <-> `Services (API)` <-> `Hooks (Orchestration)` <-> `Redux (State)` <-> `React (UI)`
 
-*   **React-komponenter**: Ansvarar enbart för rendering och lokala UI-interaktioner. De läser data från Redux via memoizade selektorer för att minimera omrenderingar.
-*   **Redux (State)**: Den enda sanningen ("single source of truth") för klienten. Alla ändringar, vare sig de kommer från användaren eller databasen, passerar här.
-*   **Services**: Rena funktioner (t.ex. `playerService.ts`) som abstraherar bort all direkt kommunikation med Supabase.
-*   **Hooks**: Fungerar som "klister" mellan Redux och Services. Till exempel lyssnar `useCloudSync` på ändringar i Redux och anropar Services, medan `useDatabaseSync` lyssnar på Supabase och uppdaterar Redux.
+*   **React Components**: Responsible only for rendering and local UI interactions. They read data from Redux via memoized selectors to minimize re-renders.
+*   **Redux (State)**: The single source of truth for the client. All changes, whether from the user or the database, pass through here.
+*   **Services**: Pure functions (e.g., `playerService.ts`) that abstract away all direct communication with Supabase.
+*   **Hooks**: Function as the "glue" between Redux and Services. For example, `useCloudSync` listens for changes in Redux and calls Services, while `useDatabaseSync` listens to Supabase and updates Redux.
 
-**Varför?** Genom att tvinga all data genom Redux kan vi uppdatera UI:t omedelbart (optimistic UI) utan att vänta på nätverksanrop, samtidigt som vi behåller en central plats för datahantering.
+**Why?** By forcing all data through Redux, we can update the UI immediately (optimistic UI) without waiting for network calls, while maintaining a central location for data management.
 
-## 2. Säkerhetsmodell och Hierarki (RLS)
+## 2. Security Model and Hierarchy (RLS)
 
-Säkerheten i applikationen är byggd direkt i databasen med hjälp av Supabase Row Level Security (RLS). Vi tillämpar en hierarkisk rollmodell: `Owner > Admin > Gatekeeper > Officer > Member > Pending/Guest`.
+Security in the application is built directly into the database using Supabase Row Level Security (RLS). We apply a hierarchical role model: `Owner > Admin > Gatekeeper > Officer > Member > Pending/Guest`.
 
 ### `get_my_role_weight()`
-Detta är hjärtat i vår RLS-design. Det är en PostgreSQL-funktion som hämtar den inloggade användarens roll från `profiles`-tabellen och konverterar den till ett numeriskt värde (t.ex. Owner = 100, Admin = 80, Officer = 50).
+This is the heart of our RLS design. It is a PostgreSQL function that retrieves the logged-in user's role from the `profiles` table and converts it to a numerical value (e.g., Owner = 100, Admin = 80, Officer = 50).
 
-**Varför RLS och vikter?**
-*   **Säkerhet på rotnivå**: Oavsett om en bugg introduceras i frontend-koden eller om någon försöker manipulera API-anrop direkt, kommer databasen att vägra utföra otillåtna operationer.
-*   **Hierarkisk kontroll**: Genom att använda numeriska vikter kan RLS-policys använda enkel matematik (t.ex. `get_my_role_weight() > target_role_weight`). Detta gör det möjligt att diktera att en Officer kan uppdatera en Member, men aldrig en Admin.
+**Why RLS and weights?**
+*   **Root-level Security**: Regardless of whether a bug is introduced in the frontend code or someone tries to manipulate API calls directly, the database will refuse to perform unauthorized operations.
+*   **Hierarchical Control**: By using numerical weights, RLS policies can use simple mathematics (e.g., `get_my_role_weight() > target_role_weight`). This makes it possible to dictate that an Officer can update a Member, but never an Admin.
 
-## 3. Synkronisering och Datastabilitet
+## 3. Synchronization and Data Stability
 
-Att hantera synkronisering i en miljö där flera användare redigerar data samtidigt och där UI:t är frikopplat från databasen kräver robusta mekanismer. Vi använder ett dubbelriktat system.
+Managing synchronization in an environment where multiple users edit data simultaneously and where the UI is decoupled from the database requires robust mechanisms. We use a bidirectional system.
 
-### Läsningar: `SyncManager` och `useDatabaseSync`
-När ändringar sker i databasen skickar Supabase Realtime-events. Om vi skulle hämta ny data vid varje event skulle applikationen snabbt bli överbelastad.
-*   **SyncManager**: Agerar stötdämpare. Den använder *debouncing* (fördröjning) och *AbortControllers* för att säkerställa att endast den senaste förfrågan går igenom om flera events tas emot i snabb följd.
-*   **Varför?** Förhindrar "race conditions" och onödiga nätverksanrop, vilket sparar bandbredd och håller UI:t stabilt.
+### Reads: `SyncManager` and `useDatabaseSync`
+When changes occur in the database, Supabase sends Realtime events. If we were to fetch new data for every event, the application would quickly become overloaded.
+*   **SyncManager**: Acts as a buffer. It uses *debouncing* (delay) and *AbortControllers* to ensure only the latest request goes through if multiple events are received in rapid succession.
+*   **Why?** Prevents "race conditions" and unnecessary network calls, saving bandwidth and keeping the UI stable.
 
-### Skrivningar: `useCloudSync` och Circuit Breaker
-När användaren ändrar data i Redux, ansvarar `useCloudSync` för att skicka detta till Supabase.
-*   **Diffing**: Hooken jämför ständigt aktuellt Redux-state med en intern referens (det som senast sparades) och skickar enbart de objekt som faktiskt ändrats.
-*   **Circuit Breaker (Strömbrytare)**: Om en uppdatering misslyckas (t.ex. på grund av RLS-fel eller nätverksproblem) kommer systemet att försöka igen. Men för att förhindra oändliga loopar som spammar databasen med felaktiga requests, spåras antalet misslyckanden per objekt-ID. Efter **5 misslyckade försök** löser strömbrytaren ut för just det objektet, loggar ett permanent fel och slutar försöka.
-*   **Varför?** Denna "Smart Retry"-logik är avgörande för systemets hälsa. Den skyddar backend från att överbelastas av klienter som fastnat i felläge, samtidigt som den ger tillfälliga nätverksfel en chans att lösa sig själva.
+### Writes: `useCloudSync` and Circuit Breaker
+When the user changes data in Redux, `useCloudSync` is responsible for sending this to Supabase.
+*   **Diffing**: The hook constantly compares the current Redux state with an internal reference (what was last saved) and only sends objects that have actually changed.
+*   **Circuit Breaker**: If an update fails (e.g., due to RLS errors or network issues), the system will retry. To prevent infinite loops that spam the database with faulty requests, the number of failures per object ID is tracked. After **5 failed attempts**, the circuit breaker trips for that specific object, logs a permanent error, and stops retrying.
+*   **Why?** This "Smart Retry" logic is critical for system health. It protects the backend from being overloaded by clients stuck in an error state, while giving temporary network errors a chance to resolve themselves.
 
-## 4. Miljövariabler
+## 4. Environment Variables
 
-För att köra projektet lokalt krävs att applikationen kan kommunicera med en Supabase-instans. Följande miljövariabler måste finnas konfigurerade (vanligtvis i en `.env.local` eller `.env`-fil i roten av projektet):
+To run the project locally, the application must be able to communicate with a Supabase instance. The following environment variables must be configured (usually in a `.env.local` or `.env` file in the root of the project):
 
 ```env
-VITE_SUPABASE_URL="https://din-projekt-id.supabase.co"
-VITE_SUPABASE_ANON_KEY="din-långa-anon-key-här"
+VITE_SUPABASE_URL="https://your-project-id.supabase.co"
+VITE_SUPABASE_ANON_KEY="your-long-anon-key-here"
 ```
 
-*   **`VITE_SUPABASE_URL`**: Den unika URL:en till din Supabase-databas.
-*   **`VITE_SUPABASE_ANON_KEY`**: Den publika nyckeln. Det är säkert att exponera denna i klienten, eftersom all faktisk datasäkerhet och auktorisering hanteras av RLS-reglerna i databasen med hjälp av JWT-tokens från inloggningen.
+*   **`VITE_SUPABASE_URL`**: The unique URL for your Supabase database.
+*   **`VITE_SUPABASE_ANON_KEY`**: The public key. It is safe to expose this in the client, as all actual data security and authorization are handled by the RLS rules in the database using JWT tokens from the login.

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Save, FolderOpen, Settings, Database, Shield, List } from './icons';
 import { Button } from './Button';
 import { UnitManagementModal } from './UnitManagementModal';
 import { AuditLogPanel } from './AuditLogPanel';
 import { auditService } from '../services/auditService';
+import { supabase } from '../services/supabase';
 import { cn } from '../utils';
 
 interface AdminPanelProps {
@@ -18,17 +19,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose 
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState(false);
     const [suspiciousCount, setSuspiciousCount] = useState(0);
 
+    const checkSuspicious = useCallback(async () => {
+        const lastChecked = localStorage.getItem('last_checked_audit_logs') || new Date(0).toISOString();
+        const count = await auditService.checkNewSuspiciousActivity(lastChecked);
+        setSuspiciousCount(count);
+    }, []);
+
     useEffect(() => {
-        const checkSuspicious = async () => {
-            const lastChecked = localStorage.getItem('last_checked_audit_logs') || new Date(0).toISOString();
-            const count = await auditService.checkNewSuspiciousActivity(lastChecked);
-            setSuspiciousCount(count);
-        };
         checkSuspicious();
-        // Check every minute if the panel is open
-        const interval = setInterval(checkSuspicious, 60000);
-        return () => clearInterval(interval);
-    }, [activeTab]);
+        
+        // Subscribe to new audit logs to update suspicious badge live
+        const channel = supabase
+            .channel('admin-panel-suspicious-sync')
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'audit_logs' 
+            }, () => {
+                checkSuspicious();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [activeTab, checkSuspicious]);
 
 
     return (
