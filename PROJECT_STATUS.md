@@ -20,6 +20,8 @@ En webbapplikation för att hantera spelar-units, grupper och Territory War (TW)
   - `profiles`: Medlemmar kan endast se sin egen data och uppdatera begränsade fält.
   - `profile_units`: Strikt begränsat till ägarens egna units.
   - `audit_logs` & `tw_history`: Endast Officerare+ har läs/skriv-rättigheter.
+- [x] **RLS Leak Fix:** Åtgärdat en läcka i `tw_history` där medlemmar tidigare kunde läsa snapshots.
+
 
 ### 3. UI/UX Modernisering (Nuvarande status)
 - [x] **Global Header:** Ny minimalistisk toppmeny med modern logout-knapp och varumärkesprofilering.
@@ -36,7 +38,15 @@ En webbapplikation för att hantera spelar-units, grupper och Territory War (TW)
     *   Namnbaserad sökning i realtid för att snabbt hitta spelare.
     *   Intelligent Leaderboard-rankning (Närvaro % -> Antal -> AWOL-straff -> Namn).
     *   **Discord Nitro Mode:** Stöd för utökad character limit (4000) vid export.
-- [x] **Sidebar Decluttering:** Rensat bort onödiga titlar och flyttat Logout till Header för en renare arbetsyta.
+- [x] **Sidebar Cleanup:** Flyttat Logout och Synk-indikator till Header för en renare arbetsyta.
+
+### 5. Service Architecture & Sync Reliability (Slutfört April 2026)
+- [x] **Centraliserad Service-logik:** Introducerat `supabaseUtils.ts` för att standardisera alla anrop, felhantering och AbortSignal-mappning.
+- [x] **Smart Retry System:**
+    *   Implementerat partiell synk (endast lyckade ändringar markeras som sparade).
+    *   Intelligent retry-logik med en gräns på 5 försök för att undvika oändliga loopar vid permanenta fel.
+- [x] **Visual Sync Feedback:** Centraliserat synk-indikatorn till Headern med dynamiska ikoner (`Synced`, `Syncing`, `Error`, `PermanentError`) och tooltips.
+- [x] **Kodstädning:** Rensat bort döda props och redundanta Redux-actions (`setAuthInitialized`) för bättre underhållbarhet.
 
 ---
 
@@ -49,13 +59,12 @@ En webbapplikation för att hantera spelar-units, grupper och Territory War (TW)
 ### Funktioner
 - [ ] **Synergi-verktyg:** Förbättringar i gruppvyn för att lättare se synergier mellan enheter (t.ex. heal-units + shields).
 
+
 ---
 
 ## 🏗 Teknisk Stack
-- **Frontend:** React (Vite), Redux Toolkit, Tailwind CSS.
+- **Frontend:** React (Vite), Redux Toolkit, Vanilla CSS.
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Säkerhet:** Row Level Security (RLS) med hierarkiska vikter.
-- **Hosting:** (Information saknas - redo för deployment).
 
-*Senast uppdaterad: 2026-04-29*
-
+*Senast uppdaterad: 2026-04-29 (Kvällspass)*
