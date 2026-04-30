@@ -6,6 +6,8 @@ import { AuditLogPanel } from './AuditLogPanel';
 import { auditService } from '../services/auditService';
 import { supabase } from '../services/supabase';
 import { cn } from '../utils';
+import { usePermission } from '../hooks/usePermission';
+
 
 interface AdminPanelProps {
     onSave: () => void;
@@ -14,8 +16,9 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose }) => {
-
+    const { isOwner } = usePermission();
     const [activeTab, setActiveTab] = useState<'tools' | 'logs'>('tools');
+
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState(false);
     const [suspiciousCount, setSuspiciousCount] = useState(0);
 
@@ -109,25 +112,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose 
                 {activeTab === 'tools' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {/* Card: JSON Backup */}
-                        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
-                            <div>
-                                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                    <Database size={20} className="text-blue-400" />
-                                    JSON Backup
-                                </h3>
-                                <p className="text-sm text-gray-400 mt-1">
-                                    Save or load a full local JSON snapshot of all data as a security backup.
-                                </p>
+                        {isOwner && (
+                            <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                        <Database size={20} className="text-blue-400" />
+                                        JSON Backup
+                                    </h3>
+                                    <p className="text-sm text-gray-400 mt-1">
+                                        Save or load a full local JSON snapshot of all data as a security backup.
+                                    </p>
+                                </div>
+                                <div className="flex gap-2 mt-auto">
+                                    <Button variant="primary" onClick={onSave} className="flex-1">
+                                        <Save size={16} /> Save JSON
+                                    </Button>
+                                    <Button variant="success" onClick={onLoad} className="flex-1">
+                                        <FolderOpen size={16} /> Load JSON
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="flex gap-2 mt-auto">
-                                <Button variant="primary" onClick={onSave} className="flex-1">
-                                    <Save size={16} /> Save JSON
-                                </Button>
-                                <Button variant="success" onClick={onLoad} className="flex-1">
-                                    <FolderOpen size={16} /> Load JSON
-                                </Button>
-                            </div>
-                        </div>
+                        )}
 
                         <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 flex flex-col gap-4">
                             <div>
