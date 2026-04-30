@@ -24,6 +24,7 @@ A web application to manage player units, groups, and Territory War (TW) statist
   - `profile_units`: Strictly limited to the owner's own units.
   - `audit_logs` & `tw_history`: Only Officers+ have read/write permissions.
 - [x] **RLS Leak Fix:** Fixed a leak in `tw_history` where members could previously read snapshots.
+- [x] **Restricted Backups:** Locked JSON Backup (Save/Load) functionality exclusively to the **Owner** role to prevent accidental data overwrites and unauthorized local copies.
 
 ### 3. UI/UX Modernization (Completed April 2026)
 
@@ -97,6 +98,12 @@ A web application to manage player units, groups, and Territory War (TW) statist
 
 ### Features
 
+- [ ] **Full Type Safety:** Implement Supabase CLI type generation to synchronize database schema with TypeScript definitions, reducing runtime errors and improving developer productivity.
+- [ ] **Performance Optimization Roadmap:**
+  - [ ] **Virtualization:** Implement virtualized lists (e.g., `react-window`) for Player List and Attendance to handle 500+ items with zero lag.
+  - [ ] **Code Splitting:** Use `React.lazy` to defer loading of heavy modules like Audit Logs and TW Statistics until needed.
+  - [ ] **Data Payload Optimization:** Refactor Supabase queries to use selective columns instead of `select(*)` to reduce network overhead.
+  - [ ] **Memoized Selectors:** Introduce `reselect` for complex state transformations (TW Stats) to eliminate redundant recalculations.
 - [ ] **Synergy Tools:** Improvements in the group view to easier see synergies between units (e.g., heal units + shields).
 
 ---
@@ -107,4 +114,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Row Level Security (RLS) with hierarchical weights.
 
-*Last updated: 2026-04-30*
+*Last updated: 2026-04-30 (Backups + Performance Roadmap update)*
