@@ -87,14 +87,23 @@ A web application to manage player units, groups, and Territory War (TW) statist
   - Cleaned up redundant imports and orphaned logic.
   - Standardized all time/date formats to `en-GB` for a clean 24h international standard.
 
+### 9. Design Evolution & Modernization (May 2026)
+
+- [x] **Obsidian & Gold Theme:** Comprehensive visual overhaul transitioning from a generic blue/gray palette to a premium "Command Center" aesthetic.
+- [x] **Glassmorphism Integration:** Implemented consistent translucent backgrounds (`bg-black/40`) with `backdrop-blur` across Sidebar, Header, GroupView, and Statistics panels.
+- [x] **Advanced Micro-interactions:** Added a custom "gliding gold underline" hover effect for unit names across all views (Member Barrack, Group Cards, Unit Lists).
+- [x] **Thematic Header Upgrade:** Implemented a gold-gradient branding logo and synchronized all sync/status icons to the amber/gold palette.
+- [x] **Admin & Tool Modernization:** Redesigned Admin Panel and Audit Logs with tactical "Admin Command" styling, including glow effects and refined typography.
+- [x] **Design Versioning:** Established a branch-based design management workflow (`design-obsidian-gold`) to allow safe experimentation with alternative themes.
+
 ---
 
 ## 🛠 In Progress / Planned
 
 ### Design & Graphics
 
-- [ ] **Medieval Theme:** Plans to replace the current "Clean" design with a more medieval theme (Conqueror's Blade aesthetic).
-- [ ] **Icon Pack:** Replace standard icons with custom graphic elements that match the game.
+- [ ] **Medieval Theme Experimentation:** Exploring alternative medieval-focused themes while maintaining the current Obsidian-Gold baseline as a fallback.
+- [x] **Modernized Icon Integration:** Successfully integrated and themed current iconography to match the premium aesthetic.
 
 ### Features
 
@@ -114,4 +123,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Row Level Security (RLS) with hierarchical weights.
 
-*Last updated: 2026-04-30 (Backups + Performance Roadmap update)*
+*Last updated: 2026-05-01 (Obsidian & Gold Design Modernization)*
