@@ -101,19 +101,27 @@ export const GroupsList = React.memo(({
                     <Shield size={18} /> Groups ({groups.length})
                     <HelpIcon helpKey="groups" text={HELP_CONTENT.group_management} />
                 </h2>
-                <div className="flex items-center gap-2 relative">
-                    <Button variant="primary" size="sm" onClick={handleCopyAllGroups} title="Copy All Groups" aria-label="Copy All Groups">
-                        <Clipboard size={16} /> Copy
+                <div className="flex items-center gap-1.5 relative">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleCopyAllGroups} 
+                        title="Copy All Groups" 
+                        aria-label="Copy All Groups"
+                        className="text-gray-400 border border-gray-700/50 hover:bg-gray-700/30 h-7"
+                    >
+                        <Clipboard size={14} /> Copy
                     </Button>
                     <div className="relative">
                         <Button 
-                            variant="success" 
+                            variant="ghost" 
                             size="sm" 
                             onClick={() => setShowCreateMenu(!showCreateMenu)} 
                             aria-label="Create New Group" 
                             title="Create New Group"
+                            className="text-emerald-400/70 border border-emerald-500/20 hover:bg-emerald-500/10 h-7"
                         >
-                            <Plus size={16} /> Create
+                            <Plus size={14} /> Create
                         </Button>
                         
                         {showCreateMenu && (
@@ -147,7 +155,7 @@ export const GroupsList = React.memo(({
                             if (!aMaybe && bMaybe) return -1;
                             return 0;
                         }).map((group) => (
-                            <li key={group.id} className={`p-2 rounded-md transition-all duration-200 flex justify-between items-center group ${selectedGroupId === group.id ? 'bg-green-500/20' : 'bg-gray-700/50'}`}>
+                            <li key={group.id} className={`p-2 rounded-md transition-all duration-200 flex justify-between items-center group border ${selectedGroupId === group.id ? 'bg-amber-500/20 border-amber-500/40 text-amber-100' : 'bg-black/30 border-white/5 hover:bg-black/50 hover:border-white/10'}`}>
                                 {editingGroup.id === group.id ? (
                                     <div className="flex-grow flex items-center gap-2">
                                         <Input type="text" value={editingGroup.name} onChange={(e) => setEditingGroup({ ...editingGroup, name: e.target.value })} onKeyPress={(e) => e.key === 'Enter' && handleSaveGroupName()} className="flex-grow bg-gray-600 border-gray-500 px-2 py-1" autoFocus aria-label="Group Name Input" />

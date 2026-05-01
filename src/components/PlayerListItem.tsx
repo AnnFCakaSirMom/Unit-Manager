@@ -47,8 +47,8 @@ export const PlayerListItem = React.memo(({
 
     return (
         <li className={cn(
-            "p-1.5 rounded-md transition-all duration-200 flex justify-between items-center group",
-            isSelected ? 'bg-blue-500/20' : 'bg-gray-700/50',
+            "p-1.5 rounded-md transition-all duration-200 flex justify-between items-center group border",
+            isSelected ? 'bg-amber-500/20 border-amber-500/40 text-amber-100' : 'bg-black/30 border-white/5 hover:bg-black/50 hover:border-white/10',
             player.notInHouse && 'opacity-60'
         )}>
             {isEditing ? (

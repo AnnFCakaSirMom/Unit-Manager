@@ -116,9 +116,9 @@ export const AuditLogPanel: React.FC = () => {
     return (
         <div className="flex flex-col h-full space-y-4">
             {/* Toolbar */}
-            <div className="flex flex-wrap items-center gap-3 bg-gray-800/40 p-4 rounded-lg border border-gray-700/50">
+            <div className="flex flex-wrap items-center gap-3 bg-black/40 p-4 rounded-xl border border-white/5 backdrop-blur-md">
                 <div className="relative flex-grow min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                     <Input 
                         placeholder="Search by name (actor or target)..." 
                         value={nameFilter}
@@ -130,11 +130,11 @@ export const AuditLogPanel: React.FC = () => {
                 <select 
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value)}
-                    className="bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-300 outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="bg-black/60 border border-amber-500/20 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none focus:ring-2 focus:ring-amber-500/30 backdrop-blur-md"
                 >
-                    <option value="">All events</option>
-                    <option value="SMALL_CHANGE">Light updates</option>
-                    <option value="MAJOR_CHANGE">Major changes</option>
+                    <option value="" className="bg-gray-900">All events</option>
+                    <option value="SMALL_CHANGE" className="bg-gray-900">Light updates</option>
+                    <option value="MAJOR_CHANGE" className="bg-gray-900">Major changes</option>
                 </select>
 
                 <div className="flex items-center gap-2">
@@ -155,25 +155,25 @@ export const AuditLogPanel: React.FC = () => {
                     />
                 </div>
 
-                <Button variant="ghost" onClick={handleExport} className="text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/10">
+                <Button variant="ghost" onClick={handleExport} className="text-amber-500/80 border border-amber-500/20 hover:bg-amber-500/10 hover:text-amber-400 transition-all">
                     <ExportIcon size={18} />
                     <span>Export CSV</span>
                 </Button>
             </div>
 
             {/* Logs Table */}
-            <div className="flex-grow overflow-auto border border-gray-700 rounded-lg">
+            <div className="flex-grow overflow-auto border border-white/5 rounded-xl bg-black/20 shadow-inner custom-scrollbar">
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-gray-800/80 sticky top-0 z-10">
+                    <thead className="bg-black/60 backdrop-blur-md sticky top-0 z-10 shadow-lg">
                         <tr>
-                            <th className="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider w-10"></th>
-                            <th className="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Time</th>
-                            <th className="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Actor</th>
-                            <th className="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Action</th>
-                            <th className="px-4 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Target</th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest w-10"></th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Time</th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Actor</th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Action</th>
+                            <th className="px-4 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Target</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-700/50">
+                    <tbody className="divide-y divide-white/5">
                         {isLoading ? (
                             <tr><td colSpan={5} className="p-8 text-center text-gray-500 italic">Loading logs...</td></tr>
                         ) : logs.length === 0 ? (
@@ -183,12 +183,12 @@ export const AuditLogPanel: React.FC = () => {
                                 <React.Fragment key={log.id}>
                                     <tr 
                                         className={cn(
-                                            "hover:bg-gray-700/30 transition-colors cursor-pointer",
+                                            "hover:bg-amber-500/5 transition-colors cursor-pointer group",
                                             log.is_suspicious && "bg-red-500/5 border-l-2 border-l-red-500"
                                         )}
                                         onClick={() => setExpandedLogId(expandedLogId === log.id ? null : log.id!)}
                                     >
-                                        <td className="px-4 py-3 text-center text-gray-500">
+                                        <td className="px-4 py-3 text-center text-gray-500 group-hover:text-amber-500 transition-colors">
                                             {expandedLogId === log.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">
@@ -202,8 +202,9 @@ export const AuditLogPanel: React.FC = () => {
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
                                                 <span className={cn(
-                                                    "text-sm",
-                                                    log.action_type === 'MAJOR_CHANGE' ? "text-indigo-300 font-semibold" : "text-gray-300"
+                                                    "text-sm transition-colors",
+                                                    log.action_type === 'MAJOR_CHANGE' ? "text-amber-100 font-semibold" : "text-gray-300",
+                                                    "group-hover:text-amber-100"
                                                 )}>
                                                     {log.action_detail}
                                                 </span>
@@ -219,32 +220,32 @@ export const AuditLogPanel: React.FC = () => {
                                         </td>
                                     </tr>
                                     {expandedLogId === log.id && (
-                                        <tr className="bg-gray-900/50">
-                                            <td colSpan={5} className="px-14 py-4">
-                                                <div className="flex justify-between items-center mb-3">
-                                                    <div className="text-gray-500 uppercase font-bold text-[10px] tracking-wider">Data Snapshot</div>
+                                        <tr className="bg-black/40">
+                                            <td colSpan={5} className="px-14 py-6 border-y border-white/5">
+                                                <div className="flex justify-between items-center mb-4">
+                                                    <div className="text-gray-500 uppercase font-bold text-[10px] tracking-widest opacity-80">Data Analysis Snapshot</div>
                                                     {isEligibleForRestore(log) && (
                                                         <Button 
                                                             variant="primary" 
                                                             size="sm" 
-                                                            className="h-8 text-xs bg-indigo-600 hover:bg-indigo-500"
+                                                            className="h-8 text-[10px] font-bold uppercase tracking-wider bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-900/20"
                                                             onClick={() => setRestoreLog(log)}
                                                         >
-                                                            <RefreshCcw size={14} className="mr-1" />
-                                                            Restore / Undo
+                                                            <RefreshCcw size={14} className="mr-1.5" />
+                                                            Rollback Change
                                                         </Button>
                                                     )}
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-                                                    <div className="space-y-2">
-                                                        <div className="text-gray-500 uppercase font-bold opacity-50">Before:</div>
-                                                        <pre className="p-3 bg-red-500/5 border border-red-500/10 rounded-md overflow-x-auto text-red-300/80 max-h-60">
+                                                <div className="grid grid-cols-2 gap-6 text-xs font-mono">
+                                                    <div className="space-y-3">
+                                                        <div className="text-[10px] text-red-400 uppercase font-bold tracking-wider opacity-60">Legacy State:</div>
+                                                        <pre className="p-4 bg-black/60 border border-red-500/10 rounded-xl overflow-x-auto text-red-300/60 max-h-80 custom-scrollbar shadow-inner">
                                                             {log.old_data ? JSON.stringify(log.old_data, null, 2) : '(No data)'}
                                                         </pre>
                                                     </div>
-                                                    <div className="space-y-2">
-                                                        <div className="text-gray-500 uppercase font-bold opacity-50">After:</div>
-                                                        <pre className="p-3 bg-green-500/5 border border-green-500/10 rounded-md overflow-x-auto text-green-300/80 max-h-60">
+                                                    <div className="space-y-3">
+                                                        <div className="text-[10px] text-green-400 uppercase font-bold tracking-wider opacity-60">New State:</div>
+                                                        <pre className="p-4 bg-black/60 border border-green-500/10 rounded-xl overflow-x-auto text-green-300/60 max-h-80 custom-scrollbar shadow-inner">
                                                             {log.new_data ? JSON.stringify(log.new_data, null, 2) : '(No data)'}
                                                         </pre>
                                                     </div>
@@ -261,13 +262,13 @@ export const AuditLogPanel: React.FC = () => {
             
             {/* Pagination Controls */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-1 py-2">
-                <div className="text-xs text-gray-500 font-medium">
+                <div className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">
                     {totalCount > 0 ? (
                         <>
-                            Showing <span className="text-gray-300">{(currentPage - 1) * pageSize + 1}</span> to <span className="text-gray-300">{Math.min(currentPage * pageSize, totalCount)}</span> of <span className="text-gray-300 font-bold">{totalCount}</span> results
+                            Showing <span className="text-amber-500/80">{(currentPage - 1) * pageSize + 1}</span> to <span className="text-amber-500/80">{Math.min(currentPage * pageSize, totalCount)}</span> of <span className="text-gray-300 font-bold">{totalCount}</span> events
                         </>
                     ) : (
-                        "No results found"
+                        "No events found"
                     )}
                 </div>
 
@@ -277,19 +278,18 @@ export const AuditLogPanel: React.FC = () => {
                         size="sm" 
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1 || isLoading}
-                        className="px-2 py-1"
+                        className="px-3 py-1 border-white/5 bg-black/40 hover:bg-white/5 transition-all"
                     >
                         <ChevronLeft size={16} />
-                        <span>Previous</span>
+                        <span className="text-[10px] uppercase font-bold tracking-widest ml-1">Prev</span>
                     </Button>
                     
-                    <div className="flex items-center gap-1 mx-2">
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">Page</span>
-                        <span className="bg-gray-800 text-indigo-400 font-bold text-sm px-2.5 py-1 rounded border border-gray-700 min-w-[32px] text-center">
+                    <div className="flex items-center gap-1.5 mx-3">
+                        <span className="text-xs bg-black/60 text-amber-500 font-bold px-3 py-1.5 rounded-lg border border-amber-500/20 min-w-[36px] text-center shadow-inner">
                             {currentPage}
                         </span>
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-tighter">of</span>
-                        <span className="text-gray-400 font-medium text-sm">
+                        <span className="text-[10px] text-gray-600 uppercase font-bold tracking-widest mx-1">of</span>
+                        <span className="text-gray-400 font-bold text-xs">
                             {Math.ceil(totalCount / pageSize) || 1}
                         </span>
                     </div>
@@ -299,23 +299,23 @@ export const AuditLogPanel: React.FC = () => {
                         size="sm" 
                         onClick={() => setCurrentPage(prev => prev + 1)}
                         disabled={currentPage >= Math.ceil(totalCount / pageSize) || isLoading}
-                        className="px-2 py-1"
+                        className="px-3 py-1 border-white/5 bg-black/40 hover:bg-white/5 transition-all"
                     >
-                        <span>Next</span>
+                        <span className="text-[10px] uppercase font-bold tracking-widest mr-1">Next</span>
                         <ChevronRight size={16} />
                     </Button>
                 </div>
             </div>
             
-            <div className="text-[10px] text-gray-500 text-center uppercase tracking-widest mt-2">
-                Logs are automatically deleted after 60 days
+            <div className="text-[10px] text-gray-600 text-center uppercase tracking-widest mt-2 font-medium opacity-50">
+                Log records are purged after 60 days
             </div>
 
             <ConfirmationModal
                 isOpen={!!restoreLog}
-                title="Restore Data?"
-                message={`Are you sure you want to revert/restore this change? \n\nAction: ${restoreLog?.action_detail}`}
-                confirmText={isRestoring ? "Restoring..." : "Yes, Restore"}
+                title="Rollback Change?"
+                message={`Are you sure you want to revert this action? This will restore the previous data state. \n\nAction: ${restoreLog?.action_detail}`}
+                confirmText={isRestoring ? "Restoring..." : "Confirm Rollback"}
                 onConfirm={handleRestore}
                 onClose={() => setRestoreLog(null)}
             />

@@ -28,12 +28,12 @@ export const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, sele
                 {isOpen ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
             </Button>
             {isOpen && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-2 p-4 bg-gray-800/30 rounded-b-md">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-2 p-4 bg-black/30 border-x border-b border-white/5 rounded-b-xl backdrop-blur-sm">
                     {units.map(unit => (
-                        <label key={unit.name} className="flex items-center space-x-2 cursor-pointer p-1 rounded hover:bg-gray-700/50 transition-colors">
+                        <label key={unit.name} className="group flex items-center space-x-2 cursor-pointer p-1.5 rounded-lg hover:bg-amber-500/5 transition-all">
                             <div
                                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'favoriteUnits'); }}
-                                className={cn("cursor-pointer transition-colors flex-shrink-0", favoriteUnits.has(unit.name) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-gray-400')}
+                                className={cn("cursor-pointer transition-colors flex-shrink-0", favoriteUnits.has(unit.name) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 group-hover:text-gray-400')}
                                 title="Toggle Favorite"
                             >
                                 <Star size={18} />
@@ -41,16 +41,19 @@ export const UnitTierSection = React.memo(({ tier, units, selectedPlayerId, sele
 
                             <div
                                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'masteryUnits'); }}
-                                className={cn("w-4 h-4 rounded-sm border-2 transition-colors flex-shrink-0", masteryUnits.has(unit.name) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-400')}
+                                className={cn("w-4 h-4 rounded-sm border-2 transition-colors flex-shrink-0", masteryUnits.has(unit.name) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500 group-hover:border-amber-500/50')}
                                 title="Toggle Mastery"
                             ></div>
                             <div
                                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); onUnitToggle(selectedPlayerId, unit.name, 'preparedUnits'); }}
-                                className={cn("w-4 h-4 rounded-full border-2 transition-colors flex-shrink-0", preparedUnits.has(unit.name) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-400')}
+                                className={cn("w-4 h-4 rounded-full border-2 transition-colors flex-shrink-0", preparedUnits.has(unit.name) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-550 group-hover:border-green-500/50')}
                                 title="Toggle Maxed"
                             ></div>
-                            <input type="checkbox" checked={selectedUnits.has(unit.name)} onChange={() => onUnitToggle(selectedPlayerId, unit.name, 'units')} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500/50" />
-                            <span className="text-gray-300">{unit.name}</span>
+                            <input type="checkbox" checked={selectedUnits.has(unit.name)} onChange={() => onUnitToggle(selectedPlayerId, unit.name, 'units')} className="form-checkbox h-5 w-5 rounded bg-black/40 border-white/10 text-amber-500 focus:ring-amber-500/50" />
+                            <span className="relative text-gray-300 group-hover:text-amber-100 transition-colors py-0.5">
+                                {unit.name}
+                                <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-gradient-to-r from-amber-600 to-amber-300 transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100" />
+                            </span>
                         </label>
                     ))}
                 </div>
