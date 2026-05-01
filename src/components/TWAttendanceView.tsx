@@ -174,47 +174,85 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                     </h2>
                     <p className="text-gray-400 text-sm">Drag and drop players, or use the dropdown menus</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                        <Button
-                            onClick={handleOpenHistory}
-                            variant="secondary"
-                            title="View and restore from history"
-                        >
-                            <History size={16} /> History
-                        </Button>
-                        <HelpIcon helpKey="tw-history" text={HELP_CONTENT.tw_history} />
-                    </div>
-                    <Button
-                        onClick={() => setIsModalOpen(true)}
-                        variant="primary"
-                    >
-                        <ImportIcon size={16} /> Import Raid Helper
-                    </Button>
-                    {attendance.length > 0 && (
-                        <>
+                <div className="flex items-center gap-3">
+                    {/* Clean Action Bar */}
+                    <div className="flex items-center bg-gray-800/40 p-1 rounded-xl border border-gray-700/50 shadow-inner backdrop-blur-sm">
+                        <div className="flex items-center px-1">
                             <Button
-                                onClick={handleManualSave}
+                                onClick={handleOpenHistory}
                                 variant="ghost"
-                                disabled={isSavingSnapshot}
-                                title="Save current planning to history"
-                                className="text-green-400 hover:text-green-300 border border-green-700/40 hover:bg-green-900/20"
+                                title="View and restore from history"
+                                className="hover:bg-amber-500/10 group"
                             >
-                                {isSavingSnapshot
-                                    ? <LoadingSpinnerIcon size={16} className="animate-spin" />
-                                    : <Save size={16} />}
-                                <span>{isSavingSnapshot ? 'Saving...' : 'Save'}</span>
+                                <History size={16} className="text-amber-500/50 group-hover:text-amber-400" />
+                                <span className="text-gray-300 group-hover:text-amber-400">History</span>
                             </Button>
-                            <Button
-                                onClick={handleClearAttendance}
-                                variant="danger"
-                                disabled={isClearing}
-                            >
-                                {isClearing ? <LoadingSpinnerIcon size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                                <span>{isClearing ? 'Clearing...' : 'Clear List'}</span>
-                            </Button>
-                        </>
-                    )}
+                            <HelpIcon helpKey="tw-history" text={HELP_CONTENT.tw_history} />
+                        </div>
+
+                        {attendance.length > 0 && (
+                            <>
+                                <div className="w-px h-6 bg-gray-700/50 mx-1" />
+                                <div className="flex items-center px-1 gap-1">
+                                    <Button
+                                        onClick={handleManualSave}
+                                        variant="ghost"
+                                        disabled={isSavingSnapshot}
+                                        title="Save current planning to history"
+                                        className="hover:bg-amber-500/10 group"
+                                    >
+                                        {isSavingSnapshot
+                                            ? <LoadingSpinnerIcon size={16} className="animate-spin text-amber-500" />
+                                            : <Save size={16} className="text-amber-500/70 group-hover:text-amber-400" />}
+                                        <span className="text-gray-300 group-hover:text-amber-400">{isSavingSnapshot ? 'Saving...' : 'Save'}</span>
+                                    </Button>
+
+                                    <Button
+                                        onClick={() => setIsModalOpen(true)}
+                                        variant="ghost"
+                                        className="hover:bg-amber-500/10 group"
+                                        title="Import current event attendance from Raid Helper JSON"
+                                    >
+                                        <ImportIcon size={16} className="text-amber-500/70 group-hover:text-amber-400" />
+                                        <span className="text-gray-300 group-hover:text-amber-400">Import</span>
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+
+                        {attendance.length === 0 && (
+                            <>
+                                <div className="w-px h-6 bg-gray-700/50 mx-1" />
+                                <Button
+                                    onClick={() => setIsModalOpen(true)}
+                                    variant="ghost"
+                                    className="hover:bg-amber-500/10 group"
+                                    title="Import attendance list from Raid Helper"
+                                >
+                                    <ImportIcon size={16} className="text-amber-500/70 group-hover:text-amber-400" />
+                                    <span className="text-gray-300 group-hover:text-amber-400">Import</span>
+                                </Button>
+                            </>
+                        )}
+
+                        {attendance.length > 0 && (
+                            <>
+                                <div className="w-px h-6 bg-gray-700/50 mx-1" />
+                                <div className="flex items-center px-1">
+                                    <Button
+                                        onClick={handleClearAttendance}
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={isClearing}
+                                        title="Clear all attendance data and groups"
+                                        className="text-rose-500/60 hover:text-rose-400 hover:bg-rose-500/10"
+                                    >
+                                        {isClearing ? <LoadingSpinnerIcon size={16} className="animate-spin text-rose-500" /> : <Trash2 size={16} />}
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -227,7 +265,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                 <div className="flex-grow flex flex-col lg:flex-row gap-6 overflow-hidden min-h-0">
                     {/* Left Panel: Players Lists */}
                     <div
-                        className="w-full lg:w-1/3 flex flex-col bg-gray-900/40 rounded-lg p-4 overflow-y-auto border border-gray-800 min-h-0"
+                        className="w-full lg:w-1/3 flex flex-col bg-white/5 backdrop-blur-lg rounded-xl p-4 overflow-y-auto border border-white/10 min-h-0 shadow-lg"
                         onDragOver={handleDragOver}
                         onDrop={handleDropOnList}
                     >
@@ -263,7 +301,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                     </div>
 
                     {/* Right Panel: Group Editor Grid */}
-                    <div className="w-full lg:w-2/3 flex flex-col bg-gray-900/40 rounded-lg p-4 overflow-y-auto border border-gray-800 min-h-0">
+                    <div className="w-full lg:w-2/3 flex flex-col bg-white/5 backdrop-blur-lg rounded-xl p-4 overflow-y-auto border border-white/10 min-h-0 shadow-lg">
                         <div className="flex justify-between items-center mb-4 border-b-2 border-gray-700 pb-2">
                             <h3 className="text-lg font-bold flex items-center gap-2 text-gray-200">
                                 <Shield size={20} className="text-indigo-400" /> Group Placements

@@ -58,18 +58,21 @@ export const UnlockedMemberView: React.FC<UnlockedMemberViewProps> = ({
                         {unitsToDisplayByTier[tier].map(unit => {
                             const cost = unitCostMap.get(unit);
                             return (
-                                <div key={unit} className="flex items-center justify-between p-1 rounded hover:bg-gray-700/50">
+                                <div key={unit} className="group flex items-center justify-between p-1.5 rounded-lg hover:bg-amber-500/5 transition-all">
                                     <label className="flex items-center space-x-2 flex-grow cursor-pointer min-w-0">
                                         <div className={cn("flex-shrink-0", playerFavoriteUnitsSet.has(unit) ? 'text-yellow-400 fill-yellow-400' : 'text-transparent')} title="Favorite">
                                             <Star size={14} />
                                         </div>
 
-                                        <div className={cn("w-4 h-4 rounded-sm border-2 flex-shrink-0", playerMasteryUnitsSet.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500')} title="Mastery"></div>
-                                        <div className={cn("w-4 h-4 rounded-full border-2 flex-shrink-0", playerPreparedUnitsSet.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-500')} title="Maxed"></div>
-                                        <input type="checkbox" checked={selectedUnitsMap.has(unit)} onChange={() => toggleUnit(unit)} className="form-checkbox h-5 w-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500/50" />
+                                        <div className={cn("w-4 h-4 rounded-sm border-2 flex-shrink-0", playerMasteryUnitsSet.has(unit) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-600 group-hover:border-amber-500/50')} title="Mastery"></div>
+                                        <div className={cn("w-4 h-4 rounded-full border-2 flex-shrink-0", playerPreparedUnitsSet.has(unit) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-600 group-hover:border-green-500/50')} title="Maxed"></div>
+                                        <input type="checkbox" checked={selectedUnitsMap.has(unit)} onChange={() => toggleUnit(unit)} className="form-checkbox h-5 w-5 rounded bg-black/40 border-white/10 text-amber-500 focus:ring-amber-500/50" />
                                         <div className="flex items-baseline min-w-0">
-                                            <span className="truncate" title={unit}>{unit}</span>
-                                            {cost && <span className="text-xs text-gray-400 ml-1 flex-shrink-0">({cost} LS)</span>}
+                                            <span className="relative text-gray-300 group-hover:text-amber-100 transition-colors py-0.5 truncate" title={unit}>
+                                                {unit}
+                                                <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-gradient-to-r from-amber-600 to-amber-300 transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100" />
+                                            </span>
+                                            {cost && <span className="text-xs text-gray-500 ml-1 flex-shrink-0">({cost} LS)</span>}
                                         </div>
                                     </label>
                                     {selectedUnitsMap.has(unit) && (

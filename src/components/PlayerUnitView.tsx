@@ -127,7 +127,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         <div className="flex items-center gap-4 mb-1">
                             {!canEditDisplayName ? (
                                 <div className="flex items-center gap-2">
-                                    <h2 className="text-2xl font-bold text-white">Units for <span className="text-blue-400">{player?.name}</span></h2>
+                                    <h2 className="text-2xl font-bold text-white">Units for <span className="text-amber-100">{player?.name}</span></h2>
                                     {player?.role && <RoleBadge role={player.role} className="mt-0.5" />}
                                 </div>
                             ) : (
@@ -139,7 +139,7 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                         value={playerNameText}
                                         onChange={(e) => setPlayerNameText(e.target.value)}
                                         onBlur={handlePlayerNameSave}
-                                        className="text-xl font-bold text-blue-400 bg-gray-800/40 border-gray-700/50 hover:bg-gray-800/60 focus:bg-gray-800"
+                                        className="text-xl font-bold text-amber-100 bg-amber-900/20 border border-amber-500/30 rounded-md px-2 focus:outline-none focus:border-amber-400/60 backdrop-blur-sm"
                                     />
                                 </div>
                             )}
@@ -152,14 +152,14 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         <p className="text-gray-400 mb-2">{selectedPlayerUnits.size} / {allUnits.length} units selected.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* ROLE SELECTOR - For those with power to manage the target user's role */}
+                        {/* ROLE SELECTOR */}
                         {canManageRole(player.role || 'Member') && (
                             <div className="flex flex-col items-end gap-1 mr-2">
-                                <span className="text-[10px] text-gray-500 uppercase font-bold">Change Role</span>
+                                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Change Role</span>
                                 <Select 
                                     value={player.role || 'Member'} 
                                     onChange={(e) => handleProfileSave(e.target.value as UserRole)}
-                                    className="text-xs py-1 h-8 bg-gray-800/80 border-indigo-500/30 text-indigo-300"
+                                    className="text-xs py-1 h-8 bg-black/40 border-amber-500/20 text-amber-200/70 hover:border-amber-500/40 focus:border-amber-500/50 backdrop-blur-sm transition-all"
                                 >
                                     {['Pending', 'Member', 'Officer', 'Gatekeeper', 'Admin', 'Owner'].map(r => (
                                         <option key={r} value={r} disabled={!canManageRole(r as UserRole)}>
@@ -171,48 +171,55 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         )}
                         {isOfficerPlus && (
                             <>
-                                <Button onClick={handleClearUnits} variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-400/10" size="sm">
-                                    <Trash2 size={16} />
-                                    <span>Clear Units</span>
+                                <Button onClick={handleCopyForm} variant="secondary" className="h-8">
+                                    <Copy size={16} />
+                                    <span>Copy</span>
                                 </Button>
-                                <Button onClick={() => setIsParseModalOpen(true)} variant="primary">
+                                <Button onClick={() => setIsParseModalOpen(true)} variant="primary" className="h-8">
                                     <ImportIcon size={16} />
-                                    <span>Import Form</span>
+                                    <span>Import</span>
+                                </Button>
+                                <Button 
+                                    onClick={handleClearUnits} 
+                                    variant="ghost" 
+                                    className="text-rose-500/60 hover:text-rose-400 hover:bg-rose-500/10 ml-2" 
+                                    size="icon"
+                                    title="Clear all unit data"
+                                >
+                                    <Trash2 size={18} />
                                 </Button>
                             </>
-                        )}
-                        {isOfficerPlus && (
-                            <Button onClick={handleCopyForm} variant="secondary">
-                                <Copy size={16} />
-                                <span>Copy Form</span>
-                            </Button>
                         )}
                     </div>
                 </div>
 
                 <div className="my-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Column 1-2: Info (Internal Notes) */}
+                    {/* Column 1-2: Info */}
                     {isOfficerPlus && (
                         <div className="md:col-span-2 order-1">
-                            <label htmlFor="playerInfo" className="block text-sm font-medium text-gray-300 mb-1">Info (Internal)</label>
+                            <label htmlFor="playerInfo" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1">Info</label>
                             <textarea
                                 id="playerInfo"
                                 value={infoText}
                                 onChange={(e) => setInfoText(e.target.value)}
                                 onBlur={handleInfoSave}
-                                placeholder={`Write internal notes about ${player?.name}...`}
-                                className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                rows={2}
+                                placeholder={`Notes about ${player?.name}...`}
+                                className="w-full bg-black/40 border border-amber-500/10 rounded-md p-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-500/40 backdrop-blur-sm transition-all resize-none"
+                                rows={1}
+                                onInput={(e) => {
+                                    const target = e.target as HTMLTextAreaElement;
+                                    target.style.height = 'auto';
+                                    target.style.height = target.scrollHeight + 'px';
+                                }}
                             />
                         </div>
                     )}
 
-                    {/* Column 3: Metadata (Leadership & Dates) — Officers only, Members see this in the Profile Rail */}
+                    {/* Column 3: Metadata (Leadership) */}
                     {isOfficerPlus && (
                         <div className="flex flex-col gap-3 order-2">
                             <div>
-                                <label htmlFor="playerLeadership" className="block text-sm font-medium text-gray-300 mb-0.5">Total Leadership</label>
-                                <p className="text-[10px] text-gray-500 mb-1.5 leading-tight italic">Total Leadership on your armor that you use for TW</p>
+                                <label htmlFor="playerLeadership" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1">Leadership</label>
                                 <Input
                                     id="playerLeadership"
                                     type="number"
@@ -221,52 +228,60 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                     onBlur={handleLeadershipSave}
                                     readOnly={!canEditOthersUnits && userId !== player.id}
                                     placeholder="e.g. 700"
-                                    className={cn("w-full p-2", (!canEditOthersUnits && userId !== player.id) && "opacity-75 cursor-not-allowed bg-gray-800")}
+                                    className={cn(
+                                        "w-full h-9 bg-black/40 border-amber-500/10 text-amber-100/80 focus:border-amber-500/40 backdrop-blur-sm", 
+                                        (!canEditOthersUnits && userId !== player.id) && "opacity-50 cursor-not-allowed"
+                                    )}
                                 />
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label htmlFor="joinedDate" className="block text-sm font-medium text-gray-300 mb-1">Joined Date</label>
-                                    <Input
-                                        id="joinedDate"
-                                        type="date"
-                                        value={joinedDate}
-                                        onChange={(e) => setJoinedDate(e.target.value)}
-                                        onBlur={() => handleProfileSave()}
-                                        readOnly={!isOfficerPlus}
-                                        className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="inactiveDate" className="block text-sm font-medium text-gray-300 mb-1">Inactive Date</label>
-                                    <Input
-                                        id="inactiveDate"
-                                        type="date"
-                                        value={inactiveDate}
-                                        onChange={(e) => setInactiveDate(e.target.value)}
-                                        onBlur={() => handleProfileSave()}
-                                        readOnly={!isOfficerPlus}
-                                        className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
-                                    />
-                                </div>
                             </div>
                         </div>
                     )}
                 </div>
 
                 {isOfficerPlus && (
-                    <div className="mb-3">
-                        <label htmlFor="aliases" className="block text-sm font-medium text-gray-300 mb-1">Discord Aliases (comma separated)</label>
-                        <Input
-                            id="aliases"
-                            type="text"
-                            value={aliasesText}
-                            onChange={(e) => setAliasesText(e.target.value)}
-                            onBlur={() => handleProfileSave()}
-                            readOnly={!isOfficerPlus}
-                            placeholder="e.g. KalleRox, Kalle_99"
-                            className={cn("w-full p-2", !isOfficerPlus && "opacity-75 cursor-not-allowed bg-gray-800")}
-                        />
+                    <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                            <label htmlFor="aliases" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1">Discord Aliases</label>
+                            <Input
+                                id="aliases"
+                                type="text"
+                                value={aliasesText}
+                                onChange={(e) => setAliasesText(e.target.value)}
+                                onBlur={() => handleProfileSave()}
+                                readOnly={!isOfficerPlus}
+                                placeholder="e.g. KalleRox, Kalle_99"
+                                className={cn(
+                                    "w-full h-9 bg-black/40 border-amber-500/10 text-gray-300 focus:border-amber-500/40 backdrop-blur-sm", 
+                                    !isOfficerPlus && "opacity-50 cursor-not-allowed"
+                                )}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label htmlFor="joinedDate" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1">Joined</label>
+                                <Input
+                                    id="joinedDate"
+                                    type="date"
+                                    value={joinedDate}
+                                    onChange={(e) => setJoinedDate(e.target.value)}
+                                    onBlur={() => handleProfileSave()}
+                                    readOnly={!isOfficerPlus}
+                                    className={cn("w-full h-9 bg-black/40 border-amber-500/10 text-xs text-gray-400 focus:border-amber-500/40", !isOfficerPlus && "opacity-50")}
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="inactiveDate" className="block text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Inactive</label>
+                                <Input
+                                    id="inactiveDate"
+                                    type="date"
+                                    value={inactiveDate}
+                                    onChange={(e) => setInactiveDate(e.target.value)}
+                                    onBlur={() => handleProfileSave()}
+                                    readOnly={!isOfficerPlus}
+                                    className={cn("w-full h-9 bg-black/40 border-amber-500/10 text-xs text-gray-400 focus:border-amber-500/40", !isOfficerPlus && "opacity-50")}
+                                />
+                            </div>
+                        </div>
                     </div>
                 )}
 

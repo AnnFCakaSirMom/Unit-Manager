@@ -56,28 +56,31 @@ export const OwnedUnitsView = React.memo(({ selectedPlayerId, selectedUnits, pre
                     <div className={`w-full flex justify-between items-center p-2 rounded-t-md border-b-2 ${tierColorClasses[tier]}`}>
                         <h3 className="text-xl font-semibold">{tier}</h3>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-3 p-4 bg-gray-800/30 rounded-b-md">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-3 p-4 bg-black/30 border-x border-b border-white/5 rounded-b-xl backdrop-blur-sm">
                         {unitNames.map(unitName => (
-                            <div key={unitName} className="flex items-center space-x-3">
+                            <div key={unitName} className="group flex items-center space-x-3 p-1.5 rounded-lg hover:bg-amber-500/5 transition-all cursor-default">
                                 {/* FAVORITE BUTTON (STAR) */}
                                 <div
                                     onClick={() => onUnitToggle(selectedPlayerId, unitName, 'favoriteUnits')}
-                                    className={`cursor-pointer transition-colors flex-shrink-0 ${favoriteUnits.has(unitName) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-gray-400'}`}
+                                    className={`cursor-pointer transition-colors flex-shrink-0 ${favoriteUnits.has(unitName) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 group-hover:text-gray-400'}`}
                                     title="Toggle Favorite"
                                 >
                                     <Star size={18} />
                                 </div>
                                 <div
                                     onClick={() => onUnitToggle(selectedPlayerId, unitName, 'masteryUnits')}
-                                    className={`w-4 h-4 rounded-sm border-2 cursor-pointer ${masteryUnits.has(unitName) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
+                                    className={`w-4 h-4 rounded-sm border-2 cursor-pointer ${masteryUnits.has(unitName) ? 'bg-yellow-500 border-yellow-400' : 'bg-transparent border-gray-500 group-hover:border-amber-500/50'} transition-colors flex-shrink-0`}
                                     title="Toggle Mastery"
                                 ></div>
                                 <div
                                     onClick={() => onUnitToggle(selectedPlayerId, unitName, 'preparedUnits')}
-                                    className={`w-4 h-4 rounded-full border-2 cursor-pointer ${preparedUnits.has(unitName) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-400'} transition-colors flex-shrink-0`}
+                                    className={`w-4 h-4 rounded-full border-2 cursor-pointer ${preparedUnits.has(unitName) ? 'bg-green-500 border-green-400' : 'bg-transparent border-gray-550 group-hover:border-green-500/50'} transition-colors flex-shrink-0`}
                                     title="Toggle Maxed"
                                 ></div>
-                                <span className="text-gray-300">{unitName}</span>
+                                <span className="relative text-gray-300 group-hover:text-amber-100 transition-colors py-0.5">
+                                    {unitName}
+                                    <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-gradient-to-r from-amber-600 to-amber-300 transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100" />
+                                </span>
                             </div>
                         ))}
                     </div>

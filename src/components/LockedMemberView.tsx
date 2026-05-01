@@ -18,10 +18,13 @@ export const LockedMemberView: React.FC<LockedMemberViewProps> = ({ selectedUnit
                         return a.unitName.localeCompare(b.unitName);
                     })
                     .map(unitObj => (
-                        <div key={unitObj.unitName} className="flex items-center gap-2">
-                            <span className="font-bold text-lg w-6 text-center">{unitObj.rank > 0 ? unitObj.rank : '-'}</span>
-                            <span>{unitObj.unitName}</span>
-                            <span className="text-xs text-gray-400">({unitCostMap.get(unitObj.unitName) || 0} LS)</span>
+                        <div key={unitObj.unitName} className="group flex items-center gap-2 p-1 rounded-lg hover:bg-amber-500/5 transition-all">
+                            <span className="font-bold text-lg w-6 text-center text-amber-500/60 group-hover:text-amber-500 transition-colors">{unitObj.rank > 0 ? unitObj.rank : '-'}</span>
+                            <span className="relative text-gray-300 group-hover:text-amber-100 transition-colors py-0.5">
+                                {unitObj.unitName}
+                                <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-gradient-to-r from-amber-600 to-amber-300 transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100" />
+                            </span>
+                            <span className="text-xs text-gray-500">({unitCostMap.get(unitObj.unitName) || 0} LS)</span>
                         </div>
                     ))
                 }

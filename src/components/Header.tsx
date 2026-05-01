@@ -11,14 +11,14 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, syncStatus }) => {
     const getSyncIcon = () => {
         switch (syncStatus) {
             case 'Syncing':
-                return <RefreshCcw size={16} className="text-blue-400 animate-spin" />;
+                return <RefreshCcw size={16} className="text-amber-400 animate-spin" />;
             case 'Error':
-                return <CloudAlert size={18} className="text-yellow-500 animate-pulse" />;
+                return <CloudAlert size={18} className="text-amber-500 animate-pulse" />;
             case 'PermanentError':
                 return <CloudOff size={18} className="text-red-500" />;
             case 'Synced':
             default:
-                return <Cloud size={18} className="text-green-500/60" />;
+                return <Cloud size={18} className="text-amber-200/40" />;
         }
     };
 
@@ -33,24 +33,29 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, syncStatus }) => {
     };
 
     return (
-        <header className="flex items-center justify-between px-5 py-3 bg-gray-900 border-b border-gray-800 flex-shrink-0">
+        <header className="flex items-center justify-between px-6 py-3.5 bg-black/60 backdrop-blur-xl border-b border-amber-500/10 flex-shrink-0 relative z-20 shadow-2xl">
             {/* Brand */}
-            <div className="flex items-center select-none">
-                <span className="text-sm font-bold tracking-widest uppercase text-gray-100">
-                    Unit
-                </span>
-                <span className="text-sm font-bold tracking-widest uppercase text-blue-400 ml-1">
-                    Manager
-                </span>
+            <div className="flex items-center select-none group cursor-default">
+                <div className="flex flex-col -space-y-1">
+                    <span className="text-[10px] font-black tracking-[0.3em] uppercase text-gray-500 group-hover:text-gray-400 transition-colors">
+                        Unit
+                    </span>
+                    <span className="text-xl font-black tracking-tight uppercase bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                        Manager
+                    </span>
+                </div>
+                <div className="ml-3 h-8 w-[1px] bg-gradient-to-b from-transparent via-amber-500/20 to-transparent" />
             </div>
 
             {/* Right side actions */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
                 {/* Sync Indicator */}
                 <div 
                     className={cn(
-                        "flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300",
-                        syncStatus === 'Synced' ? "bg-green-500/5" : "bg-gray-800"
+                        "flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-500 border",
+                        syncStatus === 'Synced' 
+                            ? "bg-amber-500/5 border-amber-500/10" 
+                            : "bg-black/40 border-white/5 shadow-inner"
                     )}
                     title={getSyncTooltip()}
                 >
@@ -61,10 +66,10 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, syncStatus }) => {
                 <button
                     id="header-logout-btn"
                     onClick={onLogout}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold tracking-wider uppercase text-gray-400 bg-gray-800 border border-gray-700 hover:text-gray-200 hover:border-gray-600 hover:bg-gray-750 transition-all duration-150 active:scale-[0.97]"
+                    className="group flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-[0.15em] uppercase text-gray-500 bg-black/40 border border-white/5 hover:text-amber-100 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all duration-300 shadow-lg active:scale-95"
                     title="Log Out"
                 >
-                    <LogOut size={13} />
+                    <LogOut size={14} className="group-hover:text-amber-500 transition-colors" />
                     <span>Log Out</span>
                 </button>
             </div>

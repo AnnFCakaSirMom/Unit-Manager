@@ -34,33 +34,43 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
     ];
 
     return (
-        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 backdrop-blur-sm shadow-2xl">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
-                <header className="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
-                    <div className="flex items-center gap-3 text-blue-400">
-                        <Info size={24} />
-                        <h2 className="text-xl font-bold text-white uppercase tracking-tight">Application Manual</h2>
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md">
+            <div className="bg-black/80 border border-amber-500/20 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden backdrop-blur-xl">
+                <header className="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                            <Book size={24} className="text-amber-500" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-white tracking-tight">APPLICATION MANUAL</h2>
+                            <p className="text-xs text-amber-500/60 font-medium tracking-widest uppercase">Obsidian Command • v1.2</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+                    <button 
+                        onClick={onClose} 
+                        className="p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-full transition-all"
+                    >
                         <X size={24} />
                     </button>
                 </header>
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* Sidebar */}
-                    <aside className="w-64 border-r border-gray-700 bg-gray-800/30 overflow-y-auto">
-                        <nav className="p-2 space-y-1">
+                    <aside className="w-72 border-r border-white/5 bg-black/20 overflow-y-auto p-4">
+                        <nav className="space-y-1">
                             {sections.map((s) => (
                                 <button
                                     key={s.id}
                                     onClick={() => setActiveSection(s.id as Section)}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                                         activeSection === s.id
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                                            : 'text-gray-400 hover:bg-gray-700/50 hover:text-gray-200'
+                                            ? 'bg-amber-500/20 text-amber-100 border border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
+                                            : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border border-transparent'
                                     }`}
                                 >
-                                    {s.icon}
+                                    <span className={activeSection === s.id ? 'text-amber-500' : 'text-gray-500'}>
+                                        {s.icon}
+                                    </span>
                                     {s.label}
                                 </button>
                             ))}
@@ -74,7 +84,7 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                                 <h3 className="text-2xl font-bold text-white mb-4 border-b border-blue-500/30 pb-2">Getting Started</h3>
                                 <div className="space-y-4 text-gray-300 leading-relaxed text-sm lg:text-base">
                                     <p className="text-lg text-blue-300">{HELP_CONTENT.app_overview.content}</p>
-                                    <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                                    <div className="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-xl">
                                         <h4 className="text-white font-bold mb-2">Help Mode</h4>
                                         <p>{HELP_CONTENT.help_mode.content}</p>
                                     </div>
@@ -90,11 +100,11 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                                     <h4 className="text-white font-bold">{HELP_CONTENT.member_management.title}</h4>
                                     <p>{HELP_CONTENT.member_management.content}</p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                                        <div className="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-xl">
                                             <h5 className="text-blue-300 font-bold mb-1">Adding Members</h5>
                                             <p>Type a name in the sidebar and click the <Users size={14} className="inline mx-1"/> button. New members are added to the 'Players' list.</p>
                                         </div>
-                                        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                                        <div className="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-xl">
                                             <h5 className="text-blue-300 font-bold mb-1">Roster Roles</h5>
                                             <p>Use roles to filter and manage permissions. 'Pending' users must be approved by a Gatekeeper or higher.</p>
                                         </div>
@@ -138,11 +148,11 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                                     <h4 className="text-white font-bold">Two Ways to Manage Groups</h4>
                                     <p>You can organize your formations in two distinct areas depending on your current task:</p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                                        <div className="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-xl">
                                             <h5 className="text-blue-300 font-bold mb-1">1. Sidebar Management</h5>
                                             <p>Best for general planning. Click 'Edit' to rename groups or use the 'Trash' icon to delete them. This view allows you to adjust <strong>Detailed Unit Ranks</strong> for each player.</p>
                                         </div>
-                                        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                                        <div className="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-xl">
                                             <h5 className="text-blue-300 font-bold mb-1">2. TW Attendance View</h5>
                                             <p>Best for active house management. This view supports <strong>Drag and Drop</strong> movement of players between groups and includes the Raid Helper Import tool.</p>
                                         </div>
@@ -211,11 +221,11 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                                     <h4 className="text-white font-bold">{HELP_CONTENT.tw_statistics.title}</h4>
                                     <p>{HELP_CONTENT.tw_statistics.content}</p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                                        <div className="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-xl">
                                             <h5 className="text-red-300 font-bold mb-1">AWOL Status</h5>
                                             <p>{HELP_CONTENT.status_awol.content}</p>
                                         </div>
-                                        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                                        <div className="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-xl">
                                             <h5 className="text-blue-300 font-bold mb-1">Raid Helper Sync</h5>
                                             <p>{HELP_CONTENT.raid_helper_import.content}</p>
                                         </div>
@@ -258,7 +268,7 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                                         <div className="space-y-4 text-gray-300 leading-relaxed text-sm lg:text-base">
                                             <h4 className="text-blue-300 font-bold">{HELP_CONTENT.audit_log_manual.title}</h4>
                                             <p>{HELP_CONTENT.audit_log_manual.content}</p>
-                                            <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700 space-y-3">
+                                            <div className="bg-white/5 border border-white/5 rounded-2xl p-6 shadow-xl space-y-3">
                                                 <div className="flex gap-3">
                                                     <div className="w-2 h-2 mt-1.5 rounded-full bg-red-500"></div>
                                                     <p>

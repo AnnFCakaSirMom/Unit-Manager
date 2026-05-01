@@ -53,13 +53,13 @@ export const GroupMemberCard = memo(({ member, player, groupId, isLeader, unitCo
     }, [dispatch, groupId, player.id]);
 
     return (
-        <Card className="bg-gray-800/30 overflow-visible border-none">
+        <Card className="bg-black/30 backdrop-blur-sm border border-white/5 overflow-visible">
             {/* Header / Stats */}
-            <CardHeader className="flex-row justify-between items-start space-y-0 p-2 pb-1 border-none">
+            <CardHeader className="flex-row justify-between items-start space-y-0 p-3 pb-1 border-none">
                 <div className="space-y-0.5">
-                    <CardTitle className={cn("text-lg flex items-center gap-1.5", isLeader ? 'text-yellow-300' : 'text-blue-300')}>
+                    <CardTitle className={cn("text-lg flex items-center gap-1.5 font-bold tracking-tight", isLeader ? 'text-amber-100' : 'text-gray-100')}>
                         {player.name}
-                        {isLeader && <Star size={14} className="fill-current" />}
+                        {isLeader && <Star size={14} className="fill-amber-500 text-amber-500" />}
                         {player.info && (
                             <div className="relative group/info">
                                 <AlertTriangle size={16} className="text-cyan-400 cursor-pointer" aria-label="Player Warning/Info" />

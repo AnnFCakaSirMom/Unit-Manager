@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import type { ConfirmModalInfo } from '../types';
-import { Settings, UserPlus, Users, ChevronUp, ChevronDown, Shield } from './icons';
+import { Settings, UserPlus, Users, ChevronUp, ChevronDown, Shield, Book } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import { UnitSearch } from './UnitSearch';
@@ -19,6 +19,7 @@ interface SidebarProps {
     onOpenTWStatistics: () => void;
     onOpenProfileMatcher: () => void;
     onOpenAdminPanel: () => void;
+    onOpenManual: () => void;
     pendingApprovalsCount: number;
     statusMessage: string;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
@@ -29,13 +30,11 @@ interface SidebarProps {
 import { useAppSelector, useAppDispatch } from '../state/store';
 import { addPlayer } from '../state/slices/playerSlice';
 import { toggleHelpMode } from '../state/slices/uiSlice';
-import { HelpManualModal } from './HelpManualModal';
 
 export const Sidebar: React.FC<SidebarProps> = (props) => {
     const players = useAppSelector(state => state.player.players);
     const showHelpMode = useAppSelector(state => state.ui.showHelpMode);
     const dispatch = useAppDispatch();
-    const [isManualOpen, setIsManualOpen] = useState(false);
     const [suspiciousCount, setSuspiciousCount] = useState(0);
 
     const { 
@@ -51,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
     const {
         selectedPlayerId, selectedGroupId,
-        onSelectPlayer, onSelectGroup, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher, onOpenAdminPanel,
+        onSelectPlayer, onSelectGroup, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher, onOpenAdminPanel, onOpenManual,
         pendingApprovalsCount, statusMessage, setConfirmModal, isPlayerListOpen,
         onTogglePlayerList
     } = props;
@@ -84,37 +83,48 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
     }, []);
 
     return (
-        <aside className="w-full md:w-1/3 lg:w-1/4 bg-gray-800/50 border-r border-gray-700 p-4 flex flex-col overflow-y-auto h-full">
+        <aside className="w-full md:w-1/3 lg:w-1/4 bg-gray-900/40 backdrop-blur-xl border-r border-white/5 p-4 flex flex-col overflow-y-auto h-full shadow-2xl relative z-10">
             <header className="mb-2 flex-shrink-0">
                 <div className="flex items-center justify-between gap-2">
                     <p className="text-xs text-gray-400 leading-tight">Manage players, units, and groups.</p>
                 </div>
 
-                <div className="flex flex-col gap-1.5 mt-2">
+                <div className="flex flex-col gap-2 mt-2">
+                    {/* Row 1: Attendance & Stats */}
+                    <div className="flex items-center gap-2">
+                        {canViewAttendance && (
+                            <Button
+                                variant="ghost"
+                                className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10 text-[11px]"
+                                onClick={onOpenAttendance}
+                            >
+                                <Users size={14} />
+                                <span>Attendance</span>
+                            </Button>
+                        )}
 
-                    {canViewAttendance && (
-                        <Button variant="primary" className="bg-purple-600 hover:bg-purple-700" onClick={onOpenAttendance}>
-                            <Users size={16} />
-                            <span>Attendance</span>
-                        </Button>
-                    )}
+                        {canViewStats && (
+                            <Button
+                                variant="ghost"
+                                className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10 text-[11px]"
+                                onClick={onOpenTWStatistics}
+                            >
+                                <Users size={14} />
+                                <span>TW Stats</span>
+                            </Button>
+                        )}
+                    </div>
 
-                    {canViewStats && (
-                        <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700" onClick={onOpenTWStatistics}>
-                            <Users size={16} />
-                            <span>TW Statistics</span>
-                        </Button>
-                    )}
-
+                    {/* Row 2: Admin & Approvals */}
                     {canViewAdminPanel && (
                         <div className="flex items-center gap-2">
                             <div className="relative flex-1 flex">
                                 <Button
                                     variant="ghost"
-                                    className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10"
+                                    className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10 text-[11px]"
                                     onClick={onOpenAdminPanel}
                                 >
-                                    <Shield size={16} />
+                                    <Shield size={14} />
                                     <span>Admin Panel</span>
                                 </Button>
                                 {suspiciousCount > 0 && (
@@ -125,20 +135,22 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                                 )}
                             </div>
 
-                            {/* Pending Approvals badge button */}
-                            <button
-                                onClick={onOpenProfileMatcher}
-                                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-blue-300 bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
-                                title="Pending Approvals"
-                            >
-                                <UserPlus size={15} />
-                                <span>Approvals</span>
+                            <div className="relative flex-1 flex">
+                                <Button
+                                    variant="ghost"
+                                    className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10 text-[11px]"
+                                    onClick={onOpenProfileMatcher}
+                                    title="Pending Approvals"
+                                >
+                                    <UserPlus size={14} />
+                                    <span>Approvals</span>
+                                </Button>
                                 {pendingApprovalsCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold shadow-sm">
                                         {pendingApprovalsCount > 9 ? '9+' : pendingApprovalsCount}
                                     </span>
                                 )}
-                            </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -160,11 +172,11 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                         </button>
 
                         <button
-                            onClick={() => setIsManualOpen(true)}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold bg-gray-800/80 border border-gray-700 text-gray-300 hover:bg-gray-700 transition-colors"
+                            onClick={props.onOpenManual}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold bg-black/40 border border-amber-500/20 text-amber-200/70 hover:bg-amber-500/10 hover:text-amber-100 transition-all"
                             title="Open Information Manual"
                         >
-                            <Settings size={14} />
+                            <Book size={14} className="text-amber-500" />
                             <span>MANUAL</span>
                         </button>
                     </div>
@@ -175,7 +187,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 </div>
             </header>
 
-            <HelpManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
+
 
             {canAddPlayers && (
                 <div className="flex items-center gap-2 mb-3 flex-shrink-0">

@@ -15,6 +15,7 @@ import { ProfileMatcher } from './components/ProfileMatcher';
 import { AdminPanel } from './components/AdminPanel';
 import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
+import { HelpManualModal } from './components/HelpManualModal';
 import { UploadCloud } from './components/icons';
 
 import { useAppSelector, useAppDispatch } from './state/store';
@@ -37,6 +38,7 @@ const App: React.FC = () => {
 
     const [statusMessage, setStatusMessage] = useState<string>("");
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
+    const [isManualOpen, setIsManualOpen] = useState<boolean>(false);
     const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
     const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
 
@@ -49,6 +51,8 @@ const App: React.FC = () => {
         handleOpenTWStatistics, handleOpenProfileMatcher, handleOpenAdminPanel,
         handleTogglePlayerList, setShowAdminPanel
     } = useNavigationState(role, userId);
+
+    const handleOpenManual = useCallback(() => setIsManualOpen(true), []);
 
     useDatabaseSync(reduxDispatch, isOfficerPlus);
 
@@ -129,7 +133,7 @@ const App: React.FC = () => {
 
     return (
         <AuthGuard>
-            <div className="bg-gray-900 text-gray-200 h-screen overflow-hidden font-sans flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+            <div className="bg-transparent text-gray-200 h-screen overflow-hidden font-sans flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                         {isDragging && (
                             <div className="drag-over-overlay">
                                 <div className="text-center text-white">
@@ -152,6 +156,7 @@ const App: React.FC = () => {
                                     onOpenTWStatistics={handleOpenTWStatistics}
                                     onOpenProfileMatcher={handleOpenProfileMatcher}
                                     onOpenAdminPanel={handleOpenAdminPanel}
+                                    onOpenManual={handleOpenManual}
                                     pendingApprovalsCount={pendingApprovalsCount}
                                     statusMessage={statusMessage}
                                     setConfirmModal={setConfirmModal}
@@ -216,10 +221,14 @@ const App: React.FC = () => {
                             />
                         )}
 
+                        <HelpManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
                         {confirmModal.isOpen && (
-                            <ConfirmationModal
-                                {...confirmModal}
-                                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                            <ConfirmationModal 
+                                isOpen={confirmModal.isOpen} 
+                                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))} 
+                                title={confirmModal.title} 
+                                message={confirmModal.message} 
+                                onConfirm={confirmModal.onConfirm} 
                             />
                         )}
                     </div>

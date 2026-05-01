@@ -103,7 +103,7 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
     return (
         <aside
             id="member-profile-rail"
-            className="w-64 flex-shrink-0 flex flex-col gap-4 p-4 bg-gray-900 border-r border-gray-800 h-full overflow-y-auto"
+            className="w-64 flex-shrink-0 flex flex-col gap-4 p-4 bg-black/40 backdrop-blur-xl border-r border-white/5 h-full overflow-y-auto"
         >
             {/* ── Profile: Avatar + Name ── */}
             <div className="flex items-center gap-3 pt-1">
@@ -111,10 +111,10 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
                     <img
                         src={avatarUrl}
                         alt="Discord Avatar"
-                        className="w-10 h-10 rounded-full border border-gray-700 flex-shrink-0 object-cover"
+                        className="w-10 h-10 rounded-full border border-amber-500/20 flex-shrink-0 object-cover"
                     />
                 ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-700 border border-gray-600 flex-shrink-0 flex items-center justify-center text-gray-400 text-sm font-bold">
+                    <div className="w-10 h-10 rounded-full bg-black/40 border border-white/5 flex-shrink-0 flex items-center justify-center text-gray-400 text-sm font-bold">
                         {player?.name?.[0]?.toUpperCase() ?? '?'}
                     </div>
                 )}
@@ -122,13 +122,13 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
                     <p className="text-sm font-semibold text-gray-100 truncate" title={player?.name}>
                         {player?.name ?? '—'}
                     </p>
-                    <p className="text-xs text-blue-400/80 font-medium">Member</p>
+                    <p className="text-xs text-amber-200/60 font-medium">Member</p>
                 </div>
             </div>
 
             {/* ── Leadership ── */}
             <div>
-                <label htmlFor="rail-leadership" className="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5">
+                <label htmlFor="rail-leadership" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1.5">
                     Total Leadership
                 </label>
                 <Input
@@ -144,15 +144,15 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
 
             {/* ── Stats Badges ── */}
             <div>
-                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
                     Barrack
                 </p>
                 <div className="flex flex-col gap-2">
 
                     {/* Owned units */}
-                    <div className="flex items-center justify-between px-3 py-2 rounded-md bg-gray-800/60 border border-gray-700/70">
-                        <div className="flex items-center gap-2 text-gray-300">
-                            <CheckSquare size={13} className="text-gray-400 flex-shrink-0" />
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
+                        <div className="flex items-center gap-2 text-gray-400">
+                            <CheckSquare size={13} className="flex-shrink-0" />
                             <span className="text-xs">Owned</span>
                         </div>
                         <span className="text-xs font-semibold text-gray-200">
@@ -162,18 +162,18 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
                     </div>
 
                     {/* Maxed units */}
-                    <div className="flex items-center justify-between px-3 py-2 rounded-md bg-gray-800/60 border border-gray-700/70">
-                        <div className="flex items-center gap-2 text-gray-300">
-                            <Star size={13} className="text-gray-400 flex-shrink-0" />
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
+                        <div className="flex items-center gap-2 text-gray-400">
+                            <Star size={13} className="flex-shrink-0" />
                             <span className="text-xs">Maxed</span>
                         </div>
                         <span className="text-xs font-semibold text-gray-200">{maxedCount}</span>
                     </div>
 
                     {/* Full Mastery units */}
-                    <div className="flex items-center justify-between px-3 py-2 rounded-md bg-gray-800/60 border border-gray-700/70">
-                        <div className="flex items-center gap-2 text-gray-300">
-                            <Shield size={13} className="text-gray-400 flex-shrink-0" />
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
+                        <div className="flex items-center gap-2 text-gray-400">
+                            <Shield size={13} className="flex-shrink-0" />
                             <span className="text-xs">Full Mastery</span>
                         </div>
                         <span className="text-xs font-semibold text-gray-200">{masteryCount}</span>
@@ -183,10 +183,10 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
             </div>
 
             {/* ── Metadata ── */}
-            <div className="flex flex-col gap-1.5 border-t border-gray-800 pt-3">
+            <div className="flex flex-col gap-1.5 border-t border-white/5 pt-3">
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Joined</span>
-                    <span className="text-xs text-gray-300">{formatJoinedDate(player?.joinedDate)}</span>
+                    <span className="text-xs text-gray-400">{formatJoinedDate(player?.joinedDate)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <span className="text-[11px] text-gray-600">Updated</span>
@@ -197,10 +197,10 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
             {/* ── Help Button ── */}
             <button
                 onClick={() => setIsHelpOpen(true)}
-                className="mt-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-gray-400 hover:text-white hover:bg-gray-800 rounded-md border border-gray-800 transition-colors"
+                className="mt-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-gray-400 bg-black/40 border border-amber-500/20 rounded-xl hover:bg-amber-500/10 hover:text-amber-100 hover:border-amber-500/40 transition-all shadow-lg"
             >
-                <HelpCircle size={14} />
-                How to use the Barrack
+                <HelpCircle size={14} className="text-amber-500/70" />
+                <span>How to use the Barrack</span>
             </button>
 
             <MemberHelpModal 

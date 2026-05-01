@@ -117,11 +117,11 @@ export const TWStatisticsView: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full bg-gray-900 rounded-lg p-4 md:p-6 overflow-hidden">
+        <div className="flex flex-col h-full bg-black/40 backdrop-blur-xl rounded-2xl p-4 md:p-6 overflow-hidden border border-white/5 shadow-2xl">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-3">
                 <div>
-                    <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-1">
+                    <h2 className="text-2xl font-bold text-white mb-1.5 flex items-center gap-1 tracking-tight">
                         TW Statistics
                         <HelpIcon helpKey="tw-stats" text={HELP_CONTENT.date_selection_warning} />
                     </h2>
@@ -129,90 +129,110 @@ export const TWStatisticsView: React.FC = () => {
                         <select
                             value={activeSeasonId}
                             onChange={e => setActiveSeasonId(e.target.value)}
-                            className="bg-gray-800 border border-gray-600 rounded p-1 text-white text-sm"
+                            className="bg-black/60 border border-amber-500/20 rounded-lg px-2 py-1 text-gray-200 text-sm focus:outline-none focus:border-amber-500/50 backdrop-blur-md"
                         >
-                            {twSeasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            {twSeasons.map(s => <option key={s.id} value={s.id} className="bg-gray-900">{s.name}</option>)}
                         </select>
-                        <Button variant="ghost" size="sm" onClick={() => { setIsCreatingNewSeason(false); setIsSeasonModalOpen(true); }}>
-                            <Settings size={14} /> Edit
+                        <Button variant="ghost" size="sm" onClick={() => { setIsCreatingNewSeason(false); setIsSeasonModalOpen(true); }} className="text-gray-400 hover:text-amber-100 hover:bg-amber-500/10">
+                            <Settings size={14} className="text-amber-500/40" /> Edit
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => { setIsCreatingNewSeason(true); setIsSeasonModalOpen(true); }} className="text-blue-400">
+                        <Button variant="ghost" size="sm" onClick={() => { setIsCreatingNewSeason(true); setIsSeasonModalOpen(true); }} className="text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10">
                             <Plus size={14} /> New
                         </Button>
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="secondary" onClick={() => setIsEditModalOpen(true)} disabled={activeEvents.length === 0}>
-                        <Settings size={16} /> Edit Manual
-                    </Button>
-                    <Button variant="secondary" onClick={() => setIsImportModalOpen(true)} disabled={activeEvents.length === 0}>
-                        <ImportIcon size={16} /> Import Raid Helper
-                    </Button>
-                    <Button
-                        variant="secondary"
-                        onClick={() => {
-                            const today = new Date().toISOString().split('T')[0];
-                            const completedEvents = activeEvents.filter(e => e.date <= today);
-                            const possibleCount = completedEvents.length;
+                    <div className="flex items-center bg-black/40 p-1.5 rounded-xl border border-white/5 shadow-inner backdrop-blur-sm">
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => setIsEditModalOpen(true)} 
+                            disabled={activeEvents.length === 0}
+                            className="hover:bg-amber-500/10 text-gray-400 hover:text-amber-400 group transition-all"
+                            title="Manually edit player attendance for each event"
+                        >
+                            <Settings size={16} className="text-amber-500/50 group-hover:text-amber-400 transition-colors" /> Edit
+                        </Button>
+                        
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => setIsImportModalOpen(true)} 
+                            disabled={activeEvents.length === 0}
+                            className="hover:bg-amber-500/10 text-gray-400 hover:text-amber-400 group transition-all"
+                            title="Import statistics from Raid Helper JSON export"
+                        >
+                            <ImportIcon size={16} className="text-amber-500/50 group-hover:text-amber-400 transition-colors" /> Import
+                        </Button>
 
-                            if (possibleCount === 0) {
-                                alert("No TW events have been completed yet this season.");
-                                return;
-                            }
+                        <div className="w-px h-6 bg-white/5 mx-1" />
 
-                            // Calculate Leaderboard Stats (Special logic)
-                            const leaderboardStats = players
-                                .filter(p => !p.notInHouse) // Only active players
-                                .map(p => {
-                                    const records = twRecords.filter(r => completedEvents.some(e => e.id === r.eventId) && r.playerId === p.id);
-                                    const attended = records.filter(r => r.status === 'Attended').length;
-                                    const declined = records.filter(r => r.status === 'Declined').length;
-                                    const awol = records.filter(r => r.status === 'AWOL').length;
-                                    const percentage = Math.round((attended / possibleCount) * 100);
+                        <Button
+                            variant="ghost"
+                            onClick={() => {
+                                const today = new Date().toISOString().split('T')[0];
+                                const completedEvents = activeEvents.filter(e => e.date <= today);
+                                const possibleCount = completedEvents.length;
 
-                                    return {
-                                        name: p.name,
-                                        attended,
-                                        possibleCount,
-                                        percentage,
-                                        declined,
-                                        awol
-                                    };
-                                })
-                                .sort((a, b) => {
-                                    // 1. Percentage (Highest first)
-                                    if (b.percentage !== a.percentage) return b.percentage - a.percentage;
-                                    // 2. Attendance count (Highest first)
-                                    if (b.attended !== a.attended) return b.attended - a.attended;
-                                    // 3. AWOL count (Lowest first)
-                                    if (a.awol !== b.awol) return a.awol - b.awol;
-                                    // 4. Declined count (Lowest first)
-                                    if (a.declined !== b.declined) return a.declined - b.declined;
-                                    // 5. Name (Alphabetical)
-                                    return a.name.localeCompare(b.name);
-                                });
+                                if (possibleCount === 0) {
+                                    alert("No TW events have been completed yet this season.");
+                                    return;
+                                }
 
-                            const text = formatTWLeaderboardToDiscord(leaderboardStats, activeSeason, isNitroMode);
+                                // Calculate Leaderboard Stats
+                                const leaderboardStats = players
+                                    .filter(p => !p.notInHouse)
+                                    .map(p => {
+                                        const records = twRecords.filter(r => completedEvents.some(e => e.id === r.eventId) && r.playerId === p.id);
+                                        const attended = records.filter(r => r.status === 'Attended').length;
+                                        const declined = records.filter(r => r.status === 'Declined').length;
+                                        const awol = records.filter(r => r.status === 'AWOL').length;
+                                        const percentage = Math.round((attended / possibleCount) * 100);
 
-                            navigator.clipboard.writeText(text);
-                            alert("Leaderboard copied to clipboard! (Formatting optimized for Discord)");
-                        }}
-                        disabled={activeEvents.length === 0}
-                        className="border-blue-500/50 hover:border-blue-500 text-blue-300"
-                    >
-                        🏆 Copy Leaderboard
-                    </Button>
-                    <Button variant="primary" onClick={handleCopy}>
-                        <Copy size={16} /> Copy to Discord
-                    </Button>
+                                        return {
+                                            name: p.name,
+                                            attended,
+                                            possibleCount,
+                                            percentage,
+                                            declined,
+                                            awol
+                                        };
+                                    })
+                                    .sort((a, b) => {
+                                        if (b.percentage !== a.percentage) return b.percentage - a.percentage;
+                                        if (b.attended !== a.attended) return b.attended - a.attended;
+                                        if (a.awol !== b.awol) return a.awol - b.awol;
+                                        if (a.declined !== b.declined) return a.declined - b.declined;
+                                        return a.name.localeCompare(b.name);
+                                    });
+
+                                const text = formatTWLeaderboardToDiscord(leaderboardStats, activeSeason, isNitroMode);
+
+                                navigator.clipboard.writeText(text);
+                                alert("Leaderboard copied to clipboard!");
+                            }}
+                            disabled={activeEvents.length === 0}
+                            className="hover:bg-amber-500/10 text-amber-500/70 hover:text-amber-400 transition-all"
+                            title="Copy a ranked leaderboard overview to clipboard"
+                        >
+                            🏆 Leaderboard
+                        </Button>
+
+                        <Button 
+                            variant="ghost" 
+                            onClick={handleCopy}
+                            className="hover:bg-amber-500/10 text-gray-400 hover:text-amber-400 group transition-all"
+                            title="Copy detailed season statistics for all players"
+                        >
+                            <Copy size={16} className="text-amber-500/50 group-hover:text-amber-400 transition-colors" /> Discord
+                        </Button>
+                    </div>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 mb-3 bg-gray-800/60 p-2 rounded-lg border border-gray-700">
+            <div className="flex flex-wrap items-center gap-3 mb-4 bg-black/40 p-2 rounded-xl border border-white/5 backdrop-blur-md">
                 {/* Search Field */}
                 <div className="relative group flex-grow sm:flex-grow-0 sm:min-w-[200px]">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-400 transition-colors">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-amber-500 transition-colors">
                         <Search size={16} />
                     </div>
                     <input
@@ -220,7 +240,7 @@ export const TWStatisticsView: React.FC = () => {
                         placeholder="Search player..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="block w-full pl-10 pr-3 py-1.5 bg-gray-900/50 border border-gray-700 rounded-md leading-5 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-all"
+                        className="block w-full pl-10 pr-3 py-1.5 bg-black/40 border border-amber-500/10 rounded-lg leading-5 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-amber-500/40 backdrop-blur-sm transition-all focus:bg-black/60 sm:text-sm"
                     />
                     {searchQuery && (
                         <button
@@ -232,35 +252,35 @@ export const TWStatisticsView: React.FC = () => {
                     )}
                 </div>
 
-                <div className="w-px h-6 bg-gray-700 mx-1 hidden sm:block"></div>
+                <div className="w-px h-6 bg-white/5 mx-1 hidden sm:block"></div>
 
-                <span className="text-sm font-semibold text-gray-300 mr-1">Filters:</span>
-                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                <span className="text-xs font-bold uppercase text-gray-500 tracking-wider mr-1">Filters</span>
+                <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">
                     <input type="checkbox" className="hidden" checked={showAttendance} onChange={toggleAttendance} />
-                    {showAttendance ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
-                    Show Attendance
+                    {showAttendance ? <CheckSquare size={16} className="text-amber-500" /> : <Square size={16} />}
+                    Attendance
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">
                     <input type="checkbox" className="hidden" checked={showDeclined} onChange={toggleDeclined} />
-                    {showDeclined ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
-                    Show Declined
+                    {showDeclined ? <CheckSquare size={16} className="text-amber-500" /> : <Square size={16} />}
+                    Declined
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">
                     <input type="checkbox" className="hidden" checked={showAwol} onChange={toggleAwol} />
-                    {showAwol ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
-                    Show AWOL
+                    {showAwol ? <CheckSquare size={16} className="text-amber-500" /> : <Square size={16} />}
+                    AWOL
                 </label>
-                <div className="w-px h-6 bg-gray-600 mx-2 hidden sm:block"></div>
-                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                <div className="w-px h-6 bg-white/5 mx-2 hidden sm:block"></div>
+                <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">
                     <input type="checkbox" className="hidden" checked={showInactive} onChange={toggleInactive} />
-                    {showInactive ? <CheckSquare size={16} className="text-yellow-400" /> : <Square size={16} />}
-                    Include Inactive
+                    {showInactive ? <CheckSquare size={16} className="text-amber-500" /> : <Square size={16} />}
+                    Inactive
                 </label>
-                <div className="w-px h-6 bg-gray-600 mx-2 hidden sm:block"></div>
-                <label className="flex items-center gap-2 text-sm text-blue-300 cursor-pointer hover:text-blue-200" title="Increases message character limit to 4000 for Discord Nitro users.">
+                <div className="w-px h-6 bg-white/5 mx-2 hidden sm:block"></div>
+                <label className="flex items-center gap-2 text-sm text-amber-500/80 cursor-pointer hover:text-amber-400 transition-all" title="Increases message character limit to 4000 for Discord Nitro users.">
                     <input type="checkbox" className="hidden" checked={isNitroMode} onChange={toggleNitro} />
-                    {isNitroMode ? <CheckSquare size={16} className="text-blue-400" /> : <Square size={16} />}
-                    🚀 Discord Nitro Mode
+                    {isNitroMode ? <CheckSquare size={16} className="text-amber-500" /> : <Square size={16} />}
+                    🚀 Nitro Mode
                     <HelpIcon helpKey="nitro" text={HELP_CONTENT.nitro_mode} />
                 </label>
             </div>
