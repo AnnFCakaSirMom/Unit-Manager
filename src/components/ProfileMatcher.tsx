@@ -53,11 +53,11 @@ export const ProfileMatcher: React.FC = () => {
             if (pendingError) throw pendingError;
             setPendingProfiles(pendingData || []);
 
-            // Get all linked profiles to exclude them from the dropdown
+            // Get all profiles that are already linked to a real auth user to exclude them from the dropdown
             const { data: linkedData, error: linkedError } = await supabase
                 .from('profiles')
                 .select('id')
-                .neq('role', 'Pending');
+                .not('user_id', 'is', null);
 
             if (linkedError) throw linkedError;
             setLinkedProfileIds(new Set((linkedData || []).map(p => p.id)));
