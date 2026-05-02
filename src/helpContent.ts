@@ -32,7 +32,8 @@ export const HELP_CONTENT = {
         owned: "Indicator that the unit is unlocked and currently in your barracks.",
         maxed: "Unit has reached its maximum level and training potential.",
         mastery: "All Mastery nodes for this unit have been fully upgraded.",
-        favorite: "Mark units as favorites if they are your preferred units to use in battle."
+        favorite: "Mark units as favorites if they are your preferred units to use in battle.",
+        leadership: "Enter the Leadership value of the armor set you use for TW."
     },
     unit_import_form: {
         title: "Import Form",
@@ -93,8 +94,9 @@ export const HELP_CONTENT = {
         content: "Permissions are built on a recursive weight system (0-6). Owners (6) and Admins (5) have full access. Gatekeepers (4) can match profiles and add players. Officers (3) can manage groups. Members (2) can only edit their own units."
     },
     approval_manual: {
-        title: "User Approval Process",
-        content: "New users appear as 'Pending' after logging in via Discord. They are prompted to enter their In-Game Name (IGN) to help you identify them. Use the 'Link & Upgrade' button to merge their login with an existing manual profile or create a fresh one. If an unauthorized user attempts to gain access, use the 'Deny' button to permanently remove their request from the queue."
+        title: "User Approval & Profile Matching",
+        content: "New users appear as 'Pending' after logging in via Discord. They are prompted to enter their In-Game Name (IGN) to help you identify them. Use the 'Link & Upgrade' button to merge their login with an existing manual profile or create a fresh one. If an unauthorized user attempts to gain access, use the 'Deny' button to permanently remove their request from the queue.",
+        profile_matcher: "The Profile Matcher (within Approvals) is used to link Discord accounts to application profiles. This allows members to log in and manage their own units without admin intervention."
     },
 
     // TW History

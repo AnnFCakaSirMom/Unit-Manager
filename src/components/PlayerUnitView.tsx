@@ -171,11 +171,11 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         )}
                         {isOfficerPlus && (
                             <>
-                                <Button onClick={handleCopyForm} variant="secondary" className="h-8">
+                                <Button onClick={handleCopyForm} variant="secondary" className="h-8" title="Copy empty form for members to fill out">
                                     <Copy size={16} />
                                     <span>Copy</span>
                                 </Button>
-                                <Button onClick={() => setIsParseModalOpen(true)} variant="primary" className="h-8">
+                                <Button onClick={() => setIsParseModalOpen(true)} variant="primary" className="h-8" title="Import unit data from a filled form">
                                     <ImportIcon size={16} />
                                     <span>Import</span>
                                 </Button>
@@ -197,7 +197,9 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                     {/* Column 1-2: Info */}
                     {isOfficerPlus && (
                         <div className="md:col-span-2 order-1">
-                            <label htmlFor="playerInfo" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1">Info</label>
+                            <div className="flex items-center gap-1 mb-1">
+                                <label htmlFor="playerInfo" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider">Info</label>
+                            </div>
                             <textarea
                                 id="playerInfo"
                                 value={infoText}
@@ -219,7 +221,10 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                     {isOfficerPlus && (
                         <div className="flex flex-col gap-3 order-2">
                             <div>
-                                <label htmlFor="playerLeadership" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1">Leadership</label>
+                                <div className="flex items-center gap-1 mb-1">
+                                    <label htmlFor="playerLeadership" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider">Leadership</label>
+                                    <HelpIcon helpKey="leadership" text={{ title: "Leadership Armor", content: HELP_CONTENT.unit_tracking.leadership }} />
+                                </div>
                                 <Input
                                     id="playerLeadership"
                                     type="number"
@@ -241,7 +246,10 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                 {isOfficerPlus && (
                     <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="md:col-span-2">
-                            <label htmlFor="aliases" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1">Discord Aliases</label>
+                            <div className="flex items-center gap-1 mb-1">
+                                <label htmlFor="aliases" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider">Discord Aliases</label>
+                                <HelpIcon helpKey="aliases" text={{ title: "Discord Aliases", content: "Used to match names from Raid Helper JSON. Separate multiple names with commas." }} />
+                            </div>
                             <Input
                                 id="aliases"
                                 type="text"
@@ -258,7 +266,10 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div>
-                                <label htmlFor="joinedDate" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1">Joined</label>
+                                <div className="flex items-center gap-1 mb-1">
+                                    <label htmlFor="joinedDate" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider">Joined</label>
+                                    <HelpIcon helpKey="joined" text={{ title: "Joined Date", content: "The date the player joined the house." }} />
+                                </div>
                                 <Input
                                     id="joinedDate"
                                     type="date"
@@ -270,7 +281,10 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                 />
                             </div>
                             <div>
-                                <label htmlFor="inactiveDate" className="block text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-1">Inactive</label>
+                                <div className="flex items-center gap-1 mb-1">
+                                    <label htmlFor="inactiveDate" className="block text-[10px] uppercase font-bold text-gray-500 tracking-wider">Inactive</label>
+                                    <HelpIcon helpKey="inactive" text={{ title: "Inactive Date", content: "The date the player was marked as inactive." }} />
+                                </div>
                                 <Input
                                     id="inactiveDate"
                                     type="date"

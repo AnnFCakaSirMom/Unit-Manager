@@ -247,8 +247,6 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
                             <section className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
                                 <h3 className="text-2xl font-bold text-white mb-4 border-b border-blue-500/30 pb-2">Admin Tools</h3>
                                 <div className="space-y-4 text-gray-300 leading-relaxed text-sm lg:text-base">
-                                    <h4 className="text-white font-bold">Profile Matcher</h4>
-                                    <p>Used to link Discord accounts to the application profiles. This allows members to log in and manage their own units without admin intervention.</p>
                                     <h4 className="text-white font-bold mt-6">Authentication System</h4>
                                     <p>The system uses Supabase Auth via Discord. Each user is assigned a role that limits their access level (Guest → Pending → Member → Officer → Gatekeeper → Admin → Owner).</p>
                                     <div className="bg-red-900/20 p-4 rounded-lg border border-red-500/30 mt-4">
@@ -315,10 +313,14 @@ export const HelpManualModal: React.FC<HelpManualModalProps> = ({ isOpen, onClos
 
                                 {activeSection === 'approvals' && (
                                     <section className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
-                                        <h3 className="text-2xl font-bold text-white mb-4 border-b border-blue-500/30 pb-2">User Approval Process</h3>
+                                        <h3 className="text-2xl font-bold text-white mb-4 border-b border-blue-500/30 pb-2">User Approval & Profile Matching</h3>
                                         <div className="space-y-4 text-gray-300 leading-relaxed text-sm lg:text-base">
                                             <h4 className="text-blue-300 font-bold">{HELP_CONTENT.approval_manual.title}</h4>
                                             <p>{HELP_CONTENT.approval_manual.content}</p>
+                                            <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-600/30">
+                                                <h5 className="text-blue-300 font-bold mb-2">Profile Matcher</h5>
+                                                <p className="text-sm">{HELP_CONTENT.approval_manual.profile_matcher}</p>
+                                            </div>
                                             <div className="bg-yellow-900/20 p-4 rounded-lg border border-yellow-600/30">
                                                 <h5 className="text-yellow-500 font-bold mb-2">Identification Guide</h5>
                                                 <ul className="list-disc pl-5 space-y-1 text-sm">

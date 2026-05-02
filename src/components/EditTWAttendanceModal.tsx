@@ -23,10 +23,33 @@ export const EditTWAttendanceModal: React.FC<EditTWAttendanceModalProps> = ({ is
     const [searchQuery, setSearchQuery] = useState('');
     const [showInactive, setShowInactive] = useState(false);
 
-    // Auto-select first event if none selected
+    // Smart date selection: find event closest to today
     React.useEffect(() => {
         if (isOpen && !selectedEventId && events.length > 0) {
-            setSelectedEventId(events[0].id);
+            const today = new Date();
+            // Normalize to start of day for cleaner comparison
+            today.setHours(0, 0, 0, 0);
+            const todayTime = today.getTime();
+
+            const bestEvent = events.reduce((closest, current) => {
+                const closestDate = new Date(closest.date);
+                closestDate.setHours(0, 0, 0, 0);
+                const closestDiff = Math.abs(closestDate.getTime() - todayTime);
+
+                const currentDate = new Date(current.date);
+                currentDate.setHours(0, 0, 0, 0);
+                const currentDiff = Math.abs(currentDate.getTime() - todayTime);
+
+                if (currentDiff < closestDiff) {
+                    return current;
+                } else if (currentDiff === closestDiff) {
+                    // If equally close, prefer the one in the past
+                    return currentDate.getTime() <= todayTime ? current : closest;
+                }
+                return closest;
+            });
+
+            setSelectedEventId(bestEvent.id);
         }
     }, [isOpen, selectedEventId, events]);
 

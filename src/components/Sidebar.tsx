@@ -97,17 +97,19 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                                 variant="ghost"
                                 className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10 text-[11px]"
                                 onClick={onOpenAttendance}
+                                title="Manage current TW attendance and group planning"
                             >
                                 <Users size={14} />
                                 <span>Attendance</span>
                             </Button>
                         )}
-
+ 
                         {canViewStats && (
                             <Button
                                 variant="ghost"
                                 className="flex-1 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/10 text-[11px]"
                                 onClick={onOpenTWStatistics}
+                                title="View attendance statistics and leaderboard for the season"
                             >
                                 <Users size={14} />
                                 <span>TW Stats</span>
