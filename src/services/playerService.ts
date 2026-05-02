@@ -107,23 +107,46 @@ export async function fetchPlayersFromSupabase(signal?: AbortSignal): Promise<Pl
 export async function upsertPlayer(player: Player): Promise<boolean> {
   console.log(`[playerService] Upserting player ${player.id} to Supabase...`);
 
-  // 1. Upsert Profile
+  // 1. Update Profile
+  // We use .update() instead of .upsert() here because Members (weight 2) 
+  // do not have INSERT permissions on the profiles table.
+  // Since a Member is always updating an existing profile linked to their auth.uid(),
+  // .update() is sufficient and bypasses the requirement for INSERT RLS policies.
   const profileSuccess = await handleMutation(
-    supabase.from('profiles').upsert({
-      id: player.id,
+    supabase.from('profiles').update({
       discord_nickname: player.name,
       display_name: player.name,
       total_leadership: player.totalLeadership ?? 0,
       joined_date: player.joinedDate ?? null,
       inactive_date: player.inactiveDate ?? null,
       not_in_house: player.notInHouse,
-      role: player.role ?? 'Member',
+      role: player.role, // This will be checked by RLS to ensure no unauthorized role changes
       discord_aliases: player.aliases ?? [],
-    }),
-    { service: 'playerService', op: `upsertProfile ${player.id}` }
+    }).eq('id', player.id),
+    { service: 'playerService', op: `updateProfile ${player.id}` }
   );
 
-  if (!profileSuccess) return false;
+  if (!profileSuccess) {
+    // Fallback: If update failed (e.g. Row doesn't exist yet for a new player), 
+    // we attempt an upsert. This handles both existing and new players.
+    console.log(`[playerService] Update failed or affected no rows for ${player.id}, attempting upsert...`);
+    const upsertSuccess = await handleMutation(
+      supabase.from('profiles').upsert({
+        id: player.id,
+        discord_nickname: player.name,
+        display_name: player.name,
+        total_leadership: player.totalLeadership ?? 0,
+        joined_date: player.joinedDate ?? null,
+        inactive_date: player.inactiveDate ?? null,
+        not_in_house: player.notInHouse,
+        role: player.role ?? 'Member',
+        discord_aliases: player.aliases ?? [],
+      }),
+      { service: 'playerService', op: `upsertProfile ${player.id}` }
+    );
+    if (!upsertSuccess) return false;
+  }
+
 
   // 2. Upsert Player Info (Optional - don't fail the whole process)
   const info = player.player_info?.[0]?.internal_notes || player.info || '';
