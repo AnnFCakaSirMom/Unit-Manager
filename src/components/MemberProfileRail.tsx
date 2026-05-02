@@ -98,115 +98,116 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
     const maxedCount   = player?.preparedUnits?.length ?? 0;
     const masteryCount = player?.masteryUnits?.length ?? 0;
 
-    // ── Render ─────────────────────────────────────────────────────────────
-
     return (
-        <aside
-            id="member-profile-rail"
-            className="w-64 flex-shrink-0 flex flex-col gap-4 p-4 bg-black/40 backdrop-blur-xl border-r border-white/5 h-full overflow-y-auto"
-        >
-            {/* ── Profile: Avatar + Name ── */}
-            <div className="flex items-center gap-3 pt-1">
-                {avatarUrl ? (
-                    <img
-                        src={avatarUrl}
-                        alt="Discord Avatar"
-                        className="w-10 h-10 rounded-full border border-amber-500/20 flex-shrink-0 object-cover"
-                    />
-                ) : (
-                    <div className="w-10 h-10 rounded-full bg-black/40 border border-white/5 flex-shrink-0 flex items-center justify-center text-gray-400 text-sm font-bold">
-                        {player?.name?.[0]?.toUpperCase() ?? '?'}
-                    </div>
-                )}
-                <div className="min-w-0">
-                    <p className="text-sm font-semibold text-gray-100 truncate" title={player?.name}>
-                        {player?.name ?? '—'}
-                    </p>
-                    <p className="text-xs text-amber-200/60 font-medium">Member</p>
-                </div>
-            </div>
-
-            {/* ── Leadership ── */}
-            <div>
-                <label htmlFor="rail-leadership" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1.5">
-                    Total Leadership
-                </label>
-                <Input
-                    id="rail-leadership"
-                    type="number"
-                    value={leadership}
-                    onChange={e => setLeadership(e.target.value)}
-                    onBlur={handleLeadershipSave}
-                    placeholder="e.g. 700"
-                    className="w-full"
-                />
-            </div>
-
-            {/* ── Stats Badges ── */}
-            <div>
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
-                    Barrack
-                </p>
-                <div className="flex flex-col gap-2">
-
-                    {/* Owned units */}
-                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
-                        <div className="flex items-center gap-2 text-gray-400">
-                            <CheckSquare size={13} className="flex-shrink-0" />
-                            <span className="text-xs">Owned</span>
-                        </div>
-                        <span className="text-xs font-semibold text-gray-200">
-                            {ownedCount}
-                            <span className="text-gray-500 font-normal"> / {totalUnits}</span>
-                        </span>
-                    </div>
-
-                    {/* Maxed units */}
-                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
-                        <div className="flex items-center gap-2 text-gray-400">
-                            <Star size={13} className="flex-shrink-0" />
-                            <span className="text-xs">Maxed</span>
-                        </div>
-                        <span className="text-xs font-semibold text-gray-200">{maxedCount}</span>
-                    </div>
-
-                    {/* Full Mastery units */}
-                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
-                        <div className="flex items-center gap-2 text-gray-400">
-                            <Shield size={13} className="flex-shrink-0" />
-                            <span className="text-xs">Full Mastery</span>
-                        </div>
-                        <span className="text-xs font-semibold text-gray-200">{masteryCount}</span>
-                    </div>
-
-                </div>
-            </div>
-
-            {/* ── Metadata ── */}
-            <div className="flex flex-col gap-1.5 border-t border-white/5 pt-3">
-                <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Joined</span>
-                    <span className="text-xs text-gray-400">{formatJoinedDate(player?.joinedDate)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-600">Updated</span>
-                    <span className="text-[11px] text-gray-500">{formatUpdatedAt(updatedAt)}</span>
-                </div>
-            </div>
-
-            {/* ── Help Button ── */}
-            <button
-                onClick={() => setIsHelpOpen(true)}
-                className="mt-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-gray-400 bg-black/40 border border-amber-500/20 rounded-xl hover:bg-amber-500/10 hover:text-amber-100 hover:border-amber-500/40 transition-all shadow-lg"
+        <>
+            <aside
+                id="member-profile-rail"
+                className="w-64 flex-shrink-0 flex flex-col gap-4 p-4 bg-black/40 backdrop-blur-xl border-r border-white/5 h-full overflow-y-auto"
             >
-                <HelpCircle size={14} className="text-amber-500/70" />
-                <span>How to use the Barrack</span>
-            </button>
+                {/* ── Profile: Avatar + Name ── */}
+                <div className="flex items-center gap-3 pt-1">
+                    {avatarUrl ? (
+                        <img
+                            src={avatarUrl}
+                            alt="Discord Avatar"
+                            className="w-10 h-10 rounded-full border border-amber-500/20 flex-shrink-0 object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-black/40 border border-white/5 flex-shrink-0 flex items-center justify-center text-gray-400 text-sm font-bold">
+                            {player?.name?.[0]?.toUpperCase() ?? '?'}
+                        </div>
+                    )}
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-100 truncate" title={player?.name}>
+                            {player?.name ?? '—'}
+                        </p>
+                        <p className="text-xs text-amber-200/60 font-medium">Member</p>
+                    </div>
+                </div>
 
-            <MemberHelpModal 
-                isOpen={isHelpOpen} 
-                onClose={() => setIsHelpOpen(false)} 
+                {/* ── Leadership ── */}
+                <div>
+                    <label htmlFor="rail-leadership" className="block text-[10px] uppercase font-bold text-gray-300 tracking-wider mb-1.5">
+                        Total Leadership
+                    </label>
+                    <Input
+                        id="rail-leadership"
+                        type="number"
+                        value={leadership}
+                        onChange={e => setLeadership(e.target.value)}
+                        onBlur={handleLeadershipSave}
+                        placeholder="e.g. 700"
+                        className="w-full"
+                    />
+                </div>
+
+                {/* ── Stats Badges ── */}
+                <div>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                        Barrack
+                    </p>
+                    <div className="flex flex-col gap-2">
+
+                        {/* Owned units */}
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <CheckSquare size={13} className="flex-shrink-0" />
+                                <span className="text-xs">Owned</span>
+                            </div>
+                            <span className="text-xs font-semibold text-gray-200">
+                                {ownedCount}
+                                <span className="text-gray-500 font-normal"> / {totalUnits}</span>
+                            </span>
+                        </div>
+
+                        {/* Maxed units */}
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <Star size={13} className="flex-shrink-0" />
+                                <span className="text-xs">Maxed</span>
+                            </div>
+                            <span className="text-xs font-semibold text-gray-200">{maxedCount}</span>
+                        </div>
+
+                        {/* Full Mastery units */}
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <Shield size={13} className="flex-shrink-0" />
+                                <span className="text-xs">Full Mastery</span>
+                            </div>
+                            <span className="text-xs font-semibold text-gray-200">{masteryCount}</span>
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* ── Metadata ── */}
+                <div className="flex flex-col gap-1.5 border-t border-white/5 pt-3">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs text-gray-500">Joined</span>
+                        <span className="text-xs text-gray-400">{formatJoinedDate(player?.joinedDate)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-gray-600">Updated</span>
+                        <span className="text-[11px] text-gray-500">{formatUpdatedAt(updatedAt)}</span>
+                    </div>
+                </div>
+
+                {/* ── Help Button ── */}
+                <button
+                    onClick={() => setIsHelpOpen(true)}
+                    className="mt-auto flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-gray-400 bg-black/40 border border-amber-500/20 rounded-xl hover:bg-amber-500/10 hover:text-amber-100 hover:border-amber-500/40 transition-all shadow-lg"
+                >
+                    <HelpCircle size={14} className="text-amber-500/70" />
+                    <span>How to use the Barrack</span>
+                </button>
+            </aside>
+
+            <MemberHelpModal
+                isOpen={isHelpOpen}
+                onClose={() => setIsHelpOpen(false)}
             />
-        </aside>
+        </>
+
     );
 };
