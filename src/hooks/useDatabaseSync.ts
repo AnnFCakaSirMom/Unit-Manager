@@ -99,30 +99,25 @@ export const useDatabaseSync = (
         
         const channel = supabase
             .channel(channelId)
-            // Group changes
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, (payload) => {
-                console.log('[Realtime] Syncing groups...', payload.eventType);
-                loadGroups();
+            // Use a broad listener for 'public' schema as specific filters were unreliable
+            .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+                const table = payload.table;
+                
+                if (table === 'groups' || table === 'group_members') {
+                    console.log('[Realtime] Syncing groups...');
+                    loadGroups();
+                } else if (table === 'profiles' || table === 'profile_units') {
+                    console.log('[Realtime] Syncing players...');
+                    loadPlayers();
+                    if (table === 'profiles') {
+                        supabase.auth.refreshSession().catch(() => {});
+                    }
+                } else if (table.startsWith('tw_')) {
+                    loadTWData();
+                } else if (table === 'tw_import_list') {
+                    loadTWImport();
+                }
             })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, (payload) => {
-                console.log('[Realtime] Syncing group members...', payload.eventType);
-                loadGroups();
-            })
-            // Player changes
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
-                console.log('[Realtime] Syncing profiles...', payload.eventType);
-                loadPlayers();
-                // Refresh JWT so any role change takes effect immediately (no logout needed).
-                supabase.auth.refreshSession().catch(e =>
-                    console.warn('[useDatabaseSync] Session refresh after profile change failed:', e)
-                );
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_units' }, loadPlayers)
-            // TW & Import changes
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_import_list' }, loadTWImport)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_seasons' }, loadTWData)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_events' }, loadTWData)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_attendance_records' }, loadTWData)
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
                     console.log('[Realtime] Connected and listening for database changes.');
