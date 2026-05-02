@@ -226,9 +226,9 @@ export const AuditLogPanel: React.FC = () => {
                                                     <div className="text-gray-500 uppercase font-bold text-[10px] tracking-widest opacity-80">Data Analysis Snapshot</div>
                                                     {isEligibleForRestore(log) && (
                                                         <Button 
-                                                            variant="primary" 
+                                                            variant="ghost" 
                                                             size="sm" 
-                                                            className="h-8 text-[10px] font-bold uppercase tracking-wider bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-900/20"
+                                                            className="h-8 text-[10px] font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
                                                             onClick={() => setRestoreLog(log)}
                                                         >
                                                             <RefreshCcw size={14} className="mr-1.5" />
