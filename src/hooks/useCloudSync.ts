@@ -222,7 +222,7 @@ export function useCloudSync(
         setStatusMessage("Saved to cloud.");
       }
 
-    }, 2000);
+    }, 800);
 
     return () => clearTimeout(timer);
 

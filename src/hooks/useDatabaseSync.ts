@@ -98,10 +98,17 @@ export const useDatabaseSync = (
         const channel = supabase
             .channel('db-sync')
             // Group changes
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, loadGroups)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, loadGroups)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, (payload) => {
+                console.log('[Realtime] Change in "groups" table:', payload.eventType, payload.new);
+                loadGroups();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, (payload) => {
+                console.log('[Realtime] Change in "group_members" table:', payload.eventType);
+                loadGroups();
+            })
             // Player changes
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+                console.log('[Realtime] Profile change:', payload.eventType);
                 loadPlayers();
                 // Refresh JWT so any role change takes effect immediately (no logout needed).
                 supabase.auth.refreshSession().catch(e =>
@@ -115,9 +122,16 @@ export const useDatabaseSync = (
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_seasons' }, loadTWData)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_events' }, loadTWData)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_attendance_records' }, loadTWData)
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('[Realtime] Successfully subscribed to database changes.');
+                } else {
+                    console.warn('[Realtime] Subscription status:', status);
+                }
+            });
 
         return () => {
+            console.log('[Realtime] Unsubscribing from database changes...');
             supabase.removeChannel(channel);
         };
     }, [isOfficerPlus, loadGroups, loadPlayers, loadTWImport, loadTWData]);
