@@ -316,12 +316,14 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                                 className="w-full pl-10 pr-3 py-2"
                             />
                         </div>
-                        {!isOfficerPlus && (
-                            <p className="text-sm font-medium text-amber-200/90 italic flex-grow">
-                                Click on a unit to mark as Owned. Use the icons to set specific status.
-                            </p>
-                        )}
                     </div>
+
+                    {!isOfficerPlus && (
+                        <p className="text-xs font-medium text-gray-200/80 italic mt-3 mb-1">
+                            Click on a unit to mark as Owned. Use the icons to set specific status.
+                        </p>
+                    )}
+
                     <div className="flex items-center gap-4 text-xs mt-2">
                         {/* LEGEND FOR STAR/ICONS */}
                         <div className="flex items-center gap-1" title="Marked as priority unit.">
