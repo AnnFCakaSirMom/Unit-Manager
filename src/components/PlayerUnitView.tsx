@@ -317,26 +317,26 @@ export const PlayerUnitView: React.FC<PlayerUnitViewProps> = ({ player, setStatu
                             />
                         </div>
                         {!isOfficerPlus && (
-                            <p className="text-[11px] text-gray-500 italic leading-snug max-w-[200px]">
+                            <p className="text-sm font-medium text-amber-200/90 italic flex-grow">
                                 Click on a unit to mark as Owned. Use the icons to set specific status.
                             </p>
                         )}
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-gray-400 mt-2">
+                    <div className="flex items-center gap-4 text-xs mt-2">
                         {/* LEGEND FOR STAR/ICONS */}
                         <div className="flex items-center gap-1" title="Marked as priority unit.">
                             <Star size={12} className="text-yellow-400 fill-yellow-400" />
-                            <span>= Favorite</span>
+                            <span className="text-gray-200 font-medium">= Favorite</span>
                             <HelpIcon helpKey="fav" text={{ title: "Favorite", content: HELP_CONTENT.unit_tracking.favorite }} />
                         </div>
                         <div className="flex items-center gap-1" title="All Mastery nodes are fully upgraded.">
-                            <div className="w-3 h-3 rounded-sm bg-yellow-500"></div>
-                            <span>= Full Mastery</span>
+                            <div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-[0_0_5px_rgba(234,179,8,0.3)]"></div>
+                            <span className="text-gray-200 font-medium">= Full Mastery</span>
                             <HelpIcon helpKey="mast" text={{ title: "Full Mastery", content: HELP_CONTENT.unit_tracking.mastery }} />
                         </div>
                         <div className="flex items-center gap-1" title="Unit has reached its maximum level.">
-                            <div className="w-3 h-3 rounded-full bg-green-500 border-2 border-green-400 flex-shrink-0"></div>
-                            <span>= Maxed Unit</span>
+                            <div className="w-3 h-3 rounded-full bg-green-500 border-2 border-green-400 flex-shrink-0 shadow-[0_0_5px_rgba(34,197,94,0.3)]"></div>
+                            <span className="text-gray-200 font-medium">= Maxed Unit</span>
                             <HelpIcon helpKey="max" text={{ title: "Maxed Unit", content: HELP_CONTENT.unit_tracking.maxed }} />
                         </div>
                     </div>

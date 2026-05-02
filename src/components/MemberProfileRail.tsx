@@ -150,11 +150,11 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
 
                         {/* Owned units */}
                         <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
-                            <div className="flex items-center gap-2 text-gray-400">
-                                <CheckSquare size={13} className="flex-shrink-0" />
-                                <span className="text-xs">Owned</span>
+                            <div className="flex items-center gap-2 text-gray-300">
+                                <CheckSquare size={13} className="flex-shrink-0 text-blue-400" />
+                                <span className="text-xs font-medium">Owned</span>
                             </div>
-                            <span className="text-xs font-semibold text-gray-200">
+                            <span className="text-xs font-bold text-gray-100">
                                 {ownedCount}
                                 <span className="text-gray-500 font-normal"> / {totalUnits}</span>
                             </span>
@@ -162,20 +162,20 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
 
                         {/* Maxed units */}
                         <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
-                            <div className="flex items-center gap-2 text-gray-400">
-                                <Star size={13} className="flex-shrink-0" />
-                                <span className="text-xs">Maxed</span>
+                            <div className="flex items-center gap-2 text-gray-300">
+                                <Star size={13} className="flex-shrink-0 text-green-400 fill-green-400/20" />
+                                <span className="text-xs font-medium">Maxed</span>
                             </div>
-                            <span className="text-xs font-semibold text-gray-200">{maxedCount}</span>
+                            <span className="text-xs font-bold text-gray-100">{maxedCount}</span>
                         </div>
 
                         {/* Full Mastery units */}
                         <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 shadow-sm">
-                            <div className="flex items-center gap-2 text-gray-400">
-                                <Shield size={13} className="flex-shrink-0" />
-                                <span className="text-xs">Full Mastery</span>
+                            <div className="flex items-center gap-2 text-gray-300">
+                                <Shield size={13} className="flex-shrink-0 text-yellow-400" />
+                                <span className="text-xs font-medium">Full Mastery</span>
                             </div>
-                            <span className="text-xs font-semibold text-gray-200">{masteryCount}</span>
+                            <span className="text-xs font-bold text-gray-100">{masteryCount}</span>
                         </div>
 
                     </div>
