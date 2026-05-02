@@ -96,13 +96,23 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Admin & Tool Modernization:** Redesigned Admin Panel and Audit Logs with tactical "Admin Command" styling, including glow effects and refined typography.
 - [x] **Design Versioning:** Established a branch-based design management workflow (`design-obsidian-gold`) to allow safe experimentation with alternative themes.
 
+### 10. Tactical Search Intelligence (May 2026)
+
+- [x] **Smart Multi-Unit Search:** Implemented an advanced unit search engine supporting up to 3 simultaneous unit queries using a modern Tag-Input interface.
+- [x] **Hierarchical Ranking Logic:** Developed a weighted scoring system that prioritizes players based on match quantity (3/3 > 2/3 > 1/3) and unit quality (Maxed > Mastery).
+- [x] **Dynamic Search UX:**
+  - **Tag-Input System:** Interactive unit tags with autocomplete and easy removal (×).
+  - **Match Badges:** Visual indicators (e.g., "2/3") in the results list to quickly identify the best fits for specific strategies.
+  - **Granular Status Pills:** Detailed unit status indicators for each searched unit, showing ownership, Maxed status, and Full Mastery at a glance.
+- [x] **Officer Efficiency:** Integrated "Accepted Attendance" checkmarks directly into search results, allowing officers to instantly see which players with specific units are available for the upcoming war.
+
 ---
 
 ## 🛠 In Progress / Planned
 
 ### Design & Graphics
 
-- [ ] **Medieval Theme Experimentation:** Exploring alternative medieval-focused themes while maintaining the current Obsidian-Gold baseline as a fallback.
+- [x] **Obsidian & Gold Standard:** Finalized the Obsidian-Gold theme as the definitive visual identity, moving away from previous Medieval experimentation to maintain a clean, premium "Command Center" feel.
 - [x] **Modernized Icon Integration:** Successfully integrated and themed current iconography to match the premium aesthetic.
 
 ### Features
@@ -123,4 +133,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Row Level Security (RLS) with hierarchical weights.
 
-*Last updated: 2026-05-01 (Obsidian & Gold Design Modernization)*
+*Last updated: 2026-05-02 (Tactical Multi-Unit Search Implementation)*
