@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Group, TWAttendancePlayer } from '../types';
-import { UserPlus, AlertTriangle } from './icons';
+import { UserPlus, AlertTriangle, ArrowDownIcon, ArrowUpIcon } from './icons';
 import { Button } from './Button';
 import { Select } from './Select';
 import { cn } from '../utils';
@@ -22,11 +22,14 @@ interface AttendancePlayerRowProps {
     onAssignGroup: (playerId: string, targetGroupId: string) => void;
     onSelectPlayer: (id: string) => void;
     onCreatePlayer: (discordName: string) => void;
+    onChangeStatus: (discordName: string, newStatus: 'Accepted' | 'Maybe') => void;
 }
 
 export const AttendancePlayerRow = React.memo(({
-    person, existingGroup, isDraggable, isDragged, groups, onDragStart, onDragEnd, onAssignGroup, onSelectPlayer, onCreatePlayer
+    person, existingGroup, isDraggable, isDragged, groups, onDragStart, onDragEnd, onAssignGroup, onSelectPlayer, onCreatePlayer, onChangeStatus
 }: AttendancePlayerRowProps) => {
+    const isAccepted = person.status === 'Accepted';
+
     return (
         <div
             draggable={isDraggable}
@@ -66,7 +69,30 @@ export const AttendancePlayerRow = React.memo(({
                 )}
             </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+            <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                {/* Status toggle button */}
+                {isAccepted ? (
+                    <Button
+                        onClick={() => onChangeStatus(person.discordName, 'Maybe')}
+                        variant="ghost"
+                        size="icon"
+                        title="Move to Maybe"
+                        className="h-6 w-6 text-yellow-500/60 hover:text-yellow-400 hover:bg-yellow-500/10 flex-shrink-0"
+                    >
+                        <ArrowDownIcon size={13} />
+                    </Button>
+                ) : (
+                    <Button
+                        onClick={() => onChangeStatus(person.discordName, 'Accepted')}
+                        variant="ghost"
+                        size="icon"
+                        title="Move to Accepted"
+                        className="h-6 w-6 text-green-500/60 hover:text-green-400 hover:bg-green-500/10 flex-shrink-0"
+                    >
+                        <ArrowUpIcon size={13} />
+                    </Button>
+                )}
+
                 {!person.matchedPlayerId ? (
                     <Button
                         onClick={() => onCreatePlayer(person.discordName)}

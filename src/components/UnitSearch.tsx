@@ -36,6 +36,8 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     // inputValue = what the user is currently typing in the text box
     const [inputValue, setInputValue] = useState('');
+    // acceptedOnly = filter results to TW-accepted players only
+    const [acceptedOnly, setAcceptedOnly] = useState(false);
 
     const twAttendance = useAppSelector(state => state.tw.twAttendance);
     const groups = useAppSelector(state => state.group.groups);
@@ -111,6 +113,14 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
 
         return results;
     }, [selectedTags, players]);
+
+    // Apply acceptedOnly filter on top of scoring
+    const displayedPlayers = useMemo(() => {
+        if (!acceptedOnly) return scoredPlayers;
+        return scoredPlayers.filter(({ player }) =>
+            twAttendance.some(a => a.matchedPlayerId === player.id && a.status === 'Accepted')
+        );
+    }, [scoredPlayers, acceptedOnly, twAttendance]);
 
     // --- Handlers ---
     const handleTagAdd = (unitName: string) => {
@@ -205,6 +215,37 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                 )}
             </div>
 
+            {/* ── Accepted-only checkbox (only shown if TW attendance is loaded) ── */}
+            {twAttendance.length > 0 && (
+                <label className="flex items-center gap-2 mt-2 px-1 cursor-pointer select-none group w-fit">
+                    <div
+                        className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all ${
+                            acceptedOnly
+                                ? 'bg-green-600 border-green-500'
+                                : 'bg-black/40 border-gray-600 group-hover:border-green-600/50'
+                        }`}
+                    >
+                        {acceptedOnly && (
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        )}
+                    </div>
+                    <input
+                        type="checkbox"
+                        checked={acceptedOnly}
+                        onChange={e => setAcceptedOnly(e.target.checked)}
+                        className="sr-only"
+                        aria-label="Show accepted players only"
+                    />
+                    <span className={`text-xs transition-colors ${
+                        acceptedOnly ? 'text-green-400' : 'text-gray-500 group-hover:text-gray-300'
+                    }`}>
+                        Accepted only
+                    </span>
+                </label>
+            )}
+
             {/* ── Dropdown area ── */}
             <div className={`mt-1.5 rounded-md overflow-y-auto transition-all ${(showSuggestions || showResults) ? 'max-h-96 bg-gray-700/50' : 'max-h-0'}`}>
 
@@ -235,9 +276,9 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                         <p className="text-xs text-gray-400 mb-2 px-1 border-b border-gray-600 pb-1.5">
                             Players matching {selectedTags.length > 1 ? `${selectedTags.length} units` : `"${selectedTags[0]}"`}:
                         </p>
-                        {scoredPlayers.length > 0 ? (
+                        {displayedPlayers.length > 0 ? (
                             <div className="space-y-1.5">
-                                {scoredPlayers.map(({ player, matchCount, unitStatuses }) => {
+                                {displayedPlayers.map(({ player, matchCount, unitStatuses }) => {
                                     const assignedGroup = groups.find(g => g.members.some(m => m.playerId === player.id));
                                     const isAttending = twAttendance.some(a => a.matchedPlayerId === player.id && a.status === 'Accepted');
                                     const totalSearched = selectedTags.length;
@@ -356,7 +397,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                                 })}
                             </div>
                         ) : (
-                            <p className="text-sm text-gray-500 text-center py-3">No players found with {selectedTags.length > 1 ? 'these units' : 'that unit'}.</p>
+                            <p className="text-sm text-gray-500 text-center py-3">No players found with {selectedTags.length > 1 ? 'these units' : 'that unit'}{acceptedOnly ? ' (accepted only)' : ''}.</p>
                         )}
                     </div>
                 )}

@@ -104,7 +104,14 @@ A web application to manage player units, groups, and Territory War (TW) statist
   - **Tag-Input System:** Interactive unit tags with autocomplete and easy removal (×).
   - **Match Badges:** Visual indicators (e.g., "2/3") in the results list to quickly identify the best fits for specific strategies.
   - **Granular Status Pills:** Detailed unit status indicators for each searched unit, showing ownership, Maxed status, and Full Mastery at a glance.
+- [x] **Tactical Attendance Filter:** Added a "Accepted only" toggle in Unit Search to instantly filter results to only include players confirmed for the upcoming war.
 - [x] **Officer Efficiency:** Integrated "Accepted Attendance" checkmarks directly into search results, allowing officers to instantly see which players with specific units are available for the upcoming war.
+
+### 11. TW Attendance Lifecycle & Manual Management (May 2026)
+
+- [x] **Manual Participant Addition:** Added a searchable "+" button to the Accepted list, allowing officers to manually add players who are participating but weren't part of the original Raid Helper import.
+- [x] **Dynamic Status Management:** Implemented quick-toggle buttons (↑/↓) on all attendance rows to seamlessly move players between "Accepted" and "Maybe" as their availability changes.
+- [x] **Smart Filter Integration:** Manual attendance updates are instantly reflected in the Unit Search "Accepted only" filter, ensuring a single source of truth for planning.
 
 ---
 
@@ -133,4 +140,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Row Level Security (RLS) with hierarchical weights.
 
-*Last updated: 2026-05-02 (Tactical Multi-Unit Search Implementation)*
+*Last updated: 2026-05-02 (TW Attendance Lifecycle & Search Integration)*

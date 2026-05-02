@@ -125,6 +125,26 @@ const twSlice = createSlice({
       state.twRecords.forEach(r => {
         if (r.playerId === oldId) r.playerId = newId;
       });
+    },
+    // Add a player manually to the Accepted list
+    addManualAttendee(state, action: PayloadAction<{ discordName: string; matchedPlayerId: string | null }>) {
+      const { discordName, matchedPlayerId } = action.payload;
+      // Prevent duplicates by discordName or matchedPlayerId
+      const alreadyExists = state.twAttendance.some(a =>
+        a.discordName.toLowerCase() === discordName.toLowerCase() ||
+        (matchedPlayerId && a.matchedPlayerId === matchedPlayerId)
+      );
+      if (!alreadyExists) {
+        state.twAttendance.push({ discordName, status: 'Accepted', matchedPlayerId });
+      }
+    },
+    // Change a player's attendance status (Accepted <-> Maybe)
+    updateAttendanceStatus(state, action: PayloadAction<{ discordName: string; newStatus: 'Accepted' | 'Maybe' }>) {
+      const { discordName, newStatus } = action.payload;
+      const entry = state.twAttendance.find(a => a.discordName === discordName);
+      if (entry) {
+        entry.status = newStatus;
+      }
     }
   }
 });
@@ -142,7 +162,9 @@ export const {
   deleteTWEvent,
   clearTWEventRecords,
   updateTWPlayerRecord,
-  mergePlayerIdInTW
+  mergePlayerIdInTW,
+  addManualAttendee,
+  updateAttendanceStatus
 } = twSlice.actions;
 
 export const twReducer = twSlice.reducer;

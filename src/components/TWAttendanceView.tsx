@@ -3,7 +3,7 @@ import { ImportIcon, Trash2, CheckSquare, Users, Shield, LoadingSpinnerIcon, His
 import { ImportRaidHelperModal } from './ImportRaidHelperModal';
 import { Button } from './Button';
 import { useAppSelector, useAppDispatch } from '../state/store';
-import { clearTWAttendance, importTWAttendance } from '../state/slices/twSlice';
+import { clearTWAttendance, importTWAttendance, addManualAttendee, updateAttendanceStatus } from '../state/slices/twSlice';
 import { addGroup } from '../state/slices/groupSlice';
 import { addPlayer } from '../state/slices/playerSlice';
 import { useGroupDragAndDrop } from '../hooks/useGroupDragAndDrop';
@@ -163,6 +163,15 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
 
     const accepted = attendance.filter(p => p.status === 'Accepted');
     const maybe = attendance.filter(p => p.status === 'Maybe');
+    const allDiscordNames = attendance.map(p => p.discordName);
+
+    const handleAddManual = (discordName: string, matchedPlayerId: string | null) => {
+        dispatch(addManualAttendee({ discordName, matchedPlayerId }));
+    };
+
+    const handleChangeStatus = (discordName: string, newStatus: 'Accepted' | 'Maybe') => {
+        dispatch(updateAttendanceStatus({ discordName, newStatus }));
+    };
 
     return (
         <div className="h-full flex flex-col">
@@ -282,6 +291,10 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                             handleAssignGroup={handleAssignGroup}
                             onSelectPlayer={onSelectPlayer}
                             handleCreatePlayer={handleCreatePlayer}
+                            onChangeStatus={handleChangeStatus}
+                            allPlayers={players}
+                            onAddManual={handleAddManual}
+                            existingDiscordNames={allDiscordNames}
                         />
 
                         <AttendancePlayerList
@@ -297,6 +310,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                             handleAssignGroup={handleAssignGroup}
                             onSelectPlayer={onSelectPlayer}
                             handleCreatePlayer={handleCreatePlayer}
+                            onChangeStatus={handleChangeStatus}
                         />
                     </div>
 
