@@ -112,10 +112,12 @@ export const useDatabaseSync = (
                     if (table === 'profiles') {
                         supabase.auth.refreshSession().catch(() => {});
                     }
-                } else if (table.startsWith('tw_')) {
-                    loadTWData();
                 } else if (table === 'tw_import_list') {
+                    console.log('[Realtime] Syncing TW import list...');
                     loadTWImport();
+                } else if (table.startsWith('tw_')) {
+                    console.log('[Realtime] Syncing TW metadata...');
+                    loadTWData();
                 }
             })
             .subscribe((status) => {
