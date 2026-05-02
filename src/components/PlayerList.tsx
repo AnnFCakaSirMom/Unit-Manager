@@ -7,6 +7,7 @@ export interface PlayerListProps {
     selectedPlayerId: string | null;
     onSelectPlayer: (id: string | null) => void;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
+    setStatusMessage: (message: string) => void;
     notInHouse: boolean;
     setNotInHouse: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -16,9 +17,11 @@ import { updatePlayerName, deletePlayer, toggleNotInHouse as toggleNotInHouseAct
 import { usePermission } from '../hooks/usePermission';
 import { washName } from '../utils';
 import { PlayerListItem } from './PlayerListItem';
+import { deletePlayer as deletePlayerService } from '../services/playerService';
+import { auditService } from '../services/auditService';
 
 export const PlayerList = React.memo(({
-    selectedPlayerId, onSelectPlayer, setConfirmModal, notInHouse, setNotInHouse
+    selectedPlayerId, onSelectPlayer, setConfirmModal, setStatusMessage, notInHouse, setNotInHouse
 }: PlayerListProps) => {
     const players = useAppSelector(state => state.player.players);
     const dispatch = useAppDispatch();
@@ -48,6 +51,9 @@ export const PlayerList = React.memo(({
         dispatch(updatePlayerName({ playerId, name }));
     }, [dispatch]);
 
+    // Auth state for audit logging
+    const { userId: actorId, discordNickname: actorNickname } = useAppSelector(state => state.auth);
+
     const handleDeletePlayer = useCallback((playerId: string, playerName: string, playerRole?: string) => {
         if (!canDeletePlayers) return;
         if (playerRole === 'Owner') {
@@ -55,17 +61,41 @@ export const PlayerList = React.memo(({
             return;
         }
 
+        const playerToDelete = players.find(p => p.id === playerId);
+
         setConfirmModal({
             isOpen: true,
             title: 'Delete Player',
             message: `Are you sure you want to delete ${playerName}? This action cannot be undone.`,
-            onConfirm: () => {
-                dispatch(deletePlayer({ playerId }));
-                if (selectedPlayerId === playerId) onSelectPlayer(null);
+            onConfirm: async () => {
+                // 1. Delete from Supabase first
+                const success = await deletePlayerService(playerId);
+                
+                if (success) {
+                    // 2. Log to audit
+                    await auditService.logAction({
+                        actor_id: actorId || 'unknown',
+                        actor_nickname: actorNickname || 'Unknown',
+                        action_type: 'MAJOR_CHANGE',
+                        action_detail: `Deleted player ${playerName}`,
+                        target_id: playerId,
+                        target_name: playerName,
+                        old_data: playerToDelete,
+                        is_suspicious: true
+                    });
+
+                    // 3. Update Redux
+                    dispatch(deletePlayer({ playerId }));
+                    if (selectedPlayerId === playerId) onSelectPlayer(null);
+                    setStatusMessage(`Deleted player ${playerName}`);
+                } else {
+                    alert("Failed to delete player from database.");
+                }
+                
                 setConfirmModal((prev) => ({ ...prev, isOpen: false }));
             }
         });
-    }, [dispatch, selectedPlayerId, onSelectPlayer, setConfirmModal, canDeletePlayers]);
+    }, [dispatch, selectedPlayerId, onSelectPlayer, setConfirmModal, canDeletePlayers, players, actorId, actorNickname]);
 
     const handleNotInHouseToggle = useCallback((playerId: string, playerRole?: string) => {
         if (!canToggleNotInHouse) return;

@@ -98,7 +98,11 @@ export function useCloudSync(
         }
       };
 
+      /* 
       // Execute Player Deletions
+      // DISABLING AUTOMATIC DELETIONS: This prevents mass deletions if the local state
+      // is temporarily filtered (e.g. during a role change). 
+      // Deletions should be handled explicitly by the UI calling the service.
       for (const p of deletedPlayers) {
         const success = await deletePlayer(p.id);
         if (handleResult(p.id, success, 'playerService.delete')) {
@@ -117,6 +121,7 @@ export function useCloudSync(
           }
         }
       }
+      */
 
       // Execute Player Upserts
       for (const player of changedPlayers) {
@@ -162,13 +167,16 @@ export function useCloudSync(
         }
       }
 
+      /* 
       // Execute Group Deletions
+      // DISABLING AUTOMATIC DELETIONS: Prevents accidental group removal during sync glitches.
       for (const g of deletedGroups) {
         const success = await deleteGroup(g.id);
         if (handleResult(g.id, success, 'groupService.delete')) {
           prevGroupsMap.delete(g.id);
         }
       }
+      */
 
       // Execute Group Upserts (Handling order changes)
       const currentGroupsWithCorrectOrder = [...currentGroups];

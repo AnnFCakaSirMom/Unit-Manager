@@ -13,6 +13,7 @@ export interface GroupsListProps {
 
 import { useAppSelector, useAppDispatch } from '../state/store';
 import { updateGroupName, deleteGroup, addGroup } from '../state/slices/groupSlice';
+import { deleteGroup as deleteGroupService } from '../services/groupService';
 import { HelpIcon } from './HelpIcon';
 import { HELP_CONTENT } from '../helpContent';
 
@@ -34,9 +35,14 @@ export const GroupsList = React.memo(({
     const handleDeleteGroup = useCallback((groupId: string, groupName: string) => {
         setConfirmModal({
             isOpen: true, title: 'Delete Group', message: `Are you sure you want to delete group "${groupName}"?`,
-            onConfirm: () => {
-                dispatch(deleteGroup({ groupId }));
-                if (selectedGroupId === groupId) onSelectGroup(null);
+            onConfirm: async () => {
+                const success = await deleteGroupService(groupId);
+                if (success) {
+                    dispatch(deleteGroup({ groupId }));
+                    if (selectedGroupId === groupId) onSelectGroup(null);
+                } else {
+                    alert("Failed to delete group from database.");
+                }
                 setConfirmModal((prev) => ({ ...prev, isOpen: false }));
             }
         });

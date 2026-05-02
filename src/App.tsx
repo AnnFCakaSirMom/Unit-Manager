@@ -159,6 +159,7 @@ const App: React.FC = () => {
                                     onOpenManual={handleOpenManual}
                                     pendingApprovalsCount={pendingApprovalsCount}
                                     statusMessage={statusMessage}
+                                    setStatusMessage={setStatusMessage}
                                     setConfirmModal={setConfirmModal}
                                     isPlayerListOpen={isPlayerListOpen}
                                     onTogglePlayerList={handleTogglePlayerList}

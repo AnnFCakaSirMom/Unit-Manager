@@ -110,7 +110,12 @@ export const useDatabaseSync = (
                     console.log('[Realtime] Syncing players...');
                     loadPlayers();
                     if (table === 'profiles') {
-                        supabase.auth.refreshSession().catch(() => {});
+                        // Only refresh session if it's OUR profile that changed
+                        const payloadId = payload.new?.id || payload.old?.id;
+                        if (payloadId === userId) {
+                            console.log('[Realtime] Our profile changed, refreshing session...');
+                            supabase.auth.refreshSession().catch(() => {});
+                        }
                     }
                 } else if (table === 'tw_import_list') {
                     console.log('[Realtime] Syncing TW import list...');

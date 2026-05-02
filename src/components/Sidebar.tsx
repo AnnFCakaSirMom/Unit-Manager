@@ -22,6 +22,7 @@ interface SidebarProps {
     onOpenManual: () => void;
     pendingApprovalsCount: number;
     statusMessage: string;
+    setStatusMessage: (message: string) => void;
     setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalInfo>>;
     isPlayerListOpen: boolean;
     onTogglePlayerList: () => void;
@@ -51,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
     const {
         selectedPlayerId, selectedGroupId,
         onSelectPlayer, onSelectGroup, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher, onOpenAdminPanel,
-        pendingApprovalsCount, statusMessage, setConfirmModal, isPlayerListOpen,
+        pendingApprovalsCount, statusMessage, setStatusMessage, setConfirmModal, isPlayerListOpen,
         onTogglePlayerList
     } = props;
 
@@ -215,6 +216,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                             selectedPlayerId={selectedPlayerId}
                             onSelectPlayer={onSelectPlayer}
                             setConfirmModal={setConfirmModal}
+                            setStatusMessage={setStatusMessage}
                             notInHouse={notInHouse}
                             setNotInHouse={setNotInHouse}
                         />
