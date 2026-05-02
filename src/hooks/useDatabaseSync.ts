@@ -94,44 +94,31 @@ export const useDatabaseSync = (
         loadGroups();
         loadTWData();
 
-        // Single channel for all realtime events
+        // ── DEBUG MODE: Listen to everything in 'public' ──────────────────────────
+        const debugChannelName = `db-sync-debug-${Math.random().toString(36).substring(7)}`;
+        console.log(`[Realtime-DEBUG] Connecting to: ${debugChannelName}`);
+
         const channel = supabase
-            .channel('db-sync')
-            // Group changes
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, (payload) => {
-                console.log('[Realtime] Change in "groups" table:', payload.eventType, payload.new);
-                loadGroups();
+            .channel(debugChannelName)
+            .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+                console.log('[Realtime-DEBUG] Event received!', {
+                    table: payload.table,
+                    type: payload.eventType,
+                    data: payload.new
+                });
+                
+                // Refresh specific data based on table
+                if (['groups', 'group_members'].includes(payload.table)) loadGroups();
+                if (['profiles', 'profile_units'].includes(payload.table)) loadPlayers();
+                if (payload.table.startsWith('tw_')) loadTWData();
+                if (payload.table === 'tw_import_list') loadTWImport();
             })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, (payload) => {
-                console.log('[Realtime] Change in "group_members" table:', payload.eventType);
-                loadGroups();
-            })
-            // Player changes
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
-                console.log('[Realtime] Profile change:', payload.eventType);
-                loadPlayers();
-                // Refresh JWT so any role change takes effect immediately (no logout needed).
-                supabase.auth.refreshSession().catch(e =>
-                    console.warn('[useDatabaseSync] Session refresh after profile change failed:', e)
-                );
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_units' }, loadPlayers)
-            // TW import changes
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_import_list' }, loadTWImport)
-            // TW attendance changes
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_seasons' }, loadTWData)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_events' }, loadTWData)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'tw_attendance_records' }, loadTWData)
             .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('[Realtime] Successfully subscribed to database changes.');
-                } else {
-                    console.warn('[Realtime] Subscription status:', status);
-                }
+                console.log('[Realtime-DEBUG] Subscription status:', status);
             });
 
         return () => {
-            console.log('[Realtime] Unsubscribing from database changes...');
+            console.log('[Realtime-DEBUG] Cleaning up channel...');
             supabase.removeChannel(channel);
         };
     }, [isOfficerPlus, loadGroups, loadPlayers, loadTWImport, loadTWData]);
