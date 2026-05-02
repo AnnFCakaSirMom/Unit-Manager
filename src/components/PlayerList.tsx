@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import type { Player, ConfirmModalInfo } from '../types';
 import { Search } from './icons';
-import { Button } from './Button';
 import { Input } from './Input';
 
 export interface PlayerListProps {

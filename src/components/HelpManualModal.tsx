@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from './Button';
-import { Info, X, Book, Users, Star, Layout, BarChart, Shield, History, Lock, UserCheck, RefreshCcw, Copy } from './icons';
+import { X, Book, Users, Star, Layout, BarChart, Shield, History, Lock, UserCheck, RefreshCcw, Copy } from './icons';
 import { HELP_CONTENT } from '../helpContent';
 import { usePermission } from '../hooks/usePermission';
 

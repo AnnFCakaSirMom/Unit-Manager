@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import { useState, useCallback, memo } from 'react';
 import type { Player, GroupMember } from '../types';
 import { Star, Trash2, ArrowRightLeft, Lock, Unlock, AlertTriangle } from './icons';
 import { Button } from './Button';

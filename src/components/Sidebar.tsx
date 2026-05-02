@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import type { ConfirmModalInfo } from '../types';
-import { Settings, UserPlus, Users, ChevronUp, ChevronDown, Shield, Book } from './icons';
+import { UserPlus, Users, ChevronUp, ChevronDown, Shield, Book } from './icons';
 import { Button } from './Button';
 import { Input } from './Input';
 import { UnitSearch } from './UnitSearch';
@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
 
     const {
         selectedPlayerId, selectedGroupId,
-        onSelectPlayer, onSelectGroup, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher, onOpenAdminPanel, onOpenManual,
+        onSelectPlayer, onSelectGroup, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher, onOpenAdminPanel,
         pendingApprovalsCount, statusMessage, setConfirmModal, isPlayerListOpen,
         onTogglePlayerList
     } = props;
