@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { fetchPlayersFromSupabase } from '../services/playerService';
 import { fetchGroupsFromSupabase } from '../services/groupService';
@@ -10,6 +10,7 @@ import { hydratePlayers } from '../state/slices/playerSlice';
 import { hydrateGroups } from '../state/slices/groupSlice';
 import { hydrateTWAttendance, hydrateTWData } from '../state/slices/twSlice';
 import { setSyncing } from '../state/slices/uiSlice';
+import { setAuthSession } from '../state/slices/authSlice';
 import { useAppSelector } from '../state/store';
 
 /**
@@ -35,7 +36,13 @@ export const useDatabaseSync = (
 
     const [isSyncing, setIsSyncing] = useState(false);
     const [reconnectTick, setReconnectTick] = useState(0);
-    const { userId } = useAppSelector(state => state.auth);
+    const { userId, avatarUrl: currentAvatarUrl } = useAppSelector(state => state.auth);
+
+    // Keep a stable ref to avatarUrl so the own-profile listener can read the
+    // latest value without it being a useEffect dependency (which would
+    // unnecessarily tear down and recreate the Realtime channel on avatar changes).
+    const avatarUrlRef = useRef<string | null>(null);
+    avatarUrlRef.current = currentAvatarUrl;
 
     // ── Subscribe to SyncManager's global loading state ──────────────────────
     useEffect(() => {
@@ -90,6 +97,74 @@ export const useDatabaseSync = (
         loadTWImport();
     }, [loadPlayers, loadTWImport]);
 
+    // ── Always-active: Own-profile role watcher (Solution A + B) ─────────────
+    // Listens for changes to the logged-in user's profile row and immediately
+    // updates Redux authState (which drives isOfficerPlus in App.tsx).
+    //
+    // Key design decisions:
+    //  - Runs regardless of isOfficerPlus, so a Member receives an instant
+    //    role promotion without needing a page refresh (Solution B).
+    //  - Directly dispatches setAuthSession instead of calling refreshSession(),
+    //    which was unreliable because onAuthStateChange doesn't always fire for
+    //    DB-only role changes (Solution A).
+    //  - Uses avatarUrlRef so the channel is never recreated due to avatar changes.
+    useEffect(() => {
+        if (!userId) return;
+
+        const channelId = `own-profile-watch-${Math.random().toString(36).substring(7)}`;
+
+        const channel = supabase
+            .channel(channelId)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'profiles' },
+                async (payload) => {
+                    // Only act on events that concern our own profile row.
+                    const payloadId = (payload.new as any)?.id || (payload.old as any)?.id;
+                    if (payloadId !== userId) return;
+
+                    console.log('[Realtime] Own profile changed — re-fetching role...');
+                    try {
+                        const { data: profile, error } = await supabase
+                            .from('profiles')
+                            .select('id, role, discord_nickname')
+                            .eq('id', userId)
+                            .maybeSingle();
+
+                        if (error) throw error;
+
+                        if (profile) {
+                            // 1. Update Redux immediately so the UI reacts without waiting for a network round-trip.
+                            dispatch(setAuthSession({
+                                userId: profile.id,
+                                role: profile.role || 'Pending',
+                                discordNickname: profile.discord_nickname || '',
+                                avatarUrl: avatarUrlRef.current,
+                            }));
+                            console.log(`[Realtime] Auth role updated → ${profile.role}`);
+
+                            // 2. Refresh the JWT in the background so Supabase RLS can switch back
+                            //    to the fast path (auth.jwt() app_metadata) instead of falling back
+                            //    to a per-row DB query on every subsequent request.
+                            //    Fire-and-forget: UI is already unblocked by the dispatch above.
+                            supabase.auth.refreshSession().catch(() => {});
+                        }
+                    } catch (err: any) {
+                        console.error('[Realtime] Failed to re-fetch own profile:', err?.message);
+                    }
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('[Realtime] Own-profile watcher connected.');
+                }
+            });
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [userId, dispatch]);
+
     // ── Officer-only: Groups & TW Data + Realtime Listeners ──────────────────
     useEffect(() => {
         if (!isOfficerPlus) return;
@@ -133,14 +208,11 @@ export const useDatabaseSync = (
                 } else if (table === 'profiles' || table === 'profile_units') {
                     console.log('[Realtime] Syncing players...');
                     loadPlayers();
-                    if (table === 'profiles') {
-                        // Only refresh session if it's OUR profile that changed
-                        const payloadId = (payload.new as any)?.id || (payload.old as any)?.id;
-                        if (payloadId === userId) {
-                            console.log('[Realtime] Our profile changed, refreshing session...');
-                            supabase.auth.refreshSession().catch(() => {});
-                        }
-                    }
+                    // Note: Auth role updates for the logged-in user are now handled
+                    // exclusively by the own-profile-watch channel above. The previous
+                    // supabase.auth.refreshSession() call has been removed — it was
+                    // unreliable because onAuthStateChange doesn't always fire for
+                    // database-side role changes (as opposed to token expiry refreshes).
                 } else if (table === 'tw_import_list') {
                     console.log('[Realtime] Syncing TW import list...');
                     loadTWImport();
@@ -176,7 +248,7 @@ export const useDatabaseSync = (
             isCleaningUp = true;
             supabase.removeChannel(channel);
         };
-    }, [isOfficerPlus, loadGroups, loadPlayers, loadTWImport, loadTWData, userId, reconnectTick]);
+    }, [isOfficerPlus, loadGroups, loadPlayers, loadTWImport, loadTWData, reconnectTick]);
 
     return { isSyncing };
 };
