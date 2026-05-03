@@ -112,35 +112,34 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Manual Participant Addition:** Added a searchable "+" button to the Accepted list, allowing officers to manually add players who are participating but weren't part of the original Raid Helper import.
 - [x] **Dynamic Status Management:** Implemented quick-toggle buttons (↑/↓) on all attendance rows to seamlessly move players between "Accepted" and "Maybe" as their availability changes.
 - [x] **Smart Filter Integration:** Manual attendance updates are instantly reflected in the Unit Search "Accepted only" filter, ensuring a single source of truth for planning.
-- [x] **Data Integrity & Sync Stability (May 2026):**
-  - **Critical Bug Fixes:** Resolved a major data loss issue triggered by Role-Based Access Control (RLS) updates that previously caused mass player/unit deletions.
-  - **Dirty Flag System:** Implemented `isDirty` tracking for Players and Groups to ensure only user-initiated changes are synced, preventing "echo" logs and sync loops.
-  - **Race Condition Protection:** Updated state hydration to preserve local unsaved changes, preventing Realtime updates from overwriting data during active editing.
-  - **Session Stability:** Patched session refresh logic to prevent global logouts; only the affected user now refreshes their session.
-  - **Explicit Deletion Logic:** Moved all destructive operations to explicit service calls with audit logging, disabling dangerous automatic background deletions.
+
+### 12. Comprehensive Security & Integrity Audit (May 2026)
+- [x] **Critical RLS Hardening:** 
+  - **Self-Role Escalation:** Implemented a `BEFORE UPDATE` trigger on `profiles` to block users from promoting their own roles.
+  - **Audit Integrity:** Enforced `actor_id` identity in RLS policies to prevent log forgery.
+  - **Debounce Fix:** Added `UPDATE` policies to `audit_logs` to enable functional 5-minute debouncing.
+  - **Leak Remediation:** Re-restricted `tw_history` and `tw_import_list` to Officer+ only, correcting regressive policies.
+  - **Granular Access Control:** Replaced broad `FOR ALL` policies with per-operation rules (`SELECT`/`INSERT`/`UPDATE`), restricting `DELETE` privileges to Admin+ on all strategic tables.
+- [x] **Stability & Sync Resilience:**
+  - **Hydration Safety:** Refactored `hydratePlayers` to prevent locally-added "dirty" players from being dropped during background syncs.
+  - **Atomic Unit Sync:** Replaced destructive delete-insert logic in `playerService` with an atomic upsert-and-prune approach, eliminating the "zero-unit window" race condition.
+  - **Retry Reliability:** Fixed the cloud sync retry mechanism with a `retryTick` system to ensure transient failures are automatically re-attempted.
+  - **Loop Prevention:** Implemented a realtime "ignore list" for side-effect tables (`audit_logs`, `player_info`) to prevent infinite sync loops.
+- [x] **Performance & Database Optimization:**
+  - **Strategic Indexing:** Added composite and foreign key indexes to `audit_logs`, `profile_units`, and `group_members` to accelerate lookups.
+  - **CASCADE constraints:** Implemented `ON DELETE CASCADE` across all junction tables to prevent "zombie" orphaned records.
+  - **Execution Efficiency:** Optimized `get_my_role_weight()` by marking it `STABLE` for statement-level caching and parallelized TW data fetches.
 
 ---
 
 ## 🛠 In Progress / Planned
 
-### Design & Graphics
-
-- [x] **Obsidian & Gold Standard:** Finalized the Obsidian-Gold theme as the definitive visual identity, moving away from previous Medieval experimentation to maintain a clean, premium "Command Center" feel.
-- [x] **Modernized Icon Integration:** Successfully integrated and themed current iconography to match the premium aesthetic.
-
-### Features
-
-- [ ] **Full Type Safety:** Implement Supabase CLI type generation to synchronize database schema with TypeScript definitions, reducing runtime errors and improving developer productivity.
-- [ ] **Performance Optimization Roadmap:**
-  - [ ] **Virtualization:** Implement virtualized lists (e.g., `react-window`) for Player List and Attendance to handle 500+ items with zero lag.
-  - [ ] **Code Splitting:** Use `React.lazy` to defer loading of heavy modules like Audit Logs and TW Statistics until needed.
-  - [ ] **Data Payload Optimization:** Refactor Supabase queries to use selective columns instead of `select(*)` to reduce network overhead.
-  - [ ] **Memoized Selectors:** Introduce `reselect` for complex state transformations (TW Stats) to eliminate redundant recalculations.
-- [ ] **Synergy Tools:** Improvements in the group view to easier see synergies between units (e.g., heal units + shields).
-
-### Security & Maintenance
-
-- [ ] **RLS Policy Consolidation:** Address Supabase Security Advisor warnings by removing legacy policies that reference insecure `user_metadata`. Consolidate multiple redundant policies into single, high-performance JWT-based rules using `get_my_role_weight()` to improve both security and query speed.
+### Features & DX
+- [ ] **Full Type Safety:** Implement Supabase CLI type generation to synchronize database schema with TypeScript definitions, reducing runtime errors.
+- [ ] **Performance Roadmap:**
+  - [ ] **Virtualization:** Implement virtualized lists (e.g., `react-window`) for Player List and Attendance to handle 500+ items.
+  - [ ] **Code Splitting:** Defer loading of heavy modules like Audit Logs and TW Statistics using `React.lazy`.
+  - [ ] **Synergy Tools:** Group view improvements to visualize unit synergies (Shields + Heals).
 
 ---
 
@@ -148,6 +147,6 @@ A web application to manage player units, groups, and Territory War (TW) statist
 
 - **Frontend:** React (Vite), Redux Toolkit, Vanilla CSS.
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
-- **Security:** Row Level Security (RLS) with hierarchical weights.
+- **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
 
-*Last updated: 2026-05-03 (Security Audit & RLS Consolidation Planning)*
+*Last updated: 2026-05-03 (Security & Integrity Audit 100% Completed)*

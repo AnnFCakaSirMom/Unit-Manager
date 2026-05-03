@@ -15,16 +15,26 @@ const playerSlice = createSlice({
   reducers: {
     hydratePlayers(state, action: PayloadAction<Player[]>) {
       const serverPlayers = action.payload;
-      
-      // If we have a local player marked as dirty, we DON'T want to overwrite it with 
-      // potentially older data from a Realtime event.
-      state.players = serverPlayers.map(serverPlayer => {
+      const serverMap = new Map(serverPlayers.map(p => [p.id, p]));
+
+      // Merge server data with local state:
+      // - For players on the server: keep dirty local version, otherwise take server data.
+      const merged = serverPlayers.map(serverPlayer => {
         const localPlayer = state.players.find(p => p.id === serverPlayer.id);
         if (localPlayer?.isDirty) {
-          return localPlayer; // Keep the dirty local version
+          return localPlayer; // Keep the pending local version
         }
         return serverPlayer;
-      }).sort((a, b) => a.name.localeCompare(b.name));
+      });
+
+      // BUG-1 FIX: Preserve locally-added dirty players not yet synced to the server.
+      // Without this, addPlayer() entries vanish on the next Realtime hydration.
+      const dirtyLocalsNotOnServer = state.players.filter(
+        p => p.isDirty && !serverMap.has(p.id)
+      );
+
+      state.players = [...merged, ...dirtyLocalsNotOnServer]
+        .sort((a, b) => a.name.localeCompare(b.name));
     },
     addPlayer(state, action: PayloadAction<{ name: string }>) {
       const newPlayer: Player = {

@@ -104,7 +104,14 @@ export const useDatabaseSync = (
             // Use a broad listener for 'public' schema as specific filters were unreliable
             .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
                 const table = payload.table;
-                
+
+                // BUG-5 FIX: Ignore tables that change as a side-effect of sync writes.
+                // audit_logs and player_info are written by the app itself — reacting to
+                // them would cause redundant fetches and risk infinite sync loops.
+                if (table === 'audit_logs' || table === 'player_info' || table === 'units') {
+                    return;
+                }
+
                 if (table === 'groups' || table === 'group_members') {
                     console.log('[Realtime] Syncing groups...');
                     loadGroups();

@@ -88,7 +88,9 @@ export const auditService = {
             .order('created_at', { ascending: false });
 
         if (filters?.name) {
-            query = query.or(`actor_nickname.ilike.%${filters.name}%,target_name.ilike.%${filters.name}%`);
+            // CRIT-7 FIX: Strip PostgREST special characters to prevent filter injection.
+            const safeName = filters.name.replace(/[%_,.*()]/g, '');
+            query = query.or(`actor_nickname.ilike.%${safeName}%,target_name.ilike.%${safeName}%`);
         }
         if (filters?.actionType) {
             query = query.eq('action_type', filters.actionType);

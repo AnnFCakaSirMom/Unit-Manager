@@ -61,26 +61,27 @@ function transformProfileToPlayer(row: ProfileRow): Player {
 export async function fetchPlayersFromSupabase(signal?: AbortSignal): Promise<Player[]> {
   console.log('[playerService] Fetching players from Supabase...');
 
-  const [profilesResult, infoResult] = await Promise.all([
-    handleQuery<ProfileRow[]>(
-      supabase.from('profiles').select(`
-        *,
-        profile_units (
-          unit_name,
-          is_owned,
-          is_prepared,
-          is_mastery,
-          is_favorite
-        )
-      `).abortSignal(signal!),
-      { service: 'playerService', op: 'fetchProfiles' },
-      []
-    ),
-    handleQuery<any[]>(
-      supabase.from('player_info').select('*').abortSignal(signal!),
-      { service: 'playerService', op: 'fetchPlayerInfo' },
-      []
+  // BUG-2 FIX: Use conditional abortSignal — signal is optional and passing
+  // undefined directly to .abortSignal() can throw at runtime.
+  let profilesQuery = supabase.from('profiles').select(`
+    *,
+    profile_units (
+      unit_name,
+      is_owned,
+      is_prepared,
+      is_mastery,
+      is_favorite
     )
+  `);
+  let infoQuery = supabase.from('player_info').select('*');
+  if (signal) {
+    profilesQuery = profilesQuery.abortSignal(signal);
+    infoQuery = infoQuery.abortSignal(signal);
+  }
+
+  const [profilesResult, infoResult] = await Promise.all([
+    handleQuery<ProfileRow[]>(profilesQuery, { service: 'playerService', op: 'fetchProfiles' }, []),
+    handleQuery<any[]>(infoQuery, { service: 'playerService', op: 'fetchPlayerInfo' }, [])
   ]);
 
   if (profilesResult.length === 0) {
@@ -158,6 +159,11 @@ export async function upsertPlayer(player: Player): Promise<boolean> {
   }
 
   // 3. Upsert Profile Units
+  // BUG-4 FIX: Replace destructive delete-all-then-insert with a safer two-step:
+  //   a) Upsert the current unit set (atomic per-row, no zero-unit window).
+  //   b) Prune any unit rows that are no longer in the player's set.
+  // This eliminates the race condition where a Realtime event fires between
+  // the delete and insert, causing the UI to see a player with zero units.
   const allUnits = new Set([
     ...player.units,
     ...player.preparedUnits,
@@ -165,7 +171,7 @@ export async function upsertPlayer(player: Player): Promise<boolean> {
     ...player.favoriteUnits
   ]);
 
-  const unitsToInsert = Array.from(allUnits).map(unit_name => ({
+  const unitsToUpsert = Array.from(allUnits).map(unit_name => ({
     profile_id: player.id,
     unit_name,
     is_owned: player.units.includes(unit_name),
@@ -174,18 +180,27 @@ export async function upsertPlayer(player: Player): Promise<boolean> {
     is_favorite: player.favoriteUnits.includes(unit_name),
   }));
 
-  // Delete existing units first
-  const deleteUnitsSuccess = await handleMutation(
-    supabase.from('profile_units').delete().eq('profile_id', player.id),
-    { service: 'playerService', op: `clearUnits ${player.id}` }
-  );
+  if (unitsToUpsert.length > 0) {
+    // Step a: Upsert current units (requires UNIQUE constraint on profile_id + unit_name)
+    const upsertSuccess = await handleMutation(
+      supabase.from('profile_units').upsert(unitsToUpsert, { onConflict: 'profile_id,unit_name' }),
+      { service: 'playerService', op: `upsertUnits ${player.id}` }
+    );
+    if (!upsertSuccess) return false;
 
-  if (!deleteUnitsSuccess) return false;
-
-  if (unitsToInsert.length > 0) {
-    return handleMutation(
-      supabase.from('profile_units').insert(unitsToInsert),
-      { service: 'playerService', op: `insertUnits ${player.id}` }
+    // Step b: Prune unit rows that no longer exist in the player's set
+    const unitNames = Array.from(allUnits);
+    await handleMutation(
+      supabase.from('profile_units').delete()
+        .eq('profile_id', player.id)
+        .not('unit_name', 'in', `(${unitNames.map(n => `"${n}"`).join(',')})`),
+      { service: 'playerService', op: `pruneUnits ${player.id}` }
+    );
+  } else {
+    // Player has no units — safe to wipe all rows for this profile
+    await handleMutation(
+      supabase.from('profile_units').delete().eq('profile_id', player.id),
+      { service: 'playerService', op: `clearUnits ${player.id}` }
     );
   }
 

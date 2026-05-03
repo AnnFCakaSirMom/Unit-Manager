@@ -42,7 +42,8 @@ function transformGroupRow(row: GroupRow): Group {
  * Sorted by order_index for stable ordering.
  */
 export async function fetchGroupsFromSupabase(signal?: AbortSignal): Promise<Group[]> {
-  const query = supabase
+  // BUG-2 FIX: Use conditional abortSignal — signal is optional.
+  let query = supabase
     .from('groups')
     .select(`
       id,
@@ -57,8 +58,8 @@ export async function fetchGroupsFromSupabase(signal?: AbortSignal): Promise<Gro
       )
     `)
     .order('order_index', { ascending: true })
-    .order('order_index', { foreignTable: 'group_members', ascending: true })
-    .abortSignal(signal!);
+    .order('order_index', { foreignTable: 'group_members', ascending: true });
+  if (signal) query = query.abortSignal(signal);
 
   const data = await handleQuery<GroupRow[]>(
     query,

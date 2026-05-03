@@ -92,12 +92,15 @@ const twSlice = createSlice({
       state.twRecords = state.twRecords.filter(r => !obsoleteEventIds.includes(r.eventId));
     },
     deleteTWSeason(state, action: PayloadAction<{ seasonId: string }>) {
-      state.twSeasons = state.twSeasons.filter(s => s.id !== action.payload.seasonId);
-      state.twEvents = state.twEvents.filter(e => e.seasonId !== action.payload.seasonId);
-      state.twRecords = state.twRecords.filter(r => {
-        const event = state.twEvents.find(e => e.id === r.eventId);
-        return event?.seasonId !== action.payload.seasonId;
-      });
+      const seasonId = action.payload.seasonId;
+      // BUG-6 FIX: Capture event IDs BEFORE mutating twEvents, otherwise the
+      // twRecords filter reads an already-empty list and orphaned records remain.
+      const eventIdsToRemove = new Set(
+        state.twEvents.filter(e => e.seasonId === seasonId).map(e => e.id)
+      );
+      state.twSeasons = state.twSeasons.filter(s => s.id !== seasonId);
+      state.twEvents = state.twEvents.filter(e => e.seasonId !== seasonId);
+      state.twRecords = state.twRecords.filter(r => !eventIdsToRemove.has(r.eventId));
     },
     addTWEvent(state, action: PayloadAction<{ event: TWEvent }>) {
       state.twEvents.push(action.payload.event);

@@ -5,11 +5,13 @@ import { TWAttendancePlayer } from '../types';
  * Fetches the temporary TW import list from Supabase.
  */
 export async function fetchTWImport(signal?: AbortSignal): Promise<TWAttendancePlayer[]> {
-  const { data, error } = await supabase
+  // BUG-2 FIX: Use conditional abortSignal — signal is optional.
+  let fetchQuery = supabase
     .from('tw_import_list')
     .select('*')
-    .order('created_at', { ascending: true })
-    .abortSignal(signal!);
+    .order('created_at', { ascending: true });
+  if (signal) fetchQuery = fetchQuery.abortSignal(signal);
+  const { data, error } = await fetchQuery;
 
   if (error) {
     // Re-throw AbortErrors so SyncManager can handle them correctly.

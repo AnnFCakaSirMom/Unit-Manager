@@ -13,6 +13,9 @@ export function useCloudSync(
   setStatusMessage: (msg: string) => void
 ) {
   const [status, setStatus] = useState<SyncStatus>('Synced');
+  // BUG-3 FIX: retryTick forces the effect to re-run after a transient failure,
+  // since the dependency array won't change on its own if no new edits are made.
+  const [retryTick, setRetryTick] = useState(0);
   const dispatch = useAppDispatch();
   const { userId: actorId, discordNickname: actorNickname } = useAppSelector(state => state.auth);
   
@@ -39,9 +42,12 @@ export function useCloudSync(
     }
 
     if (
-      currentPlayers === prevPlayersRef.current && 
+      currentPlayers === prevPlayersRef.current &&
       currentGroups === prevGroupsRef.current &&
-      currentTWAttendance === prevTWAttendanceRef.current
+      currentTWAttendance === prevTWAttendanceRef.current &&
+      // BUG-3 FIX: Also allow through when items are pending retry, even if
+      // no new user edits have been made (refs would otherwise be equal).
+      retryCountsRef.current.size === 0
     ) {
       return;
     }
@@ -231,7 +237,10 @@ export function useCloudSync(
         setStatusMessage("Cloud save failed permanently for some items.");
       } else if (hasErrors) {
         setStatus('Error');
-        setStatusMessage("Cloud save completed with errors. Retrying...");
+        setStatusMessage("Cloud save completed with errors. Retrying in 5s...");
+        // BUG-3 FIX: Schedule a retry by bumping retryTick after a delay.
+        // This re-triggers the effect even when no new user edits occur.
+        setTimeout(() => setRetryTick(t => t + 1), 5000);
       } else {
         setStatus('Synced');
         setStatusMessage("Saved to cloud.");
@@ -241,7 +250,7 @@ export function useCloudSync(
 
     return () => clearTimeout(timer);
 
-  }, [players, groups, twAttendance, setStatusMessage, actorId, actorNickname]);
+  }, [players, groups, twAttendance, setStatusMessage, actorId, actorNickname, retryTick]);
 
   return { status, isSyncing: status === 'Syncing' };
 }

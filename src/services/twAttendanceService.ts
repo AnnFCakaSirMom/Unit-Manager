@@ -9,22 +9,23 @@ import type { TWSeason, TWEvent, TWPlayerRecord } from '../types';
  * Fetches all TW-related data (seasons, events, and records) in a structured format.
  */
 export async function fetchTWAttendanceData(signal?: AbortSignal) {
-  const { data: seasons, error: sErr } = await supabase
-    .from('tw_seasons')
-    .select('*')
-    .order('start_date', { ascending: false })
-    .abortSignal(signal!);
+  // PERF FIX: Run all three queries in parallel with Promise.all instead of
+  // sequential awaits. This reduces total fetch time by ~2x since the three
+  // tables are independent. Also fixes the signal! non-null assertion (BUG-2 pattern).
+  let seasonsQuery = supabase.from('tw_seasons').select('*').order('start_date', { ascending: false });
+  let eventsQuery  = supabase.from('tw_events').select('*').order('date', { ascending: true });
+  let recordsQuery = supabase.from('tw_attendance_records').select('*');
+  if (signal) {
+    seasonsQuery = seasonsQuery.abortSignal(signal);
+    eventsQuery  = eventsQuery.abortSignal(signal);
+    recordsQuery = recordsQuery.abortSignal(signal);
+  }
 
-  const { data: events, error: eErr } = await supabase
-    .from('tw_events')
-    .select('*')
-    .order('date', { ascending: true })
-    .abortSignal(signal!);
-
-  const { data: records, error: rErr } = await supabase
-    .from('tw_attendance_records')
-    .select('*')
-    .abortSignal(signal!);
+  const [
+    { data: seasons, error: sErr },
+    { data: events,  error: eErr },
+    { data: records, error: rErr }
+  ] = await Promise.all([seasonsQuery, eventsQuery, recordsQuery]);
 
   if (sErr || eErr || rErr) {
     // Re-throw AbortErrors so SyncManager can handle them correctly.
