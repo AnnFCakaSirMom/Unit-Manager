@@ -138,6 +138,10 @@ A web application to manage player units, groups, and Territory War (TW) statist
   - [ ] **Memoized Selectors:** Introduce `reselect` for complex state transformations (TW Stats) to eliminate redundant recalculations.
 - [ ] **Synergy Tools:** Improvements in the group view to easier see synergies between units (e.g., heal units + shields).
 
+### Security & Maintenance
+
+- [ ] **RLS Policy Consolidation:** Address Supabase Security Advisor warnings by removing legacy policies that reference insecure `user_metadata`. Consolidate multiple redundant policies into single, high-performance JWT-based rules using `get_my_role_weight()` to improve both security and query speed.
+
 ---
 
 ## 🏗 Technical Stack
@@ -146,4 +150,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Row Level Security (RLS) with hierarchical weights.
 
-*Last updated: 2026-05-03 (Data Integrity & Sync Stability Patch)*
+*Last updated: 2026-05-03 (Security Audit & RLS Consolidation Planning)*
