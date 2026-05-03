@@ -14,7 +14,17 @@ const playerSlice = createSlice({
   initialState,
   reducers: {
     hydratePlayers(state, action: PayloadAction<Player[]>) {
-      state.players = [...action.payload].sort((a, b) => a.name.localeCompare(b.name));
+      const serverPlayers = action.payload;
+      
+      // If we have a local player marked as dirty, we DON'T want to overwrite it with 
+      // potentially older data from a Realtime event.
+      state.players = serverPlayers.map(serverPlayer => {
+        const localPlayer = state.players.find(p => p.id === serverPlayer.id);
+        if (localPlayer?.isDirty) {
+          return localPlayer; // Keep the dirty local version
+        }
+        return serverPlayer;
+      }).sort((a, b) => a.name.localeCompare(b.name));
     },
     addPlayer(state, action: PayloadAction<{ name: string }>) {
       const newPlayer: Player = {
@@ -30,6 +40,7 @@ const playerSlice = createSlice({
         player_info: [],
         aliases: []
       };
+      newPlayer.isDirty = true;
       state.players.push(newPlayer);
       state.players.sort((a, b) => a.name.localeCompare(b.name));
     },
@@ -38,13 +49,17 @@ const playerSlice = createSlice({
     },
     updatePlayerName(state, action: PayloadAction<{ playerId: string; name: string }>) {
       const player = state.players.find(p => p.id === action.payload.playerId);
-      if (player) player.name = action.payload.name.trim();
+      if (player) {
+        player.name = action.payload.name.trim();
+        player.isDirty = true;
+      }
     },
     toggleNotInHouse(state, action: PayloadAction<{ playerId: string }>) {
       const player = state.players.find(p => p.id === action.payload.playerId);
       if (player) {
         player.notInHouse = !player.notInHouse;
         player.inactiveDate = player.notInHouse ? new Date().toISOString().split('T')[0] : null;
+        player.isDirty = true;
       }
     },
     updatePlayerInfo(state, action: PayloadAction<{ playerId: string; info: string }>) {
@@ -52,16 +67,21 @@ const playerSlice = createSlice({
       if (player) {
         player.info = action.payload.info;
         player.player_info = [{ internal_notes: action.payload.info }];
+        player.isDirty = true;
       }
     },
     updatePlayerLeadership(state, action: PayloadAction<{ playerId: string; leadership: number }>) {
       const player = state.players.find(p => p.id === action.payload.playerId);
-      if (player) player.totalLeadership = action.payload.leadership;
+      if (player) {
+        player.totalLeadership = action.payload.leadership;
+        player.isDirty = true;
+      }
     },
     togglePlayerUnit(state, action: PayloadAction<{ playerId: string; unitName: string; unitType: 'units' | 'preparedUnits' | 'masteryUnits' | 'favoriteUnits' }>) {
       const { playerId, unitName, unitType } = action.payload;
       const player = state.players.find(p => p.id === playerId);
       if (!player) return;
+      player.isDirty = true;
 
       const currentList = player[unitType] || [];
       const isRemoving = currentList.includes(unitName);
@@ -141,6 +161,7 @@ const playerSlice = createSlice({
       player.preparedUnits = merge(player.preparedUnits, parsedPreparedUnits);
       player.masteryUnits = merge(player.masteryUnits, parsedMasteryUnits);
       player.favoriteUnits = merge(player.favoriteUnits, parsedFavoriteUnits);
+      player.isDirty = true;
     },
     clearPlayerUnits(state, action: PayloadAction<{ playerId: string }>) {
       const player = state.players.find(p => p.id === action.payload.playerId);
@@ -149,6 +170,7 @@ const playerSlice = createSlice({
         player.preparedUnits = [];
         player.masteryUnits = [];
         player.favoriteUnits = [];
+        player.isDirty = true;
       }
     },
     renameUnitGlobally(state, action: PayloadAction<{ oldName: string; newName: string }>) {
@@ -158,6 +180,7 @@ const playerSlice = createSlice({
         player.preparedUnits = (player.preparedUnits || []).map(u => u === oldName ? newName : u);
         player.masteryUnits = (player.masteryUnits || []).map(u => u === oldName ? newName : u);
         player.favoriteUnits = (player.favoriteUnits || []).map(u => u === oldName ? newName : u);
+        player.isDirty = true;
       });
     },
     deleteUnitGlobally(state, action: PayloadAction<{ unitNameToDelete: string }>) {
@@ -167,6 +190,7 @@ const playerSlice = createSlice({
         player.preparedUnits = (player.preparedUnits || []).filter(u => u !== unitNameToDelete);
         player.masteryUnits = (player.masteryUnits || []).filter(u => u !== unitNameToDelete);
         player.favoriteUnits = (player.favoriteUnits || []).filter(u => u !== unitNameToDelete);
+        player.isDirty = true;
       });
     },
     updatePlayerProfile(state, action: PayloadAction<{ playerId: string; joinedDate?: string; inactiveDate?: string | null; aliases?: string[]; role?: UserRole }>) {
@@ -176,11 +200,21 @@ const playerSlice = createSlice({
         if (action.payload.inactiveDate !== undefined) player.inactiveDate = action.payload.inactiveDate;
         if (action.payload.aliases !== undefined) player.aliases = action.payload.aliases;
         if (action.payload.role !== undefined) player.role = action.payload.role;
+        player.isDirty = true;
       }
     },
     mergePlayerId(state, action: PayloadAction<{ oldId: string; newId: string }>) {
       const player = state.players.find(p => p.id === action.payload.oldId);
-      if (player) player.id = action.payload.newId;
+      if (player) {
+        player.id = action.payload.newId;
+        player.isDirty = true;
+      }
+    },
+    clearPlayerDirtyFlag(state, action: PayloadAction<{ playerId: string }>) {
+      const player = state.players.find(p => p.id === action.payload.playerId);
+      if (player) {
+        player.isDirty = false;
+      }
     }
   }
 });
@@ -199,7 +233,8 @@ export const {
   renameUnitGlobally,
   deleteUnitGlobally,
   updatePlayerProfile,
-  mergePlayerId
+  mergePlayerId,
+  clearPlayerDirtyFlag
 } = playerSlice.actions;
 
 export const playerReducer = playerSlice.reducer;

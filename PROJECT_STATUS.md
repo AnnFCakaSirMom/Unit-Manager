@@ -112,6 +112,12 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Manual Participant Addition:** Added a searchable "+" button to the Accepted list, allowing officers to manually add players who are participating but weren't part of the original Raid Helper import.
 - [x] **Dynamic Status Management:** Implemented quick-toggle buttons (↑/↓) on all attendance rows to seamlessly move players between "Accepted" and "Maybe" as their availability changes.
 - [x] **Smart Filter Integration:** Manual attendance updates are instantly reflected in the Unit Search "Accepted only" filter, ensuring a single source of truth for planning.
+- [x] **Data Integrity & Sync Stability (May 2026):**
+  - **Critical Bug Fixes:** Resolved a major data loss issue triggered by Role-Based Access Control (RLS) updates that previously caused mass player/unit deletions.
+  - **Dirty Flag System:** Implemented `isDirty` tracking for Players and Groups to ensure only user-initiated changes are synced, preventing "echo" logs and sync loops.
+  - **Race Condition Protection:** Updated state hydration to preserve local unsaved changes, preventing Realtime updates from overwriting data during active editing.
+  - **Session Stability:** Patched session refresh logic to prevent global logouts; only the affected user now refreshes their session.
+  - **Explicit Deletion Logic:** Moved all destructive operations to explicit service calls with audit logging, disabling dangerous automatic background deletions.
 
 ---
 
@@ -140,4 +146,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Row Level Security (RLS) with hierarchical weights.
 
-*Last updated: 2026-05-02 (TW Attendance Lifecycle & Search Integration)*
+*Last updated: 2026-05-03 (Data Integrity & Sync Stability Patch)*

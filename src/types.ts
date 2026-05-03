@@ -46,6 +46,7 @@ export interface Group {
   name: string;
   leaderId: string | null;
   members: GroupMember[];
+  isDirty?: boolean;
 }
 
 export interface Player {
@@ -63,6 +64,7 @@ export interface Player {
   inactiveDate?: string | null;
   aliases?: string[];
   role?: UserRole;
+  isDirty?: boolean;
 }
 
 export interface UnitTiers {

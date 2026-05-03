@@ -14,7 +14,14 @@ const groupSlice = createSlice({
   initialState,
   reducers: {
     hydrateGroups(state, action: PayloadAction<Group[]>) {
-      state.groups = [...action.payload];
+      const serverGroups = action.payload;
+      state.groups = serverGroups.map(serverGroup => {
+        const localGroup = state.groups.find(g => g.id === serverGroup.id);
+        if (localGroup?.isDirty) {
+          return localGroup;
+        }
+        return serverGroup;
+      });
     },
     setGroups(state, action: PayloadAction<Group[]>) {
       state.groups = action.payload;
@@ -34,7 +41,8 @@ const groupSlice = createSlice({
           id: crypto.randomUUID(), 
           name: `MAYBE - Group ${maybeCount + 1}`, 
           leaderId: null, 
-          members: [] 
+          members: [],
+          isDirty: true
         };
         state.groups.push(newGroup);
       } else {
@@ -43,7 +51,8 @@ const groupSlice = createSlice({
           id: crypto.randomUUID(), 
           name: `Group ${standardCount + 1}`, 
           leaderId: null, 
-          members: [] 
+          members: [],
+          isDirty: true
         };
         state.groups.push(newGroup);
       }
@@ -53,7 +62,10 @@ const groupSlice = createSlice({
     },
     updateGroupName(state, action: PayloadAction<{ groupId: string; name: string }>) {
       const group = state.groups.find(g => g.id === action.payload.groupId);
-      if (group) group.name = action.payload.name.trim();
+      if (group) {
+        group.name = action.payload.name.trim();
+        group.isDirty = true;
+      }
     },
     addPlayerToGroup(state, action: PayloadAction<{ groupId: string; playerId: string }>) {
       const { groupId, playerId } = action.payload;
@@ -64,6 +76,7 @@ const groupSlice = createSlice({
         const isFirstMember = group.members.length === 0;
         group.members.push(newMember);
         if (isFirstMember) group.leaderId = playerId;
+        group.isDirty = true;
       }
     },
     removePlayerFromGroup(state, action: PayloadAction<{ groupId: string; playerId: string }>) {
@@ -74,6 +87,7 @@ const groupSlice = createSlice({
         if (group.leaderId === playerId) {
           group.leaderId = group.members.length > 0 ? group.members[0].playerId : null;
         }
+        group.isDirty = true;
       }
     },
     movePlayerBetweenGroups(state, action: PayloadAction<{ playerId: string; sourceGroupId: string; targetGroupId: string }>) {
@@ -88,6 +102,7 @@ const groupSlice = createSlice({
           if (sourceGroup.leaderId === playerId) {
             sourceGroup.leaderId = sourceGroup.members.length > 0 ? sourceGroup.members[0].playerId : null;
           }
+          sourceGroup.isDirty = true;
         }
       }
 
@@ -99,6 +114,7 @@ const groupSlice = createSlice({
           if (isTargetEmpty) {
             targetGroup.leaderId = playerId;
           }
+          targetGroup.isDirty = true;
         }
       }
     },
@@ -114,6 +130,7 @@ const groupSlice = createSlice({
         if (currentIndex !== -1 && targetIndex !== -1) {
           const [movedMember] = group.members.splice(currentIndex, 1);
           group.members.splice(targetIndex, 0, movedMember);
+          group.isDirty = true;
         }
       }
     },
@@ -129,6 +146,7 @@ const groupSlice = createSlice({
           } else {
             member.selectedUnits.push({ unitName, rank: 0 });
           }
+          group.isDirty = true;
         }
       }
     },
@@ -139,7 +157,10 @@ const groupSlice = createSlice({
         const member = group.members.find(m => m.playerId === playerId);
         if (member) {
           const unit = member.selectedUnits.find(u => u.unitName === unitName);
-          if (unit) unit.rank = rank;
+          if (unit) {
+            unit.rank = rank;
+            group.isDirty = true;
+          }
         }
       }
     },
@@ -148,20 +169,32 @@ const groupSlice = createSlice({
       const group = state.groups.find(g => g.id === groupId);
       if (group) {
         const member = group.members.find(m => m.playerId === playerId);
-        if (member) member.isLocked = !member.isLocked;
+        if (member) {
+          member.isLocked = !member.isLocked;
+          group.isDirty = true;
+        }
       }
     },
     setGroupLeader(state, action: PayloadAction<{ groupId: string; playerId: string }>) {
       const { groupId, playerId } = action.payload;
       const group = state.groups.find(g => g.id === groupId);
-      if (group) group.leaderId = playerId;
+      if (group) {
+        group.leaderId = playerId;
+        group.isDirty = true;
+      }
     },
     mergePlayerIdInGroups(state, action: PayloadAction<{ oldId: string; newId: string }>) {
       const { oldId, newId } = action.payload;
       state.groups.forEach(g => {
-        if (g.leaderId === oldId) g.leaderId = newId;
+        if (g.leaderId === oldId) {
+          g.leaderId = newId;
+          g.isDirty = true;
+        }
         g.members.forEach(m => {
-          if (m.playerId === oldId) m.playerId = newId;
+          if (m.playerId === oldId) {
+            m.playerId = newId;
+            g.isDirty = true;
+          }
         });
       });
     },
@@ -172,6 +205,7 @@ const groupSlice = createSlice({
           member.selectedUnits.forEach(unit => {
             if (unit.unitName === oldName) {
               unit.unitName = newName;
+              group.isDirty = true;
             }
           });
         });
@@ -181,9 +215,19 @@ const groupSlice = createSlice({
       const { unitNameToDelete } = action.payload;
       state.groups.forEach(group => {
         group.members.forEach(member => {
+          const originalLength = member.selectedUnits.length;
           member.selectedUnits = member.selectedUnits.filter(u => u.unitName !== unitNameToDelete);
+          if (member.selectedUnits.length !== originalLength) {
+            group.isDirty = true;
+          }
         });
       });
+    },
+    clearGroupDirtyFlag(state, action: PayloadAction<{ groupId: string }>) {
+      const group = state.groups.find(g => g.id === action.payload.groupId);
+      if (group) {
+        group.isDirty = false;
+      }
     }
   }
 });
@@ -205,8 +249,8 @@ export const {
   setGroupLeader,
   mergePlayerIdInGroups,
   renameUnitGloballyInGroups,
-  deleteUnitGloballyInGroups
+  deleteUnitGloballyInGroups,
+  clearGroupDirtyFlag
 } = groupSlice.actions;
 
 export const groupReducer = groupSlice.reducer;
-

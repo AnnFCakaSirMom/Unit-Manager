@@ -10,6 +10,7 @@ import { hydratePlayers } from '../state/slices/playerSlice';
 import { hydrateGroups } from '../state/slices/groupSlice';
 import { hydrateTWAttendance, hydrateTWData } from '../state/slices/twSlice';
 import { setSyncing } from '../state/slices/uiSlice';
+import { useAppSelector } from '../state/store';
 
 /**
  * useDatabaseSync
@@ -33,6 +34,7 @@ export const useDatabaseSync = (
 ): { isSyncing: boolean } => {
 
     const [isSyncing, setIsSyncing] = useState(false);
+    const { userId } = useAppSelector(state => state.auth);
 
     // ── Subscribe to SyncManager's global loading state ──────────────────────
     useEffect(() => {
@@ -111,7 +113,7 @@ export const useDatabaseSync = (
                     loadPlayers();
                     if (table === 'profiles') {
                         // Only refresh session if it's OUR profile that changed
-                        const payloadId = payload.new?.id || payload.old?.id;
+                        const payloadId = (payload.new as any)?.id || (payload.old as any)?.id;
                         if (payloadId === userId) {
                             console.log('[Realtime] Our profile changed, refreshing session...');
                             supabase.auth.refreshSession().catch(() => {});
@@ -134,7 +136,7 @@ export const useDatabaseSync = (
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [isOfficerPlus, loadGroups, loadPlayers, loadTWImport, loadTWData]);
+    }, [isOfficerPlus, loadGroups, loadPlayers, loadTWImport, loadTWData, userId]);
 
     return { isSyncing };
 };

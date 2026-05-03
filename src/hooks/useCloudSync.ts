@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAppSelector } from '../state/store';
-import { upsertPlayer, deletePlayer } from '../services/playerService';
-import { upsertGroup, deleteGroup } from '../services/groupService';
+import { useAppSelector, useAppDispatch } from '../state/store';
+import { upsertPlayer /*, deletePlayer */ } from '../services/playerService';
+import { upsertGroup /*, deleteGroup */ } from '../services/groupService';
 import { upsertTWImport, deleteTWImportEntry } from '../services/twImportService';
 import { auditService } from '../services/auditService';
+import { clearPlayerDirtyFlag } from '../state/slices/playerSlice';
+import { clearGroupDirtyFlag } from '../state/slices/groupSlice';
 
 export type SyncStatus = 'Syncing' | 'Synced' | 'Error' | 'PermanentError';
 
@@ -11,6 +13,7 @@ export function useCloudSync(
   setStatusMessage: (msg: string) => void
 ) {
   const [status, setStatus] = useState<SyncStatus>('Synced');
+  const dispatch = useAppDispatch();
   const { userId: actorId, discordNickname: actorNickname } = useAppSelector(state => state.auth);
   
   const players = useAppSelector(state => state.player.players);
@@ -62,21 +65,19 @@ export function useCloudSync(
       const prevGroupsMap = new Map(prevGroupsRef.current.map(g => [g.id, g]));
       const prevTWMap = new Map(prevTWAttendanceRef.current.map(p => [p.discordName, p]));
 
-      // 1. Diffs for Players
-      const changedPlayers = currentPlayers.filter(p => {
-        const prev = prevPlayersMap.get(p.id);
-        return !prev || JSON.stringify(prev) !== JSON.stringify(p);
-      });
+      // 1. Diffs for Players - ONLY sync dirty players
+      const changedPlayers = currentPlayers.filter(p => p.isDirty);
+      /*
       const currentPlayerIds = new Set(currentPlayers.map(p => p.id));
       const deletedPlayers = prevPlayersRef.current.filter(p => !currentPlayerIds.has(p.id));
+      */
 
-      // 2. Diffs for Groups
-      const changedGroups = currentGroups.filter(g => {
-        const prev = prevGroupsMap.get(g.id);
-        return !prev || JSON.stringify(prev) !== JSON.stringify(g);
-      });
+      // 2. Diffs for Groups - ONLY sync dirty groups
+      const changedGroups = currentGroups.filter(g => g.isDirty);
+      /*
       const currentGroupIds = new Set(currentGroups.map(g => g.id));
       const deletedGroups = prevGroupsRef.current.filter(g => !currentGroupIds.has(g.id));
+      */
 
       let hasErrors = false;
       let hasPermanentErrors = false;
@@ -163,6 +164,9 @@ export function useCloudSync(
                 new_data: player,
                 is_suspicious: isSuspicious
             });
+            
+            // Clear the dirty flag after successful save and audit log
+            dispatch(clearPlayerDirtyFlag({ playerId: player.id }));
           }
         }
       }
@@ -188,6 +192,9 @@ export function useCloudSync(
           const success = await upsertGroup(group, i);
           if (handleResult(group.id, success, 'groupService.upsert')) {
             prevGroupsMap.set(group.id, group);
+            if (success) {
+              dispatch(clearGroupDirtyFlag({ groupId: group.id }));
+            }
           }
         }
       }
