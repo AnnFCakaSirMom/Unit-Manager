@@ -62,6 +62,18 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, syncStatus }) => {
                     {getSyncIcon()}
                 </div>
 
+                {/* UX-1: Retry button — only shown on PermanentError */}
+                {syncStatus === 'PermanentError' && (
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black tracking-[0.1em] uppercase text-red-300 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 hover:text-red-200 transition-all duration-200 animate-pulse"
+                        title="Reload the page to retry failed saves"
+                    >
+                        <RefreshCcw size={12} />
+                        <span>Retry</span>
+                    </button>
+                )}
+
                 {/* Logout */}
                 <button
                     id="header-logout-btn"

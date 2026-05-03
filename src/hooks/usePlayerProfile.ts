@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Player, UserRole } from '../types';
-import { supabase } from '../services/supabase';
 import { updatePlayerInfo, updatePlayerLeadership, updatePlayerName, updatePlayerProfile } from '../state/slices/playerSlice';
 import { AppDispatch } from '../state/store';
 
@@ -35,25 +34,12 @@ export const usePlayerProfile = (
         }
     }, [player]);
 
-    const handleInfoSave = useCallback(async () => {
+    const handleInfoSave = useCallback(() => {
         if (!player) return;
         const currentNote = player.player_info?.[0]?.internal_notes || "";
         if (infoText !== currentNote) {
-            // Direct Supabase Upsert - using player_id as PK to prevent duplicates
-            const { error } = await supabase
-                .from('player_info')
-                .upsert({ 
-                    player_id: player.id, 
-                    internal_notes: infoText 
-                });
-
-            if (error) {
-                console.error("Failed to save player info:", error);
-                setStatusMessage("Error saving internal notes.");
-                return;
-            }
-
-            // Sync with local state (Redux/Context)
+            // UX-5 FIX: Dispatch to Redux (sets isDirty = true) so useCloudSync
+            // handles persistence — consistent with all other profile fields.
             dispatch(updatePlayerInfo({ playerId: player.id, info: infoText }));
             setStatusMessage("Internal notes saved.");
         }

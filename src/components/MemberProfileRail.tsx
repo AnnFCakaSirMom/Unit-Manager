@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppSelector, useAppDispatch } from '../state/store';
-import { updatePlayerLeadership } from '../state/slices/playerSlice';
+import { updatePlayerLeadership, hydratePlayers } from '../state/slices/playerSlice';
 import { supabase } from '../services/supabase';
+import { fetchPlayersFromSupabase } from '../services/playerService';
+import { syncManager } from '../services/SyncManager';
 import { Input } from './Input';
 import { Star, Shield, CheckSquare, HelpCircle } from './icons';
 import { MemberHelpModal } from './MemberHelpModal';
@@ -69,17 +71,68 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
         setLeadership(String(player?.totalLeadership || ''));
     }, [player?.totalLeadership]);
 
-    // updated_at from Supabase
+    // RT-1 + RT-2: Subscribe to Realtime changes on our own profile and units.
+    // - RT-2: updated_at is read directly from the Realtime payload (no extra round-trip).
+    // - RT-1: Any change triggers a player re-fetch via SyncManager so Redux stays in sync
+    //         even when an officer edits this member's profile or units.
     const [updatedAt, setUpdatedAt] = useState<string | null>(null);
     useEffect(() => {
         if (!userId) return;
+
+        // Initial fetch — Realtime only delivers deltas, not the current state on connect.
         supabase
             .from('profiles')
             .select('updated_at')
             .eq('id', userId)
             .maybeSingle()
             .then(({ data }) => setUpdatedAt(data?.updated_at ?? null));
-    }, [userId]);
+
+        const channelId = `member-profile-${Math.random().toString(36).substring(7)}`;
+        let isCleaningUp = false;
+
+        // Shared helper: re-fetch the member's player data through SyncManager
+        // so debouncing and AbortController apply (safe to call multiple times quickly).
+        const triggerPlayerRefresh = () => {
+            if (isCleaningUp) return;
+            syncManager.triggerSync('players', async (signal) => {
+                const players = await fetchPlayersFromSupabase(signal);
+                if (players.length > 0) dispatch(hydratePlayers(players));
+            });
+        };
+
+        const channel = supabase
+            .channel(channelId)
+            // Listen for changes to our profile row
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+                const profileId = (payload.new as any)?.id || (payload.old as any)?.id;
+                if (profileId !== userId) return;
+
+                // RT-2: Extract updated_at directly from the payload — instant, no round-trip.
+                const newUpdatedAt = (payload.new as any)?.updated_at;
+                if (newUpdatedAt) setUpdatedAt(newUpdatedAt);
+
+                // RT-1: Sync profile changes (name, role, aliases, etc.) into Redux.
+                triggerPlayerRefresh();
+            })
+            // Listen for changes to our unit rows
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_units' }, (payload) => {
+                const profileId = (payload.new as any)?.profile_id || (payload.old as any)?.profile_id;
+                if (profileId !== userId) return;
+
+                // RT-1: Sync unit changes into Redux.
+                triggerPlayerRefresh();
+            })
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('[Realtime] Member profile channel connected.');
+                }
+            });
+
+        return () => {
+            isCleaningUp = true;
+            supabase.removeChannel(channel);
+        };
+    }, [userId, dispatch]);
 
     const handleLeadershipSave = useCallback(() => {
         if (!player) return;
@@ -88,8 +141,7 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
         if (newLeadership !== (player.totalLeadership || 0)) {
             dispatch(updatePlayerLeadership({ playerId: player.id, leadership: newLeadership }));
             setStatusMessage('Leadership saved!');
-            // Refresh updated_at locally after save
-            setUpdatedAt(new Date().toISOString());
+            // updated_at will be updated automatically via the Realtime subscription
         }
     }, [leadership, player, dispatch, setStatusMessage]);
 

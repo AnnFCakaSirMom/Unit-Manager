@@ -130,12 +130,22 @@ A web application to manage player units, groups, and Territory War (TW) statist
   - **CASCADE constraints:** Implemented `ON DELETE CASCADE` across all junction tables to prevent "zombie" orphaned records.
   - **Execution Efficiency:** Optimized `get_my_role_weight()` by marking it `STABLE` for statement-level caching and parallelized TW data fetches.
 
+### 13. Real-time & UX Health Check (May 2026)
+- [x] **Real-time Reconnect Logic:** Implemented exponential backoff (1s -> 30s) for Supabase channels to ensure automatic recovery from network interruptions (RT-5).
+- [x] **Global Sync Feedback:** Migrated status messages to a central `StatusToast` component, ensuring Members see save confirmations and errors previously restricted to the Officer Sidebar (UX-2).
+- [x] **Initial Hydration UX:** Added skeleton loading states to the Player List and a "Loading data..." spinner to the main content area to provide immediate feedback during initial sync (UX-3).
+- [x] **Member Real-time Sync:** Enabled targeted Real-time subscriptions for Members, ensuring their `updated_at` and profile data stay in sync live without requiring page refreshes (RT-1, RT-2).
+- [x] **Sync Flow Consolidation:** Refactored internal notes saving to use the standardized `isDirty` / `useCloudSync` pipeline, eliminating inconsistent direct-to-database bypasses (UX-5).
+- [x] **Contextual UI Fixes:** Corrected the Sidebar player count to respect the active "Inactive" filter and assigned unique session IDs to all Real-time channels to prevent multi-tab conflicts (RT-3, UX-6).
+- [x] **Premium Auth UX:** Harmonized AuthGuard loading and NoProfile screens with the "Obsidian & Gold" design system, using glassmorphism and amber-themed assets (UX-4).
+
 ---
 
 ## 🛠 In Progress / Planned
 
 ### Features & DX
 - [ ] **Full Type Safety:** Implement Supabase CLI type generation to synchronize database schema with TypeScript definitions, reducing runtime errors.
+- [ ] **TW-Import Sync Optimization:** Replace JSON-stringify diffing with a dedicated `isDirty` flag for TW Import records to improve performance and reliability (RT-4).
 - [ ] **Performance Roadmap:**
   - [ ] **Virtualization:** Implement virtualized lists (e.g., `react-window`) for Player List and Attendance to handle 500+ items.
   - [ ] **Code Splitting:** Defer loading of heavy modules like Audit Logs and TW Statistics using `React.lazy`.
@@ -149,4 +159,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
 
-*Last updated: 2026-05-03 (Security & Integrity Audit 100% Completed)*
+*Last updated: 2026-05-03 (Real-time & UX Health Check 100% Completed)*

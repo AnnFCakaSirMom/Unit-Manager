@@ -34,6 +34,7 @@ export const useDatabaseSync = (
 ): { isSyncing: boolean } => {
 
     const [isSyncing, setIsSyncing] = useState(false);
+    const [reconnectTick, setReconnectTick] = useState(0);
     const { userId } = useAppSelector(state => state.auth);
 
     // ── Subscribe to SyncManager's global loading state ──────────────────────
@@ -82,6 +83,7 @@ export const useDatabaseSync = (
         });
     }, [dispatch]);
 
+
     // ── Initial Hydration (players + TW import — available to all roles) ──────
     useEffect(() => {
         loadPlayers();
@@ -96,8 +98,21 @@ export const useDatabaseSync = (
         loadGroups();
         loadTWData();
 
+        // RT-5: On reconnect (tick > 0), also re-fetch all-role data to cover
+        // any database events missed while the channel was down.
+        if (reconnectTick > 0) {
+            console.log(`[Realtime] Re-fetching all data after reconnect (attempt ${reconnectTick})…`);
+            loadPlayers();
+            loadTWImport();
+        }
+
         // Use a unique channel ID per session to ensure a fresh connection
         const channelId = `db-sync-${Math.random().toString(36).substring(7)}`;
+
+        // RT-5: Closure variables for reconnect guard and backoff tracking.
+        // These are scoped to this effect run so each channel owns its own state.
+        let isCleaningUp = false;
+        let reconnectAttempts = 0;
         
         const channel = supabase
             .channel(channelId)
@@ -136,14 +151,32 @@ export const useDatabaseSync = (
             })
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
+                    // RT-5: Successful connection — reset the backoff counter
+                    reconnectAttempts = 0;
                     console.log('[Realtime] Connected and listening for database changes.');
+                } else if ((status === 'CHANNEL_ERROR' || status === 'CLOSED') && !isCleaningUp) {
+                    // RT-5: Exponential backoff — 1s → 2s → 4s → … capped at 30s
+                    const delayMs = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    reconnectAttempts++;
+                    console.warn(
+                        `[Realtime] Channel ${status}. ` +
+                        `Reconnecting in ${delayMs / 1000}s (attempt ${reconnectAttempts})…`
+                    );
+                    setTimeout(() => {
+                        if (!isCleaningUp) {
+                            // Bumping the tick causes this useEffect to re-run:
+                            // cleanup removes the broken channel, then a fresh one is created.
+                            setReconnectTick(t => t + 1);
+                        }
+                    }, delayMs);
                 }
             });
 
         return () => {
+            isCleaningUp = true;
             supabase.removeChannel(channel);
         };
-    }, [isOfficerPlus, loadGroups, loadPlayers, loadTWImport, loadTWData, userId]);
+    }, [isOfficerPlus, loadGroups, loadPlayers, loadTWImport, loadTWData, userId, reconnectTick]);
 
     return { isSyncing };
 };

@@ -35,6 +35,7 @@ import { toggleHelpMode } from '../state/slices/uiSlice';
 export const Sidebar: React.FC<SidebarProps> = (props) => {
     const players = useAppSelector(state => state.player.players);
     const showHelpMode = useAppSelector(state => state.ui.showHelpMode);
+    const isSyncing = useAppSelector(state => state.ui.isSyncing);
     const dispatch = useAppDispatch();
     const [suspiciousCount, setSuspiciousCount] = useState(0);
 
@@ -52,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
     const {
         selectedPlayerId, selectedGroupId,
         onSelectPlayer, onSelectGroup, onOpenAttendance, onOpenTWStatistics, onOpenProfileMatcher, onOpenAdminPanel,
-        pendingApprovalsCount, statusMessage, setStatusMessage, setConfirmModal, isPlayerListOpen,
+        pendingApprovalsCount, setStatusMessage, setConfirmModal, isPlayerListOpen,
         onTogglePlayerList
     } = props;
 
@@ -184,13 +185,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                         </button>
                     </div>
                 )}
-
-                <div className="h-5 mt-2 text-center">
-                    {statusMessage && <p className={cn("text-sm", statusMessage.startsWith('Error') ? 'text-red-400' : 'text-green-400')}>{statusMessage}</p>}
-                </div>
             </header>
-
-
 
             {canAddPlayers && (
                 <div className="flex items-center gap-2 mb-3 flex-shrink-0">
@@ -199,7 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                 </div>
             )}
 
-            {canViewPlayerList && (
+                {canViewPlayerList && (
                 <div className="border-t border-gray-700 pt-2">
                     <Button
                         variant="ghost"
@@ -208,18 +203,33 @@ export const Sidebar: React.FC<SidebarProps> = (props) => {
                         title={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
                         aria-label={isPlayerListOpen ? "Collapse Players List" : "Expand Players List"}
                     >
-                        <h2 className="text-base font-semibold text-gray-300 flex items-center gap-2"><Users size={18} /> Players ({players.filter(p => !p.notInHouse).length})</h2>
+                        <h2 className="text-base font-semibold text-gray-300 flex items-center gap-2"><Users size={18} /> Players ({players.filter(p => notInHouse ? p.notInHouse : !p.notInHouse).length})</h2>
                         {isPlayerListOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </Button>
                     {isPlayerListOpen && (
-                        <PlayerList
-                            selectedPlayerId={selectedPlayerId}
-                            onSelectPlayer={onSelectPlayer}
-                            setConfirmModal={setConfirmModal}
-                            setStatusMessage={setStatusMessage}
-                            notInHouse={notInHouse}
-                            setNotInHouse={setNotInHouse}
-                        />
+                        isSyncing && players.length === 0 ? (
+                            // UX-3: Loading skeleton — shown during initial data hydration
+                            <div className="mt-2 space-y-2" aria-label="Loading players..." aria-busy="true">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="flex items-center gap-2 px-2 py-2 rounded-md">
+                                        <div className="w-5 h-5 rounded-full bg-gray-700/70 animate-pulse flex-shrink-0" />
+                                        <div
+                                            className="h-3 rounded bg-gray-700/70 animate-pulse"
+                                            style={{ width: `${55 + i * 12}%` }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <PlayerList
+                                selectedPlayerId={selectedPlayerId}
+                                onSelectPlayer={onSelectPlayer}
+                                setConfirmModal={setConfirmModal}
+                                setStatusMessage={setStatusMessage}
+                                notInHouse={notInHouse}
+                                setNotInHouse={setNotInHouse}
+                            />
+                        )
                     )}
                 </div>
             )}

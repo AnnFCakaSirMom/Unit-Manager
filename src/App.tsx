@@ -25,6 +25,7 @@ import { fetchUnitsFromSupabase } from './state/slices/unitSlice';
 import { useAuth } from './hooks/useAuth';
 import { useNavigationState } from './hooks/useNavigationState';
 import { useDatabaseSync } from './hooks/useDatabaseSync';
+import { StatusToast } from './components/StatusToast';
 
 declare global {
     interface Window {
@@ -79,9 +80,9 @@ const App: React.FC = () => {
 
         fetchCount();
 
-        // Subscribe to changes in the profiles table
+        // RT-3: Use a unique channel ID per session (consistent with the rest of the app)
         const channel = supabase
-            .channel('pending-approvals-count')
+            .channel(`pending-approvals-${Math.random().toString(36).substring(7)}`)
             .on('postgres_changes', { 
                 event: '*', 
                 schema: 'public', 
@@ -118,6 +119,7 @@ const App: React.FC = () => {
 
     const players = useAppSelector(state => state.player.players);
     const groups = useAppSelector(state => state.group.groups);
+    const isSyncing = useAppSelector(state => state.ui.isSyncing);
 
     const selectedPlayer = useMemo(() => players.find((p: any) => p.id === selectedPlayerId), [players, selectedPlayerId]);
     const selectedGroup = useMemo(() => groups.find((g: any) => g.id === selectedGroupId), [groups, selectedGroupId]);
@@ -209,9 +211,17 @@ const App: React.FC = () => {
                                         setConfirmModal={setConfirmModal}
                                     />
                                 ) : (
-                                    <div className="flex items-center justify-center h-full text-center text-gray-500">
-                                        <h2 className="text-xl">Select a player or group to get started.</h2>
-                                    </div>
+                                    isSyncing && players.length === 0 ? (
+                                        // UX-3: Initial loading state for main content area
+                                        <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-500">
+                                            <div className="w-8 h-8 rounded-full border-2 border-amber-500/30 border-t-amber-500/80 animate-spin" />
+                                            <p className="text-sm font-medium tracking-wide">Loading data…</p>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full text-center text-gray-500">
+                                            <h2 className="text-xl">Select a player or group to get started.</h2>
+                                        </div>
+                                    )
                                 )}
                             </main>
                         </div>
@@ -232,6 +242,12 @@ const App: React.FC = () => {
                                 onConfirm={confirmModal.onConfirm} 
                             />
                         )}
+
+                        {/* UX-2: Global status toast — visible for ALL roles (officers + members) */}
+                        <StatusToast
+                            message={statusMessage}
+                            onDismiss={() => setStatusMessage('')}
+                        />
                     </div>
         </AuthGuard>
     );
