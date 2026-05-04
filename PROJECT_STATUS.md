@@ -119,7 +119,7 @@ A web application to manage player units, groups, and Territory War (TW) statist
   - **Audit Integrity:** Enforced `actor_id` identity in RLS policies to prevent log forgery.
   - **Debounce Fix:** Added `UPDATE` policies to `audit_logs` to enable functional 5-minute debouncing.
   - **Leak Remediation:** Re-restricted `tw_history` and `tw_import_list` to Officer+ only, correcting regressive policies.
-  - **Granular Access Control:** Replaced broad `FOR ALL` policies with per-operation rules (`SELECT`/`INSERT`/`UPDATE`), restricting `DELETE` privileges to Admin+ on all strategic tables.
+  - **Granular Access Control:** Replaced broad `FOR ALL` policies with per-operation rules (`SELECT`/`INSERT`/`UPDATE`), restricting `DELETE` privileges to Admin+ on strategic tables, while ensuring Members maintain `DELETE` rights for their own `profile_units` to enable barrack pruning.
 - [x] **Stability & Sync Resilience:**
   - **Hydration Safety:** Refactored `hydratePlayers` to prevent locally-added "dirty" players from being dropped during background syncs.
   - **Atomic Unit Sync:** Replaced destructive delete-insert logic in `playerService` with an atomic upsert-and-prune approach, eliminating the "zero-unit window" race condition.
@@ -141,6 +141,10 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Contextual UI Fixes:** Corrected the Sidebar player count to respect the active "Inactive" filter and assigned unique session IDs to all Real-time channels to prevent multi-tab conflicts (RT-3, UX-6).
 - [x] **Premium Auth UX:** Harmonized AuthGuard loading and NoProfile screens with the "Obsidian & Gold" design system, using glassmorphism and amber-themed assets (UX-4).
 
+### 14. Member Lifecycle & RLS Reliability (May 2026)
+- [x] **Member Unit Deletion:** Fixed a critical RLS policy on `profile_units` that previously blocked Members (weight 2) from deleting their own unit records. The `DELETE` policy now correctly allows owners to prune their barracks while maintaining Officer+ administrative oversight.
+- [x] **Sync Feedback Analysis:** Investigated and verified the "3-step" sync behavior (role fetch, auth sync, player hydration) to ensure that automated profile updates don't cause redundant overhead during unit management.
+
 ---
 
 ## 🛠 In Progress / Planned
@@ -161,4 +165,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
 
-*Last updated: 2026-05-03 (Real-time Role Propagation & UX Health Check 100% Completed)*
+*Last updated: 2026-05-04 (Member Unit Deletion RLS Fix & Lifecycle Verification)*
