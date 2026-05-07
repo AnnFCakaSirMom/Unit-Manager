@@ -141,9 +141,11 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Contextual UI Fixes:** Corrected the Sidebar player count to respect the active "Inactive" filter and assigned unique session IDs to all Real-time channels to prevent multi-tab conflicts (RT-3, UX-6).
 - [x] **Premium Auth UX:** Harmonized AuthGuard loading and NoProfile screens with the "Obsidian & Gold" design system, using glassmorphism and amber-themed assets (UX-4).
 
-### 14. Member Lifecycle & RLS Reliability (May 2026)
-- [x] **Member Unit Deletion:** Fixed a critical RLS policy on `profile_units` that previously blocked Members (weight 2) from deleting their own unit records. The `DELETE` policy now correctly allows owners to prune their barracks while maintaining Officer+ administrative oversight.
-- [x] **Sync Feedback Analysis:** Investigated and verified the "3-step" sync behavior (role fetch, auth sync, player hydration) to ensure that automated profile updates don't cause redundant overhead during unit management.
+### 15. Delta Sync Architecture (Completed May 2026)
+- [x] **Surgical Player Updates:** Replaced the "Hammer" approach (full re-fetches) with surgical player-level updates using Supabase Realtime payloads, reducing network load from O(N*M) to O(1) per update.
+- [x] **Race Condition Protection:** Implemented `isDirty` and `updatedAt` guards in the `playerSlice` to ensure local changes are never overwritten by stale server data or out-of-order payloads.
+- [x] **Optimized Rendering:** Leveraged Immer's structural sharing in the `updateSinglePlayer` reducer to maintain object reference stability, enabling optimal React memoization and eliminating full-list re-renders.
+- [x] **Production Hardening:** Implemented a feature-flagged rollout (`DELTA_SYNC_ENABLED`) and environment-aware logging (`import.meta.env.DEV`) to ensure stability and maintainability.
 
 ## 🛠 In Progress / Planned
 
@@ -151,22 +153,9 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [ ] **Full Type Safety:** Implement Supabase CLI type generation to synchronize database schema with TypeScript definitions, reducing runtime errors.
 - [ ] **TW-Import Sync Optimization:** Replace JSON-stringify diffing with a dedicated `isDirty` flag for TW Import records to improve performance and reliability (RT-4).
 - [ ] **Performance Roadmap:**
-  - [ ] **Delta Sync Implementation:** Migrate from full-database fetches to surgical player-level updates based on the May 2026 Audit.
   - [ ] **Virtualization:** Implement virtualized lists (e.g., `react-window`) for Player List and Attendance to handle 500+ items.
   - [ ] **Code Splitting:** Defer loading of heavy modules like Audit Logs and TW Statistics using `React.lazy`.
   - [ ] **Synergy Tools:** Group view improvements to visualize unit synergies (Shields + Heals).
-
-## 🔍 Performance & Concurrency Audit (May 2026)
-
-### Identified Bottlenecks
-- **Over-fetching (The "Hammer" approach):** Currently, any change to `profiles` or `profile_units` triggers a Realtime signal that causes *all* connected users to re-fetch the *entire* player database. This scales poorly (O(N*M)) and causes significant network/DB load.
-- **Redux Rendering Overhead:** The `hydratePlayers` action replaces the entire `players` array. This breaks object references and forces React to perform a deep diff/re-render of the entire player list, even if only one unit for one player was changed.
-- **UI Lag:** The combination of a large JSON download and a full-list re-render is the primary cause of the "slow update" feel reported by users.
-
-### Proposed Solution: Delta Sync Architecture
-- **Surgical Updates:** Modify `useDatabaseSync.ts` to use the Supabase Realtime `payload`. Instead of a full `loadPlayers()` call, the app should fetch *only* the specific player that changed.
-- **Partial Hydration:** Add a `updateSinglePlayer` reducer to `playerSlice.ts` that merges updates for a specific ID into the existing array without replacing other player objects.
-- **Scalability:** This transition from "Full Fetch" to "Delta Fetch" will allow the app to handle 100+ concurrent users with minimal latency and minimal database pressure.
 
 ---
 
@@ -176,5 +165,5 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
 
-*Last updated: 2026-05-05 (Performance & Concurrency Audit Results Added)*
+*Last updated: 2026-05-07 (Delta Sync Architecture Implemented)*
 

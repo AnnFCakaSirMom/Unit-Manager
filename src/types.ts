@@ -65,6 +65,7 @@ export interface Player {
   aliases?: string[];
   role?: UserRole;
   isDirty?: boolean;
+  updatedAt?: string;
 }
 
 export interface UnitTiers {

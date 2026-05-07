@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../services/supabase';
-import { fetchPlayersFromSupabase } from '../services/playerService';
+import { fetchPlayersFromSupabase, fetchSinglePlayer } from '../services/playerService';
 import { fetchGroupsFromSupabase } from '../services/groupService';
 import { fetchTWAttendanceData } from '../services/twAttendanceService';
 import { fetchTWImport } from '../services/twImportService';
 import { syncManager } from '../services/SyncManager';
 import { AppDispatch } from '../state/store';
-import { hydratePlayers } from '../state/slices/playerSlice';
+import { hydratePlayers, updateSinglePlayer } from '../state/slices/playerSlice';
 import { hydrateGroups } from '../state/slices/groupSlice';
 import { hydrateTWAttendance, hydrateTWData } from '../state/slices/twSlice';
 import { setSyncing } from '../state/slices/uiSlice';
 import { setAuthSession } from '../state/slices/authSlice';
 import { useAppSelector } from '../state/store';
+import { DELTA_SYNC_ENABLED } from '../config/features';
 
 /**
  * useDatabaseSync
@@ -90,6 +91,14 @@ export const useDatabaseSync = (
         });
     }, [dispatch]);
 
+    const loadSinglePlayer = useCallback((profileId: string) => {
+        syncManager.triggerSync(`player-${profileId}`, async (signal) => {
+            const player = await fetchSinglePlayer(profileId, signal);
+            if (player) {
+                dispatch(updateSinglePlayer(player));
+            }
+        });
+    }, [dispatch]);
 
     // ── Initial Hydration (players + TW import — available to all roles) ──────
     useEffect(() => {
@@ -120,10 +129,10 @@ export const useDatabaseSync = (
                 { event: '*', schema: 'public', table: 'profiles' },
                 async (payload) => {
                     // Only act on events that concern our own profile row.
-                    const payloadId = (payload.new as any)?.id || (payload.old as any)?.id;
+                    const payloadId = ((payload as any).new?.id) || ((payload as any).old?.id);
                     if (payloadId !== userId) return;
 
-                    console.log('[Realtime] Own profile changed — re-fetching role...');
+                    if (import.meta.env.DEV) console.log('[Realtime] Own profile changed — re-fetching role...');
                     try {
                         const { data: profile, error } = await supabase
                             .from('profiles')
@@ -141,7 +150,7 @@ export const useDatabaseSync = (
                                 discordNickname: profile.discord_nickname || '',
                                 avatarUrl: avatarUrlRef.current,
                             }));
-                            console.log(`[Realtime] Auth role updated → ${profile.role}`);
+                            if (import.meta.env.DEV) console.log(`[Realtime] Auth role updated → ${profile.role}`);
 
                             // 2. Refresh the JWT in the background so Supabase RLS can switch back
                             //    to the fast path (auth.jwt() app_metadata) instead of falling back
@@ -156,7 +165,7 @@ export const useDatabaseSync = (
             )
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log('[Realtime] Own-profile watcher connected.');
+                    if (import.meta.env.DEV) console.log('[Realtime] Own-profile watcher connected.');
                 }
             });
 
@@ -176,7 +185,7 @@ export const useDatabaseSync = (
         // RT-5: On reconnect (tick > 0), also re-fetch all-role data to cover
         // any database events missed while the channel was down.
         if (reconnectTick > 0) {
-            console.log(`[Realtime] Re-fetching all data after reconnect (attempt ${reconnectTick})…`);
+            if (import.meta.env.DEV) console.log(`[Realtime] Re-fetching all data after reconnect (attempt ${reconnectTick})…`);
             loadPlayers();
             loadTWImport();
         }
@@ -203,21 +212,29 @@ export const useDatabaseSync = (
                 }
 
                 if (table === 'groups' || table === 'group_members') {
-                    console.log('[Realtime] Syncing groups...');
+                    if (import.meta.env.DEV) console.log('[Realtime] Syncing groups...');
                     loadGroups();
                 } else if (table === 'profiles' || table === 'profile_units') {
-                    console.log('[Realtime] Syncing players...');
-                    loadPlayers();
-                    // Note: Auth role updates for the logged-in user are now handled
-                    // exclusively by the own-profile-watch channel above. The previous
-                    // supabase.auth.refreshSession() call has been removed — it was
-                    // unreliable because onAuthStateChange doesn't always fire for
-                    // database-side role changes (as opposed to token expiry refreshes).
+                    if (DELTA_SYNC_ENABLED) {
+                        const changedId = ((payload as any).new?.profile_id)
+                                       || ((payload as any).new?.id)
+                                       || ((payload as any).old?.id);
+                        if (changedId) {
+                            if (import.meta.env.DEV) console.log(`[Realtime] Delta sync for player ${changedId}...`);
+                            loadSinglePlayer(changedId);
+                        } else {
+                            if (import.meta.env.DEV) console.log('[Realtime] Delta sync missing ID, fallback to full sync...');
+                            loadPlayers();
+                        }
+                    } else {
+                        if (import.meta.env.DEV) console.log('[Realtime] Syncing players...');
+                        loadPlayers();
+                    }
                 } else if (table === 'tw_import_list') {
-                    console.log('[Realtime] Syncing TW import list...');
+                    if (import.meta.env.DEV) console.log('[Realtime] Syncing TW import list...');
                     loadTWImport();
                 } else if (table.startsWith('tw_')) {
-                    console.log('[Realtime] Syncing TW metadata...');
+                    if (import.meta.env.DEV) console.log('[Realtime] Syncing TW metadata...');
                     loadTWData();
                 }
             })
@@ -225,7 +242,7 @@ export const useDatabaseSync = (
                 if (status === 'SUBSCRIBED') {
                     // RT-5: Successful connection — reset the backoff counter
                     reconnectAttempts = 0;
-                    console.log('[Realtime] Connected and listening for database changes.');
+                    if (import.meta.env.DEV) console.log('[Realtime] Connected and listening for database changes.');
                 } else if ((status === 'CHANNEL_ERROR' || status === 'CLOSED') && !isCleaningUp) {
                     // RT-5: Exponential backoff — 1s → 2s → 4s → … capped at 30s
                     const delayMs = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
@@ -248,7 +265,7 @@ export const useDatabaseSync = (
             isCleaningUp = true;
             supabase.removeChannel(channel);
         };
-    }, [isOfficerPlus, loadGroups, loadPlayers, loadTWImport, loadTWData, reconnectTick]);
+    }, [isOfficerPlus, loadGroups, loadPlayers, loadSinglePlayer, loadTWImport, loadTWData, reconnectTick]);
 
     return { isSyncing };
 };

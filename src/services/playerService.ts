@@ -26,6 +26,7 @@ type ProfileRow = {
   role: UserRole | null;
   internal_notes: string | null;
   discord_aliases: string[] | null;
+  updated_at?: string;
   profile_units: ProfileUnitRow[];
   player_info: { internal_notes: string }[];
 };
@@ -52,6 +53,7 @@ function transformProfileToPlayer(row: ProfileRow): Player {
     inactiveDate:  row.inactive_date  ?? null,
     aliases:       row.discord_aliases ?? [],
     role:          row.role ?? 'Member',
+    updatedAt:     row.updated_at ?? undefined,
   };
 }
 
@@ -98,6 +100,47 @@ export async function fetchPlayersFromSupabase(signal?: AbortSignal): Promise<Pl
       ...row,
       player_info: manualInfo ? [{ internal_notes: manualInfo }] : (row.player_info || [])
     });
+  });
+}
+
+/**
+ * Fetches a single player profile with their associated units.
+ * Used for delta sync to avoid O(N) fetching.
+ */
+export async function fetchSinglePlayer(profileId: string, signal?: AbortSignal): Promise<Player | null> {
+  console.log(`[playerService] Fetching single player ${profileId} from Supabase...`);
+
+  let profileBuilder = supabase.from('profiles').select(`
+    *,
+    profile_units (
+      unit_name,
+      is_owned,
+      is_prepared,
+      is_mastery,
+      is_favorite
+    )
+  `).eq('id', profileId);
+
+  let infoBuilder = supabase.from('player_info').select('*').eq('player_id', profileId);
+
+  if (signal) {
+    profileBuilder = profileBuilder.abortSignal(signal);
+    infoBuilder = infoBuilder.abortSignal(signal);
+  }
+
+  const [profileResult, infoResult] = await Promise.all([
+    handleQuery<ProfileRow | null>(profileBuilder.maybeSingle() as any, { service: 'playerService', op: `fetchSingleProfile ${profileId}` }, null),
+    handleQuery<any | null>(infoBuilder.maybeSingle() as any, { service: 'playerService', op: `fetchSinglePlayerInfo ${profileId}` }, null)
+  ]);
+
+  if (!profileResult) {
+    if (import.meta.env.DEV) console.warn(`[playerService] Profile not found for ${profileId}`);
+    return null;
+  }
+
+  return transformProfileToPlayer({
+    ...profileResult,
+    player_info: infoResult ? [{ internal_notes: infoResult.internal_notes }] : (profileResult.player_info || [])
   });
 }
 

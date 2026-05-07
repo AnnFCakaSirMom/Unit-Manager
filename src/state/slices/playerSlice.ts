@@ -36,6 +36,39 @@ const playerSlice = createSlice({
       state.players = [...merged, ...dirtyLocalsNotOnServer]
         .sort((a, b) => a.name.localeCompare(b.name));
     },
+    updateSinglePlayer(state, action: PayloadAction<Player>) {
+      const incoming = action.payload;
+      const index = state.players.findIndex(p => p.id === incoming.id);
+
+      if (index === -1) {
+        // Ny spelare — lägg till och sortera
+        state.players.push(incoming);
+        state.players.sort((a, b) => a.name.localeCompare(b.name));
+        return;
+      }
+
+      const existing = state.players[index];
+
+      // 🔑 Skydda dirty-spelare — kasta inte bort osparade lokala ändringar
+      if (existing.isDirty) {
+        console.log(`[Delta] Skippar uppdatering av dirty player ${incoming.id}`);
+        return;
+      }
+
+      // Timestamp-guard: Skippa om incoming är äldre än befintlig data
+      if (existing.updatedAt && incoming.updatedAt) {
+        const existingTs = new Date(existing.updatedAt).getTime();
+        const incomingTs = new Date(incoming.updatedAt).getTime();
+        if (incomingTs <= existingTs) {
+          console.log(`[Delta] Skippar stale payload för ${incoming.id}`);
+          return;
+        }
+      }
+
+      // Immer-kompatibel mutation — ändrar bara det specifika indexet
+      // Övriga element i arrayen behåller sina referenser → React memo slår in
+      state.players[index] = incoming;
+    },
     addPlayer(state, action: PayloadAction<{ name: string }>) {
       const newPlayer: Player = {
         id: crypto.randomUUID(),
@@ -231,6 +264,7 @@ const playerSlice = createSlice({
 
 export const {
   hydratePlayers,
+  updateSinglePlayer,
   addPlayer,
   deletePlayer,
   updatePlayerName,
