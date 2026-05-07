@@ -141,6 +141,10 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Contextual UI Fixes:** Corrected the Sidebar player count to respect the active "Inactive" filter and assigned unique session IDs to all Real-time channels to prevent multi-tab conflicts (RT-3, UX-6).
 - [x] **Premium Auth UX:** Harmonized AuthGuard loading and NoProfile screens with the "Obsidian & Gold" design system, using glassmorphism and amber-themed assets (UX-4).
 
+### 14. Member Lifecycle & RLS Reliability (May 2026)
+- [x] **Member Unit Deletion:** Fixed a critical RLS policy on `profile_units` that previously blocked Members (weight 2) from deleting their own unit records. The `DELETE` policy now correctly allows owners to prune their barracks while maintaining Officer+ administrative oversight.
+- [x] **Sync Feedback Analysis:** Investigated and verified the "3-step" sync behavior (role fetch, auth sync, player hydration) to ensure that automated profile updates don't cause redundant overhead during unit management.
+
 ### 15. Delta Sync Architecture (Completed May 2026)
 - [x] **Surgical Player Updates:** Replaced the "Hammer" approach (full re-fetches) with surgical player-level updates using Supabase Realtime payloads, reducing network load from O(N*M) to O(1) per update.
 - [x] **Race Condition Protection:** Implemented `isDirty` and `updatedAt` guards in the `playerSlice` to ensure local changes are never overwritten by stale server data or out-of-order payloads.
