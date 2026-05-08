@@ -26,11 +26,6 @@ const groupSlice = createSlice({
     setGroups(state, action: PayloadAction<Group[]>) {
       state.groups = action.payload;
     },
-    clearTWAttendanceGroups(state) {
-      // This was 'CLEAR_TW_ATTENDANCE' returning [] previously? 
-      // Wait, clearing TW attendance means groups become empty? The original logic did `return []` for 'CLEAR_TW_ATTENDANCE'.
-      state.groups = [];
-    },
     addGroup(state, action: PayloadAction<{ isMaybe?: boolean } | undefined>) {
       const isMaybe = action.payload?.isMaybe ?? false;
       const groups = state.groups;
@@ -235,7 +230,6 @@ const groupSlice = createSlice({
 export const {
   hydrateGroups,
   setGroups,
-  clearTWAttendanceGroups,
   addGroup,
   deleteGroup,
   updateGroupName,
