@@ -6,6 +6,7 @@ import { upsertTWImport, deleteTWImportEntry } from '../services/twImportService
 import { auditService } from '../services/auditService';
 import { clearPlayerDirtyFlag } from '../state/slices/playerSlice';
 import { clearGroupDirtyFlag } from '../state/slices/groupSlice';
+import { clearTWEntryDirtyFlag } from '../state/slices/twSlice';
 
 export type SyncStatus = 'Syncing' | 'Synced' | 'Error' | 'PermanentError';
 
@@ -205,11 +206,8 @@ export function useCloudSync(
         }
       }
 
-      // TW Attendance Sync
-      const changedTW = currentTWAttendance.filter(p => {
-        const prev = prevTWMap.get(p.discordName);
-        return !prev || JSON.stringify(prev) !== JSON.stringify(p);
-      });
+      // TW Attendance Sync - ONLY sync dirty entries
+      const changedTW = currentTWAttendance.filter(p => p.isDirty);
       const currentTWNames = new Set(currentTWAttendance.map(p => p.discordName));
       const deletedTWNames = prevTWAttendanceRef.current.filter(p => !currentTWNames.has(p.discordName)).map(p => p.discordName);
 
@@ -223,6 +221,9 @@ export function useCloudSync(
         const success = await upsertTWImport(entry);
         if (handleResult(entry.discordName, success, 'twService.upsert')) {
           prevTWMap.set(entry.discordName, entry);
+          if (success) {
+            dispatch(clearTWEntryDirtyFlag({ discordName: entry.discordName }));
+          }
         }
       }
 

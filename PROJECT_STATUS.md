@@ -147,15 +147,15 @@ A web application to manage player units, groups, and Territory War (TW) statist
 
 ### 15. Delta Sync Architecture (Completed May 2026)
 - [x] **Surgical Player Updates:** Replaced the "Hammer" approach (full re-fetches) with surgical player-level updates using Supabase Realtime payloads, reducing network load from O(N*M) to O(1) per update.
-- [x] **Race Condition Protection:** Implemented `isDirty` and `updatedAt` guards in the `playerSlice` to ensure local changes are never overwritten by stale server data or out-of-order payloads.
-- [x] **Optimized Rendering:** Leveraged Immer's structural sharing in the `updateSinglePlayer` reducer to maintain object reference stability, enabling optimal React memoization and eliminating full-list re-renders.
+- [x] **TW-Import Sync Optimization:** Replaced JSON-stringify diffing with a dedicated `isDirty` flag and implemented surgical delta-sync for TW Import records, eliminating race conditions and improving performance (RT-4).
+- [x] **Race Condition Protection:** Implemented `isDirty` and `updatedAt` guards in the `playerSlice` and `twSlice` to ensure local changes are never overwritten by stale server data or out-of-order payloads.
+- [x] **Optimized Rendering:** Leveraged Immer's structural sharing in the update reducers to maintain object reference stability, enabling optimal React memoization.
 - [x] **Production Hardening:** Implemented a feature-flagged rollout (`DELTA_SYNC_ENABLED`) and environment-aware logging (`import.meta.env.DEV`) to ensure stability and maintainability.
 
 ## 🛠 In Progress / Planned
 
 ### Features & DX
 - [ ] **Full Type Safety:** Implement Supabase CLI type generation to synchronize database schema with TypeScript definitions, reducing runtime errors.
-- [ ] **TW-Import Sync Optimization:** Replace JSON-stringify diffing with a dedicated `isDirty` flag for TW Import records to improve performance and reliability (RT-4).
 - [ ] **Performance Roadmap:**
   - [ ] **Virtualization:** Implement virtualized lists (e.g., `react-window`) for Player List and Attendance to handle 500+ items.
   - [ ] **Code Splitting:** Defer loading of heavy modules like Audit Logs and TW Statistics using `React.lazy`.

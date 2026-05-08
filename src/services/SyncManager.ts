@@ -12,7 +12,7 @@
  *    without creating circular dependencies on this service.
  */
 
-export type SyncType = 'players' | 'groups' | 'twData' | 'twImport' | `player-${string}`;
+export type SyncType = 'players' | 'groups' | 'twData' | 'twImport' | `player-${string}` | `tw-entry-${string}`;
 
 type LoadingCallback = (isLoading: boolean) => void;
 

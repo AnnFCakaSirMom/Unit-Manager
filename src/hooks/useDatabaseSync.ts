@@ -3,12 +3,12 @@ import { supabase } from '../services/supabase';
 import { fetchPlayersFromSupabase, fetchSinglePlayer } from '../services/playerService';
 import { fetchGroupsFromSupabase } from '../services/groupService';
 import { fetchTWAttendanceData } from '../services/twAttendanceService';
-import { fetchTWImport } from '../services/twImportService';
+import { fetchTWImport, fetchSingleTWEntry } from '../services/twImportService';
 import { syncManager } from '../services/SyncManager';
 import { AppDispatch } from '../state/store';
 import { hydratePlayers, updateSinglePlayer } from '../state/slices/playerSlice';
 import { hydrateGroups } from '../state/slices/groupSlice';
-import { hydrateTWAttendance, hydrateTWData } from '../state/slices/twSlice';
+import { hydrateTWAttendance, hydrateTWData, updateSingleTWEntry } from '../state/slices/twSlice';
 import { setSyncing } from '../state/slices/uiSlice';
 import { setAuthSession } from '../state/slices/authSlice';
 import { useAppSelector } from '../state/store';
@@ -96,6 +96,15 @@ export const useDatabaseSync = (
             const player = await fetchSinglePlayer(profileId, signal);
             if (player) {
                 dispatch(updateSinglePlayer(player));
+            }
+        });
+    }, [dispatch]);
+
+    const loadSingleTWEntry = useCallback((discordName: string) => {
+        syncManager.triggerSync(`tw-entry-${discordName}`, async (signal) => {
+            const entry = await fetchSingleTWEntry(discordName, signal);
+            if (entry) {
+                dispatch(updateSingleTWEntry(entry));
             }
         });
     }, [dispatch]);
@@ -231,8 +240,20 @@ export const useDatabaseSync = (
                         loadPlayers();
                     }
                 } else if (table === 'tw_import_list') {
-                    if (import.meta.env.DEV) console.log('[Realtime] Syncing TW import list...');
-                    loadTWImport();
+                    if (DELTA_SYNC_ENABLED) {
+                        const changedName = ((payload as any).new?.discord_name)
+                                         || ((payload as any).old?.discord_name);
+                        if (changedName) {
+                            if (import.meta.env.DEV) console.log(`[Realtime] Delta sync TW entry: ${changedName}`);
+                            loadSingleTWEntry(changedName);
+                        } else {
+                            if (import.meta.env.DEV) console.log('[Realtime] Delta sync TW missing name, fallback to full sync...');
+                            loadTWImport();
+                        }
+                    } else {
+                        if (import.meta.env.DEV) console.log('[Realtime] Syncing TW import list...');
+                        loadTWImport();
+                    }
                 } else if (table.startsWith('tw_')) {
                     if (import.meta.env.DEV) console.log('[Realtime] Syncing TW metadata...');
                     loadTWData();
@@ -265,7 +286,7 @@ export const useDatabaseSync = (
             isCleaningUp = true;
             supabase.removeChannel(channel);
         };
-    }, [isOfficerPlus, loadGroups, loadPlayers, loadSinglePlayer, loadTWImport, loadTWData, reconnectTick]);
+    }, [isOfficerPlus, loadGroups, loadPlayers, loadSinglePlayer, loadSingleTWEntry, loadTWImport, loadTWData, reconnectTick]);
 
     return { isSyncing };
 };

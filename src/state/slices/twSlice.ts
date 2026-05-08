@@ -62,8 +62,65 @@ const twSlice = createSlice({
       state.twRecords = action.payload.records;
     },
     hydrateTWAttendance(state, action: PayloadAction<TWAttendancePlayer[]>) {
-      state.twAttendance = action.payload;
+      const serverEntries = action.payload;
+      const serverMap = new Map(serverEntries.map(e => [e.discordName, e]));
+
+      // Merge server data with local state:
+      // - For entries on the server: keep dirty local version, otherwise take server data.
+      const merged = serverEntries.map(serverEntry => {
+        const localEntry = state.twAttendance.find(e => e.discordName === serverEntry.discordName);
+        if (localEntry?.isDirty) {
+          return localEntry; // Keep the pending local version
+        }
+        return serverEntry;
+      });
+
+      // Preserve locally-added dirty entries not yet synced to the server.
+      const dirtyLocalsNotOnServer = state.twAttendance.filter(
+        e => e.isDirty && !serverMap.has(e.discordName)
+      );
+
+      state.twAttendance = [...merged, ...dirtyLocalsNotOnServer];
     },
+    updateSingleTWEntry(state, action: PayloadAction<TWAttendancePlayer>) {
+      const incoming = action.payload;
+      const index = state.twAttendance.findIndex(e => e.discordName === incoming.discordName);
+
+      if (index === -1) {
+        // New entry — add to list
+        state.twAttendance.push(incoming);
+        return;
+      }
+
+      const existing = state.twAttendance[index];
+
+      // 🔑 Protect dirty entries — don't overwrite unsaved local changes
+      if (existing.isDirty) {
+        if (import.meta.env.DEV) console.log(`[Delta-TW] Skipping update for dirty entry ${incoming.discordName}`);
+        return;
+      }
+
+      // Timestamp-guard: Skip if incoming is older than or equal to existing data
+      if (existing.updatedAt && incoming.updatedAt) {
+        const existingTs = new Date(existing.updatedAt).getTime();
+        const incomingTs = new Date(incoming.updatedAt).getTime();
+        if (incomingTs <= existingTs) {
+          if (import.meta.env.DEV) console.log(`[Delta-TW] Skipping stale payload for ${incoming.discordName}`);
+          return;
+        }
+      }
+
+      // Immer-compatible mutation
+      state.twAttendance[index] = incoming;
+    },
+    clearTWEntryDirtyFlag(state, action: PayloadAction<{ discordName: string }>) {
+      const entry = state.twAttendance.find(a => a.discordName === action.payload.discordName);
+      if (entry) {
+        entry.isDirty = false;
+      }
+    },
+    // WARNING: Destructive bulk-import operation (e.g. Raid Helper JSON).
+    // Intentionally overwrites the entire array without respecting isDirty flags.
     setTWAttendance(state, action: PayloadAction<TWAttendancePlayer[]>) {
       state.twAttendance = action.payload;
     },
@@ -138,7 +195,12 @@ const twSlice = createSlice({
         (matchedPlayerId && a.matchedPlayerId === matchedPlayerId)
       );
       if (!alreadyExists) {
-        state.twAttendance.push({ discordName, status: 'Accepted', matchedPlayerId });
+        state.twAttendance.push({ 
+          discordName, 
+          status: 'Accepted', 
+          matchedPlayerId,
+          isDirty: true 
+        });
       }
     },
     // Change a player's attendance status (Accepted <-> Maybe)
@@ -147,6 +209,7 @@ const twSlice = createSlice({
       const entry = state.twAttendance.find(a => a.discordName === discordName);
       if (entry) {
         entry.status = newStatus;
+        entry.isDirty = true;
       }
     }
   }
@@ -155,6 +218,8 @@ const twSlice = createSlice({
 export const {
   hydrateTWData,
   hydrateTWAttendance,
+  updateSingleTWEntry,
+  clearTWEntryDirtyFlag,
   setTWAttendance,
   setTWRecords,
   clearTWAttendance,

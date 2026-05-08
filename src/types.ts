@@ -80,6 +80,8 @@ export interface TWAttendancePlayer {
   discordName: string;
   status: 'Accepted' | 'Maybe';
   matchedPlayerId: string | null;
+  isDirty?: boolean;
+  updatedAt?: string;
 }
 
 export interface TWSeason {
