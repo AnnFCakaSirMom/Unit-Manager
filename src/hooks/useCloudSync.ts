@@ -38,7 +38,10 @@ export function useCloudSync(
     const currentGroups = groups;
     const currentTWAttendance = twAttendance;
     
-    if (!isInitialized.current && currentPlayers.length === 0 && currentGroups.length === 0) {
+    // Wait specifically for players before initializing. Groups may load faster than
+    // players, and initializing with an empty player list would cause all subsequent
+    // edits to be logged as "Added new player" (audit-log race condition).
+    if (!isInitialized.current && currentPlayers.length === 0) {
         return;
     }
 
@@ -227,8 +230,13 @@ export function useCloudSync(
         }
       }
 
-      // Update refs with what was successfully synced (or permanently failed)
-      prevPlayersRef.current = currentPlayers.filter(p => prevPlayersMap.has(p.id));
+      // Update refs with what was successfully synced (or permanently failed).
+      // BUG-AUDITLOG FIX: Use the full currentPlayers list, not filtered by prevPlayersMap.
+      // The old filter caused players that existed in Redux but were not touched during
+      // this sync cycle to be dropped from the "known players" snapshot. On the next
+      // edit those players would be missing from prevPlayersMap, causing the audit log
+      // to incorrectly classify them as new ("Added new player").
+      prevPlayersRef.current = currentPlayers;
       // For groups, we need to maintain order as much as possible
       prevGroupsRef.current = currentGroups.filter(g => prevGroupsMap.has(g.id));
       prevTWAttendanceRef.current = currentTWAttendance.filter(p => prevTWMap.has(p.discordName));
