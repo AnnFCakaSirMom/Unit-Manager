@@ -151,6 +151,8 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Race Condition Protection:** Implemented `isDirty` and `updatedAt` guards in the `playerSlice` and `twSlice` to ensure local changes are never overwritten by stale server data or out-of-order payloads.
 - [x] **Optimized Rendering:** Leveraged Immer's structural sharing in the update reducers to maintain object reference stability, enabling optimal React memoization.
 - [x] **Production Hardening:** Implemented a feature-flagged rollout (`DELTA_SYNC_ENABLED`) and environment-aware logging (`import.meta.env.DEV`) to ensure stability and maintainability.
+- [x] **Sync Performance Tuning:** Optimized the cloud sync debounce from 800ms to 500ms to provide a more responsive "Saved to cloud" experience without impacting API limits.
+- [x] **Data Loss Prevention:** Implemented a browser-level `beforeunload` guard that detects "dirty" unsaved changes across players, groups, and TW attendance, warning users before they accidentally close the tab.
 
 ## 🛠 In Progress / Planned
 
@@ -169,5 +171,5 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
 
-*Last updated: 2026-05-07 (Delta Sync Architecture Implemented)*
+*Last updated: 2026-05-08 (Sync Optimization & Data Protection)*
 

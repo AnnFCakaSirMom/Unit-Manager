@@ -247,11 +247,30 @@ export function useCloudSync(
         setStatusMessage("Saved to cloud.");
       }
 
-    }, 800);
+    }, 500);
 
     return () => clearTimeout(timer);
 
   }, [players, groups, twAttendance, setStatusMessage, actorId, actorNickname, retryTick]);
+
+  // Data Loss Prevention: Warn user if they try to close the tab with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const hasUnsavedChanges = 
+        players.some(p => p.isDirty) || 
+        groups.some(g => g.isDirty) || 
+        twAttendance.some(e => e.isDirty);
+
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [players, groups, twAttendance]);
 
   return { status, isSyncing: status === 'Syncing' };
 }
