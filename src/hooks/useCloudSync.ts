@@ -137,7 +137,7 @@ export function useCloudSync(
       // Execute Player Upserts
       for (const player of changedPlayers) {
         const prev = prevPlayersMap.get(player.id);
-        const success = await upsertPlayer(player);
+        const success = await upsertPlayer(player, prev);
         
         if (handleResult(player.id, success, 'playerService.upsert')) {
           prevPlayersMap.set(player.id, player);

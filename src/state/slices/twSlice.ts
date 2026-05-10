@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import type { TWAttendancePlayer, TWSeason, TWEvent, TWPlayerRecord, TWRecordStatus } from '../../types';
-import { handleTWAttendanceImport as helperHandleTWAttendanceImport, handleTWStatisticsImport as helperHandleTWStatisticsImport } from '../../utils/reducerHelpers';
+import { handleTWAttendanceImport as helperHandleTWAttendanceImport } from '../../utils/reducerHelpers';
 import { RootState } from '../store';
 import { setGroups } from './groupSlice';
 
@@ -37,20 +37,6 @@ export const importTWAttendance = createAsyncThunk<void, { jsonString: string },
   }
 );
 
-// Thunk for importing TW Statistics (needs access to players)
-export const importTWStatisticsRaidHelper = createAsyncThunk<void, { jsonString: string, eventId: string }, { state: RootState }>(
-  'tw/importTWStatisticsRaidHelper',
-  async (payload, { getState, dispatch }) => {
-    const state = getState();
-    const mockAppState: any = {
-      players: state.player.players,
-      twRecords: state.tw.twRecords
-    };
-    
-    const newState = helperHandleTWStatisticsImport(mockAppState, payload);
-    dispatch(setTWRecords(newState.twRecords));
-  }
-);
 
 const twSlice = createSlice({
   name: 'tw',

@@ -147,33 +147,106 @@ export async function fetchSinglePlayer(profileId: string, signal?: AbortSignal)
 /**
  * Upserts a single player into Supabase.
  * Atomically updates `profiles`, `player_info`, and `profile_units`.
+ * @param player The current player state to save
+ * @param prevPlayer Optional baseline. If provided, performs a partial update of only changed fields.
  */
-export async function upsertPlayer(player: Player): Promise<boolean> {
+export async function upsertPlayer(player: Player, prevPlayer?: Player): Promise<boolean> {
   console.log(`[playerService] Upserting player ${player.id} to Supabase...`);
 
-  // 1. Update Profile
-  // We use .update() instead of .upsert() here because Members (weight 2) 
-  // do not have INSERT permissions on the profiles table.
-  // Since a Member is always updating an existing profile linked to their auth.uid(),
-  // .update() is sufficient and bypasses the requirement for INSERT RLS policies.
-  const profileSuccess = await handleMutation(
-    supabase.from('profiles').update({
+  let profileUpdatePayload: any = {};
+  let infoUpdatePayload: string | undefined = undefined;
+  let unitsChanged = true;
+
+  if (prevPlayer) {
+    // 1. Diff Profile Fields
+    if (player.name !== prevPlayer.name) {
+       profileUpdatePayload.discord_nickname = player.name;
+       profileUpdatePayload.display_name = player.name;
+    }
+    if (player.totalLeadership !== prevPlayer.totalLeadership) {
+      profileUpdatePayload.total_leadership = player.totalLeadership ?? 0;
+    }
+    
+    // Safely compare dates (handle null/undefined matching)
+    const safeDateCompare = (a?: string | null, b?: string | null) => (a ?? null) === (b ?? null);
+    if (!safeDateCompare(player.joinedDate, prevPlayer.joinedDate)) profileUpdatePayload.joined_date = player.joinedDate ?? null;
+    if (!safeDateCompare(player.inactiveDate, prevPlayer.inactiveDate)) profileUpdatePayload.inactive_date = player.inactiveDate ?? null;
+    
+    if (player.notInHouse !== prevPlayer.notInHouse) profileUpdatePayload.not_in_house = player.notInHouse;
+    if (player.role !== prevPlayer.role) profileUpdatePayload.role = player.role;
+    
+    // Sort arrays to safely stringify and compare
+    const currentAliasesStr = JSON.stringify([...(player.aliases || [])].sort());
+    const prevAliasesStr = JSON.stringify([...(prevPlayer.aliases || [])].sort());
+    if (currentAliasesStr !== prevAliasesStr) {
+        profileUpdatePayload.discord_aliases = player.aliases ?? [];
+    }
+
+    // 2. Diff Info Fields
+    const info = player.player_info?.[0]?.internal_notes ?? player.info ?? '';
+    const prevInfo = prevPlayer.player_info?.[0]?.internal_notes ?? prevPlayer.info ?? '';
+    if (info !== prevInfo) {
+       infoUpdatePayload = info;
+    }
+
+    // 3. Diff Units (Sort before stringify)
+    const sortArr = (arr?: string[]) => [...(arr || [])].sort();
+    const currentUnitsStr = JSON.stringify({
+      u: sortArr(player.units),
+      p: sortArr(player.preparedUnits),
+      m: sortArr(player.masteryUnits),
+      f: sortArr(player.favoriteUnits)
+    });
+    const prevUnitsStr = JSON.stringify({
+      u: sortArr(prevPlayer.units),
+      p: sortArr(prevPlayer.preparedUnits),
+      m: sortArr(prevPlayer.masteryUnits),
+      f: sortArr(prevPlayer.favoriteUnits)
+    });
+    
+    if (currentUnitsStr === prevUnitsStr) {
+       unitsChanged = false;
+    }
+
+    if (import.meta.env.DEV) {
+       console.log(`[playerService] Diff for ${player.id}:`, {
+         profileFields: Object.keys(profileUpdatePayload),
+         infoChanged: infoUpdatePayload !== undefined,
+         unitsChanged
+       });
+    }
+
+  } else {
+    // No prevPlayer (new player) - Full payload
+    profileUpdatePayload = {
       discord_nickname: player.name,
       display_name: player.name,
       total_leadership: player.totalLeadership ?? 0,
       joined_date: player.joinedDate ?? null,
       inactive_date: player.inactiveDate ?? null,
       not_in_house: player.notInHouse,
-      role: player.role, // This will be checked by RLS to ensure no unauthorized role changes
+      role: player.role ?? 'Member',
       discord_aliases: player.aliases ?? [],
-    }).eq('id', player.id),
-    { service: 'playerService', op: `updateProfile ${player.id}` }
-  );
+    };
+    infoUpdatePayload = player.player_info?.[0]?.internal_notes ?? player.info ?? '';
+  }
 
-  if (!profileSuccess) {
-    // Fallback: If update failed (e.g. Row doesn't exist yet for a new player), 
-    // we attempt an upsert. This handles both existing and new players.
-    console.log(`[playerService] Update failed or affected no rows for ${player.id}, attempting upsert...`);
+  // 1. Execute Profile Update
+  let profileSuccess = true;
+  let updateAttempted = false;
+
+  if (Object.keys(profileUpdatePayload).length > 0) {
+    updateAttempted = true;
+    profileSuccess = await handleMutation(
+      supabase.from('profiles').update(profileUpdatePayload).eq('id', player.id),
+      { service: 'playerService', op: `updateProfile partial ${player.id}` }
+    );
+  }
+
+  // Fallback to full upsert if update failed (e.g. Row doesn't exist yet for a new player) or if it's a new player.
+  // Note: if updateAttempted is true but profileSuccess is false, it means no rows were updated.
+  if ((updateAttempted && !profileSuccess) || !prevPlayer) {
+    if (import.meta.env.DEV && updateAttempted) console.log(`[playerService] Partial update failed or affected no rows for ${player.id}, falling back to full upsert...`);
     const upsertSuccess = await handleMutation(
       supabase.from('profiles').upsert({
         id: player.id,
@@ -186,65 +259,61 @@ export async function upsertPlayer(player: Player): Promise<boolean> {
         role: player.role ?? 'Member',
         discord_aliases: player.aliases ?? [],
       }),
-      { service: 'playerService', op: `upsertProfile ${player.id}` }
+      { service: 'playerService', op: `upsertProfile full ${player.id}` }
     );
     if (!upsertSuccess) return false;
   }
 
-
-  // 2. Upsert Player Info (Optional - don't fail the whole process)
-  const info = player.player_info?.[0]?.internal_notes || player.info || '';
-  if (info !== undefined || player.player_info !== undefined) {
+  // 2. Upsert Player Info
+  if (infoUpdatePayload !== undefined) {
     await handleMutation(
-      supabase.from('player_info').upsert({ player_id: player.id, internal_notes: info }),
+      supabase.from('player_info').upsert({ player_id: player.id, internal_notes: infoUpdatePayload }),
       { service: 'playerService', op: `upsertPlayerInfo ${player.id}` }
     );
   }
 
   // 3. Upsert Profile Units
-  // BUG-4 FIX: Replace destructive delete-all-then-insert with a safer two-step:
-  //   a) Upsert the current unit set (atomic per-row, no zero-unit window).
-  //   b) Prune any unit rows that are no longer in the player's set.
-  // This eliminates the race condition where a Realtime event fires between
-  // the delete and insert, causing the UI to see a player with zero units.
-  const allUnits = new Set([
-    ...player.units,
-    ...player.preparedUnits,
-    ...player.masteryUnits,
-    ...player.favoriteUnits
-  ]);
+  // BUG-4 FIX: Replace destructive delete-all-then-insert with a safer two-step.
+  if (unitsChanged) {
+    const allUnits = new Set([
+      ...player.units,
+      ...player.preparedUnits,
+      ...player.masteryUnits,
+      ...player.favoriteUnits
+    ]);
 
-  const unitsToUpsert = Array.from(allUnits).map(unit_name => ({
-    profile_id: player.id,
-    unit_name,
-    is_owned: player.units.includes(unit_name),
-    is_prepared: player.preparedUnits.includes(unit_name),
-    is_mastery: player.masteryUnits.includes(unit_name),
-    is_favorite: player.favoriteUnits.includes(unit_name),
-  }));
+    const unitsToUpsert = Array.from(allUnits).map(unit_name => ({
+      profile_id: player.id,
+      unit_name,
+      is_owned: player.units.includes(unit_name),
+      is_prepared: player.preparedUnits.includes(unit_name),
+      is_mastery: player.masteryUnits.includes(unit_name),
+      is_favorite: player.favoriteUnits.includes(unit_name),
+    }));
 
-  if (unitsToUpsert.length > 0) {
-    // Step a: Upsert current units (requires UNIQUE constraint on profile_id + unit_name)
-    const upsertSuccess = await handleMutation(
-      supabase.from('profile_units').upsert(unitsToUpsert, { onConflict: 'profile_id,unit_name' }),
-      { service: 'playerService', op: `upsertUnits ${player.id}` }
-    );
-    if (!upsertSuccess) return false;
+    if (unitsToUpsert.length > 0) {
+      // Step a: Upsert current units (requires UNIQUE constraint on profile_id + unit_name)
+      const upsertSuccess = await handleMutation(
+        supabase.from('profile_units').upsert(unitsToUpsert, { onConflict: 'profile_id,unit_name' }),
+        { service: 'playerService', op: `upsertUnits ${player.id}` }
+      );
+      if (!upsertSuccess) return false;
 
-    // Step b: Prune unit rows that no longer exist in the player's set
-    const unitNames = Array.from(allUnits);
-    await handleMutation(
-      supabase.from('profile_units').delete()
-        .eq('profile_id', player.id)
-        .not('unit_name', 'in', `(${unitNames.map(n => `"${n}"`).join(',')})`),
-      { service: 'playerService', op: `pruneUnits ${player.id}` }
-    );
-  } else {
-    // Player has no units — safe to wipe all rows for this profile
-    await handleMutation(
-      supabase.from('profile_units').delete().eq('profile_id', player.id),
-      { service: 'playerService', op: `clearUnits ${player.id}` }
-    );
+      // Step b: Prune unit rows that no longer exist in the player's set
+      const unitNames = Array.from(allUnits);
+      await handleMutation(
+        supabase.from('profile_units').delete()
+          .eq('profile_id', player.id)
+          .not('unit_name', 'in', `(${unitNames.map(n => `"${n}"`).join(',')})`),
+        { service: 'playerService', op: `pruneUnits ${player.id}` }
+      );
+    } else {
+      // Player has no units — safe to wipe all rows for this profile
+      await handleMutation(
+        supabase.from('profile_units').delete().eq('profile_id', player.id),
+        { service: 'playerService', op: `clearUnits ${player.id}` }
+      );
+    }
   }
 
   return true;

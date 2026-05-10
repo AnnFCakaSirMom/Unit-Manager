@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ConfirmModalInfo } from './types';
 
 import { useFileHandler } from './hooks/useFileHandler';
-import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { useCloudSync } from './hooks/useCloudSync';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -13,10 +12,8 @@ import { TWAttendanceView } from './components/TWAttendanceView';
 import { TWStatisticsView } from './components/TWStatisticsView';
 import { ProfileMatcher } from './components/ProfileMatcher';
 import { AdminPanel } from './components/AdminPanel';
-import { UnitManagementModal } from './components/UnitManagementModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { HelpManualModal } from './components/HelpManualModal';
-import { UploadCloud } from './components/icons';
 
 import { useAppSelector, useAppDispatch } from './state/store';
 import { supabase } from './services/supabase';
@@ -38,7 +35,6 @@ const App: React.FC = () => {
     const reduxDispatch = useAppDispatch();
 
     const [statusMessage, setStatusMessage] = useState<string>("");
-    const [isMgmtModalOpen, setIsMgmtModalOpen] = useState<boolean>(false);
     const [isManualOpen, setIsManualOpen] = useState<boolean>(false);
     const [confirmModal, setConfirmModal] = useState<ConfirmModalInfo>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
     const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
@@ -121,29 +117,17 @@ const App: React.FC = () => {
     const groups = useAppSelector(state => state.group.groups);
     const isSyncing = useAppSelector(state => state.ui.isSyncing);
 
-    const selectedPlayer = useMemo(() => players.find((p: any) => p.id === selectedPlayerId), [players, selectedPlayerId]);
-    const selectedGroup = useMemo(() => groups.find((g: any) => g.id === selectedGroupId), [groups, selectedGroupId]);
+    const selectedPlayer = useMemo(() => players.find(p => p.id === selectedPlayerId), [players, selectedPlayerId]);
+    const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
 
-    const { processFile, handleSaveData, handleModernOpenFile } = useFileHandler({
+    const { handleSaveData, handleModernOpenFile } = useFileHandler({
         handleSelectPlayer,
         setStatusMessage
     });
 
-    const { isDragging, handleDragOver, handleDragLeave, handleDrop } = useDragAndDrop({
-        onDropFile: (file) => processFile(file, null)
-    });
-
     return (
         <AuthGuard>
-            <div className="bg-transparent text-gray-200 h-screen overflow-hidden font-sans flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-                        {isDragging && (
-                            <div className="drag-over-overlay">
-                                <div className="text-center text-white">
-                                    <UploadCloud size={64} className="mx-auto mb-4" />
-                                    <h2 className="text-2xl font-bold">Drop your .json file here</h2>
-                                </div>
-                            </div>
-                        )}
+            <div className="bg-transparent text-gray-200 h-screen overflow-hidden font-sans flex flex-col">
                         {/* Global Header */}
                         <Header onLogout={handleLogout} syncStatus={status} />
 
@@ -226,11 +210,7 @@ const App: React.FC = () => {
                             </main>
                         </div>
 
-                        {isMgmtModalOpen && (
-                            <UnitManagementModal
-                                onClose={() => setIsMgmtModalOpen(false)}
-                            />
-                        )}
+
 
                         <HelpManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
                         {confirmModal.isOpen && (
