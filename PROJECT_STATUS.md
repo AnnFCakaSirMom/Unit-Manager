@@ -154,9 +154,15 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Sync Performance Tuning:** Optimized the cloud sync debounce from 800ms to 500ms to provide a more responsive "Saved to cloud" experience without impacting API limits.
 - [x] **Data Loss Prevention:** Implemented a browser-level `beforeunload` guard that detects "dirty" unsaved changes across players, groups, and TW attendance, warning users before they accidentally close the tab.
 
+### 16. TW Statistics Reliability & Data Integrity (May 2026)
+- [x] **Pagination for Large Datasets:** Resolved a critical bug where TW Statistics silently truncated records after 1000 rows (PostgREST default). Implemented a `while`-loop pagination system in `twAttendanceService.ts` to ensure 100% data integrity as the database grows.
+- [x] **Instant Import Feedback:** Optimized the TW import flow to perform a local Redux dispatch immediately after the database write, ensuring the UI reflects imported data instantly without waiting for Realtime propagation.
+- [x] **Data Synchronization Hardening:** Investigated and resolved "Ghost Event" issues by ensuring clear event-ID mapping and improving the robustness of the record hydration logic.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
+- [ ] **Stricter Name Matching:** Refine `findMatchedPlayer` logic to eliminate "short-name stealing" (where names like 'Immo' incorrectly match 'immoSoulX') by prioritizing exact matches and aliases.
 - [ ] **Full Type Safety:** Implement Supabase CLI type generation to synchronize database schema with TypeScript definitions, reducing runtime errors.
 - [ ] **Performance Roadmap:**
   - [ ] **Virtualization:** Implement virtualized lists (e.g., `react-window`) for Player List and Attendance to handle 500+ items.
@@ -171,5 +177,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
 
-*Last updated: 2026-05-08 (Sync Optimization & Data Protection)*
-
+*Last updated: 2026-05-10 (TW Stats Reliability & Pagination Fix)*

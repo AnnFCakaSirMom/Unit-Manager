@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAppSelector } from '../state/store';
+import { useAppSelector, useAppDispatch } from '../state/store';
 
 import { Button } from './Button';
 import { Clipboard as Copy, ImportIcon, Settings, Plus, CheckSquare, Square, ChevronUp, ChevronDown, Search } from './icons';
@@ -8,6 +8,7 @@ import { ImportTWStatsModal } from './ImportTWStatsModal';
 import { EditTWAttendanceModal } from './EditTWAttendanceModal';
 import { cn } from '../utils';
 import { saveTWAttendanceRecords } from '../services/twAttendanceService';
+import { setTWRecords } from '../state/slices/twSlice';
 import { auditService } from '../services/auditService';
 import { findMatchedPlayer } from '../utils/reducerHelpers';
 import { HelpIcon } from './HelpIcon';
@@ -17,6 +18,7 @@ import { useTWStats, SortKey } from '../hooks/useTWStats';
 import { formatTWStatsToDiscord, formatTWLeaderboardToDiscord } from '../utils/discordExport';
 
 export const TWStatisticsView: React.FC = () => {
+    const dispatch = useAppDispatch();
     const { userId: actorId, discordNickname: actorNickname } = useAppSelector(state => state.auth);
 
     const {
@@ -73,7 +75,17 @@ export const TWStatisticsView: React.FC = () => {
 
             if (newRecords.length > 0) {
                 await saveTWAttendanceRecords(newRecords);
-                
+
+                // FIX: Immediately update Redux without waiting for Supabase Realtime.
+                // Filter out any existing records for this event (prevents duplicates),
+                // then concat the freshly imported records. Realtime will later confirm
+                // the same data — hydrateTWData is idempotent so that is harmless.
+                dispatch(setTWRecords(
+                    twRecords
+                        .filter(r => r.eventId !== eventId)
+                        .concat(newRecords)
+                ));
+
                 // Log the action
                 const event = activeEvents.find(e => e.id === eventId);
                 await auditService.logAction({

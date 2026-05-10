@@ -9,33 +9,58 @@ import type { TWSeason, TWEvent, TWPlayerRecord } from '../types';
  * Fetches all TW-related data (seasons, events, and records) in a structured format.
  */
 export async function fetchTWAttendanceData(signal?: AbortSignal) {
-  // PERF FIX: Run all three queries in parallel with Promise.all instead of
-  // sequential awaits. This reduces total fetch time by ~2x since the three
-  // tables are independent. Also fixes the signal! non-null assertion (BUG-2 pattern).
+  // PERF FIX: Run seasons + events in parallel, then paginate records separately.
+  // PostgREST has a default max-rows limit (typically 1000). With many players
+  // across many events the record count easily exceeds this, causing the most
+  // recently imported event's records to be silently dropped from Redux.
+  // Pagination via .range() bypasses the server-side limit entirely.
   let seasonsQuery = supabase.from('tw_seasons').select('*').order('start_date', { ascending: false });
   let eventsQuery  = supabase.from('tw_events').select('*').order('date', { ascending: true });
-  let recordsQuery = supabase.from('tw_attendance_records').select('*');
   if (signal) {
     seasonsQuery = seasonsQuery.abortSignal(signal);
     eventsQuery  = eventsQuery.abortSignal(signal);
-    recordsQuery = recordsQuery.abortSignal(signal);
   }
 
   const [
     { data: seasons, error: sErr },
     { data: events,  error: eErr },
-    { data: records, error: rErr }
-  ] = await Promise.all([seasonsQuery, eventsQuery, recordsQuery]);
+  ] = await Promise.all([seasonsQuery, eventsQuery]);
 
-  if (sErr || eErr || rErr) {
-    // Re-throw AbortErrors so SyncManager can handle them correctly.
-    const msg = sErr?.message || eErr?.message || rErr?.message || '';
+  // Paginate attendance records to bypass PostgREST's default row limit.
+  const PAGE_SIZE = 1000;
+  let allRecordRows: any[] = [];
+  let from = 0;
+  while (true) {
+    let pageQuery = supabase
+      .from('tw_attendance_records')
+      .select('*')
+      .range(from, from + PAGE_SIZE - 1);
+    if (signal) pageQuery = pageQuery.abortSignal(signal);
+    const { data: page, error: rErr } = await pageQuery;
+    if (rErr) {
+      const msg = rErr.message || '';
+      if (msg.includes('abort')) {
+        const e = new Error('AbortError'); e.name = 'AbortError'; throw e;
+      }
+      console.error('[twAttendanceService] Records page fetch error:', rErr);
+      throw new Error('Could not fetch TW attendance records');
+    }
+    if (!page || page.length === 0) break;
+    allRecordRows = allRecordRows.concat(page);
+    if (page.length < PAGE_SIZE) break; // Last page — no more rows
+    from += PAGE_SIZE;
+  }
+  const records = allRecordRows;
+
+  // Seasons/events errors (records errors are handled inside the pagination loop above).
+  if (sErr || eErr) {
+    const msg = sErr?.message || eErr?.message || '';
     if (msg.includes('abort')) {
       const e = new Error('AbortError');
       e.name = 'AbortError';
       throw e;
     }
-    console.error('[twAttendanceService] Fetch error:', { sErr, eErr, rErr });
+    console.error('[twAttendanceService] Fetch error:', { sErr, eErr });
     throw new Error('Could not fetch TW attendance data');
   }
 
