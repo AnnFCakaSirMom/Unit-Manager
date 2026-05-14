@@ -8,7 +8,7 @@ import { usePermission } from '../hooks/usePermission';
 import { Button } from './Button';
 import { Select } from './Select';
 import { ConfirmationModal } from './ConfirmationModal';
-import { Check, UserPlus, Link as LinkIcon, AlertTriangle } from './icons';
+import { Check, UserPlus, Link as LinkIcon, AlertTriangle, Trash2 } from './icons';
 import { washName } from '../utils';
 
 interface PendingProfile {
