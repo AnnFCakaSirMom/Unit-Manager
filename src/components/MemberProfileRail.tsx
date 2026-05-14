@@ -102,8 +102,8 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
 
         const channel = supabase
             .channel(channelId)
-            // Listen for changes to our profile row
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, (payload) => {
+            // Listen for changes to our profile row (server-side filtered to our userId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` }, (payload) => {
                 const profileId = (payload.new as any)?.id || (payload.old as any)?.id;
                 if (profileId !== userId) return;
 
@@ -114,8 +114,8 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
                 // RT-1: Sync profile changes (name, role, aliases, etc.) into Redux.
                 triggerPlayerRefresh();
             })
-            // Listen for changes to our unit rows
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_units' }, (payload) => {
+            // Listen for changes to our unit rows (server-side filtered to our userId)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'profile_units', filter: `profile_id=eq.${userId}` }, (payload) => {
                 const profileId = (payload.new as any)?.profile_id || (payload.old as any)?.profile_id;
                 if (profileId !== userId) return;
 
@@ -124,7 +124,7 @@ export const MemberProfileRail: React.FC<MemberProfileRailProps> = ({ setStatusM
             })
             .subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log('[Realtime] Member profile channel connected.');
+                    if (import.meta.env.DEV) console.log('[Realtime] Member profile channel connected.');
                 }
             });
 

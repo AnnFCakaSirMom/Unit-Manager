@@ -15,16 +15,19 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     const { userId, role, isInitialized, discordNickname } = useSelector((state: RootState) => state.auth);
     const [isRequesting, setIsRequesting] = useState(false);
     const [claimedName, setClaimedName] = useState('');
+    const [requestError, setRequestError] = useState<string | null>(null);
 
     const handleRequestAccess = async () => {
         if (!userId) return;
         setIsRequesting(true);
+        setRequestError(null);
         try {
             const { supabase } = await import('../services/supabase');
-            
-            // Create a new pending profile
-            // We MUST provide 'id' (Primary Key) and 'user_id' (Auth link).
-            // Usually these should be the same UUID from the Auth session.
+
+            // SEC: 'role' is intentionally omitted from this payload.
+            // The database column has DEFAULT 'Pending', so the DB assigns the role.
+            // Sending 'role' from the client would allow a malicious actor to
+            // self-assign a privileged role. RLS WITH CHECK enforces this server-side.
             const { data: newProfile, error } = await supabase
                 .from('profiles')
                 .insert({
@@ -32,7 +35,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                     user_id: userId,
                     discord_nickname: discordNickname || '',
                     claimed_name: claimedName.trim() || null,
-                    role: 'Pending'
                 })
                 .select('id, role, discord_nickname')
                 .single();
@@ -40,7 +42,12 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             if (error) throw error;
 
             if (newProfile) {
-                // Update local state to transition to Pending
+                // Defensive guard: the DB should always return 'Pending'.
+                // If it doesn't, something is wrong with our DEFAULT or RLS setup.
+                if (newProfile.role !== 'Pending') {
+                    console.error('[AuthGuard] Unexpected role after insert:', newProfile.role);
+                    throw new Error('Unexpected profile state. Please contact an admin.');
+                }
                 dispatch(setAuthSession({
                     userId: newProfile.id,
                     role: newProfile.role as any,
@@ -48,8 +55,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                 }));
             }
         } catch (err: any) {
-            console.error('Failed to request access:', err.message);
-            alert('Failed to send request: ' + err.message);
+            setRequestError('Failed to send request: ' + err.message);
         } finally {
             setIsRequesting(false);
         }
@@ -106,6 +112,11 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                         </p>
                     </div>
 
+                    {requestError && (
+                        <div className="mb-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+                            {requestError}
+                        </div>
+                    )}
                     <Button
                         onClick={handleRequestAccess}
                         disabled={isRequesting}

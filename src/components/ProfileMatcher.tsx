@@ -8,7 +8,7 @@ import { usePermission } from '../hooks/usePermission';
 import { Button } from './Button';
 import { Select } from './Select';
 import { ConfirmationModal } from './ConfirmationModal';
-import { Check, UserPlus, Link as LinkIcon, AlertTriangle, Trash2 } from './icons';
+import { Check, UserPlus, Link as LinkIcon, AlertTriangle } from './icons';
 import { washName } from '../utils';
 
 interface PendingProfile {
@@ -69,13 +69,17 @@ export const ProfileMatcher: React.FC = () => {
     useEffect(() => {
         fetchProfiles();
 
-        // Subscribe to changes in the profiles table to update the pending list live
+        // Subscribe to Realtime changes — server-side filtered to Pending profiles only.
+        // This component only cares about the pending list (new requests arriving,
+        // or approvals that change role away from 'Pending'). Filtering at the server
+        // means we don't receive noise from Officer edits of Member profiles.
         const channel = supabase
             .channel('profile-matcher-changes')
             .on('postgres_changes', { 
                 event: '*', 
                 schema: 'public', 
-                table: 'profiles' 
+                table: 'profiles',
+                filter: 'role=eq.Pending'
             }, () => {
                 fetchProfiles();
             })
@@ -172,121 +176,62 @@ export const ProfileMatcher: React.FC = () => {
         setMessage(null);
 
         try {
-            // Check hierarchy: Can we manage a Member role?
+            // Frontend permission guard (UX only — the RPC enforces this server-side too)
             if (!canManageRole('Member')) {
-                throw new Error("You do not have permission to assign the Member role.");
+                throw new Error('You do not have permission to assign the Member role.');
             }
 
-            // Update the profile in Supabase
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .update({
-                    role: 'Member',
-                    display_name: localPlayer.name,
-                    total_leadership: localPlayer.totalLeadership || 0,
-                    joined_date: localPlayer.joinedDate || null,
-                    inactive_date: localPlayer.inactiveDate || null,
-                    not_in_house: localPlayer.notInHouse || false,
-                    internal_notes: localPlayer.info || '',
-                    discord_aliases: localPlayer.aliases || []
-                })
-                .eq('id', pendingId);
+            // Build the unit payload for the RPC
+            const allUnitNames = new Set([
+                ...localPlayer.units,
+                ...localPlayer.preparedUnits,
+                ...localPlayer.masteryUnits,
+                ...localPlayer.favoriteUnits,
+            ]);
+            const unitPayload = Array.from(allUnitNames).map(unitName => ({
+                unit_name:   unitName,
+                is_owned:    localPlayer.units.includes(unitName),
+                is_prepared: localPlayer.preparedUnits.includes(unitName),
+                is_mastery:  localPlayer.masteryUnits.includes(unitName),
+                is_favorite: localPlayer.favoriteUnits.includes(unitName),
+            }));
 
-            if (profileError) throw profileError;
+            // Single atomic RPC call — all 8 steps run inside one DB transaction.
+            // If any step fails the entire operation is rolled back automatically.
+            const { data, error } = await supabase.rpc('link_and_approve_profile', {
+                p_pending_id:      pendingId,
+                p_local_player_id: localPlayerId,
+                p_display_name:    localPlayer.name,
+                p_leadership:      localPlayer.totalLeadership || 0,
+                p_joined_date:     localPlayer.joinedDate     || null,
+                p_inactive_date:   localPlayer.inactiveDate   || null,
+                p_not_in_house:    localPlayer.notInHouse     || false,
+                p_internal_notes:  localPlayer.player_info?.[0]?.internal_notes
+                                   ?? localPlayer.info
+                                   ?? null,
+                p_aliases:         localPlayer.aliases || [],
+                p_units:           unitPayload,
+            });
 
-            // Prepare unit rows
-            const unitRows = [];
-            
-            // Get all unique units to iterate over
-            const allUnits = new Set([...localPlayer.units, ...localPlayer.preparedUnits, ...localPlayer.masteryUnits, ...localPlayer.favoriteUnits]);
-            
-            for (const unitName of allUnits) {
-                unitRows.push({
-                    profile_id: pendingId,
-                    unit_name: unitName,
-                    is_owned: localPlayer.units.includes(unitName),
-                    is_prepared: localPlayer.preparedUnits.includes(unitName),
-                    is_mastery: localPlayer.masteryUnits.includes(unitName),
-                    is_favorite: localPlayer.favoriteUnits.includes(unitName)
-                });
+            // Network / Supabase-level error
+            if (error) throw error;
+
+            // Application-level error returned as JSON from the RPC
+            // (e.g. "already approved", "permission denied")
+            if (!data?.success) {
+                throw new Error(data?.message || 'Unknown error from server.');
             }
 
-            if (unitRows.length > 0) {
-                const { error: unitError } = await supabase
-                    .from('profile_units')
-                    .insert(unitRows);
-                    
-                if (unitError) {
-                    console.error("Warning: Profile upgraded, but unit migration failed:", unitError);
-                }
-            }
-
-            // Also migrate player_info (internal notes)
-            if (localPlayer.info) {
-                const { error: infoError } = await supabase
-                    .from('player_info')
-                    .upsert({ 
-                        player_id: pendingId, 
-                        internal_notes: localPlayer.info 
-                    });
-                
-                if (infoError) {
-                    console.error("Warning: Profile upgraded, but notes migration failed:", infoError);
-                }
-            }
-
-            // --- MIGRATION: Move related data in database BEFORE deleting old profile ---
-            
-            // 1. Update TW Attendance (import list)
-            await supabase
-                .from('tw_import_list')
-                .update({ matched_player_id: pendingId })
-                .eq('matched_player_id', localPlayerId);
-
-            // 2. Update TW Statistics (records)
-            await supabase
-                .from('tw_attendance_records')
-                .update({ profile_id: pendingId })
-                .eq('profile_id', localPlayerId);
-
-            // 3. Update Group Memberships
-            await supabase
-                .from('group_members')
-                .update({ profile_id: pendingId })
-                .eq('profile_id', localPlayerId);
-
-            // 4. Update Group Leadership
-            await supabase
-                .from('groups')
-                .update({ leader_id: pendingId })
-                .eq('leader_id', localPlayerId);
-
-            // Update local state by replacing all occurrences of localPlayerId with pendingId
+            // Only update local Redux state after the DB has confirmed success.
+            // This guarantees the frontend reflects the actual DB state.
             dispatch(mergePlayerId({ oldId: localPlayerId, newId: pendingId }));
             dispatch(mergePlayerIdInTW({ oldId: localPlayerId, newId: pendingId }));
             dispatch(mergePlayerIdInGroups({ oldId: localPlayerId, newId: pendingId }));
 
-            setMessage({ text: `Successfully linked and upgraded ${localPlayer.name}!`, type: 'success' });
-            
-            // Remove from the local pending list to update UI
+            setMessage({ text: `✅ ${localPlayer.name} linked and approved!`, type: 'success' });
             setPendingProfiles(prev => prev.filter(p => p.id !== pendingId));
-            
-            // Re-fetch profiles to refresh `linkedProfileIds`
-            fetchProfiles();
-
-            // CLEANUP: Delete the old manually created profile row from Supabase
-            // Since we've already merged its data into the new 'pendingId' row,
-            // the old row at 'localPlayerId' is now a duplicate.
-            if (localPlayerId !== pendingId) {
-                const { error: cleanupError } = await supabase
-                    .from('profiles')
-                    .delete()
-                    .eq('id', localPlayerId);
-                
-                if (cleanupError) {
-                    console.warn("Merge successful, but failed to delete old duplicate profile:", cleanupError);
-                }
-            }
+            fetchProfiles(); // Eagerly refresh linkedProfileIds so the dropdown
+                             // excludes the newly linked player immediately.
 
         } catch (err: any) {
             setMessage({ text: `Merge Failed: ${err.message}`, type: 'error' });

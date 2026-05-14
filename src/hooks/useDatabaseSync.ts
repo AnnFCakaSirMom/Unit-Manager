@@ -135,9 +135,12 @@ export const useDatabaseSync = (
             .channel(channelId)
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'profiles' },
+                // Server-side filter: Supabase only sends events for this user's
+                // own profile row. No need to check payloadId === userId client-side.
+                { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
                 async (payload) => {
-                    // Only act on events that concern our own profile row.
+                    // Server-side filter guarantees this is always our own row —
+                    // the client-side ID check is kept as a cheap defensive guard.
                     const payloadId = ((payload as any).new?.id) || ((payload as any).old?.id);
                     if (payloadId !== userId) return;
 
