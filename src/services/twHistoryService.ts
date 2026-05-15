@@ -6,7 +6,7 @@
 import { supabase } from './supabase';
 import type { TWHistorySnapshot } from '../types';
 
-const MAX_HISTORY_SLOTS = 5;
+const MAX_HISTORY_SLOTS = 10;
 
 /**
  * Fetches all saved snapshots, sorted by date (newest first).
