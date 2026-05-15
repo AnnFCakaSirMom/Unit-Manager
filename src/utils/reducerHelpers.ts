@@ -36,7 +36,8 @@ export const handleTWAttendanceImport = (
                 attendance.push({
                     discordName: signup.name,
                     status: status,
-                    matchedPlayerId: match ? match.id : null
+                    matchedPlayerId: match ? match.id : null,
+                    isDirty: true
                 });
                 
                 if (match) {
