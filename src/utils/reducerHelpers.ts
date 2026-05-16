@@ -1,4 +1,4 @@
-import type { TWAttendancePlayer, TWPlayerRecord, TWRecordStatus, Player, Group } from '../types';
+import type { TWAttendancePlayer, Player, Group } from '../types';
 import { washName } from '../utils';
 
 export const findMatchedPlayer = (players: Player[], discordName: string) => {
@@ -53,11 +53,11 @@ export const handleTWAttendanceImport = (
             return a.discordName.localeCompare(b.discordName);
         });
 
-        // 1. Process existing groups: Remove those who are NOT 'Accepted' or 'Maybe'
+        // 1. Process existing groups: Remove those who are NOT 'Accepted' or 'Maybe'.
         // Collect those who are 'Maybe' but in a combat group to be parked.
         const membersToPark: any[] = [];
         
-        let processedGroups = state.groups.map(group => {
+        let processedGroups: Group[] = state.groups.map(group => {
             const isParkingGroup = group.name.toUpperCase().includes('MAYBE');
             
             const newMembers = group.members.filter(m => {
@@ -77,7 +77,10 @@ export const handleTWAttendanceImport = (
             if (newLeaderId && !newMembers.some(m => m.playerId === newLeaderId)) {
                 newLeaderId = newMembers.length > 0 ? newMembers[0].playerId : null;
             }
-            return { ...group, members: newMembers, leaderId: newLeaderId };
+
+            // FIX-1: Mark every group touched by the import as dirty so
+            // useCloudSync persists the updated membership to Supabase.
+            return { ...group, members: newMembers, leaderId: newLeaderId, isDirty: true };
         });
 
         // 2. Handle parking for collected members
@@ -91,11 +94,15 @@ export const handleTWAttendanceImport = (
                     id: crypto.randomUUID(),
                     name: `MAYBE - Parking ${processedGroups.filter(g => g.name.toUpperCase().includes('MAYBE')).length + 1}`,
                     leaderId: member.playerId,
-                    members: [member]
+                    members: [member],
+                    // FIX-1: New parking groups must be dirty so they are saved to Supabase.
+                    isDirty: true
                 };
                 processedGroups.push(newGroup);
             } else {
                 targetGroup.members.push(member);
+                // Ensure the existing parking group is also marked dirty.
+                targetGroup.isDirty = true;
             }
         });
 

@@ -40,8 +40,13 @@ class SyncManager {
      * @param action - An async factory that accepts an AbortSignal and performs
      *                 the fetch + dispatch. It must propagate the signal to all
      *                 underlying Supabase queries via .abortSignal(signal).
+     * @param onError - Optional callback invoked when the fetch/dispatch fails.
      */
-    public triggerSync(type: SyncType, action: (signal: AbortSignal) => Promise<void>): void {
+    public triggerSync(
+        type: SyncType, 
+        action: (signal: AbortSignal) => Promise<void>,
+        onError?: (err: Error) => void
+    ): void {
         // Clear any pending debounce timer for this type.
         const existingTimer = this.timers[type];
         if (existingTimer !== undefined) {
@@ -50,7 +55,7 @@ class SyncManager {
 
         // Schedule the actual execution after the debounce window.
         this.timers[type] = setTimeout(() => {
-            void this.executeLatest(type, action);
+            void this.executeLatest(type, action, onError);
         }, DEBOUNCE_MS);
     }
 
@@ -72,7 +77,8 @@ class SyncManager {
      */
     private async executeLatest(
         type: SyncType,
-        action: (signal: AbortSignal) => Promise<void>
+        action: (signal: AbortSignal) => Promise<void>,
+        onError?: (err: Error) => void
     ): Promise<void> {
         // Abort the previous in-flight request of this type, if any.
         const previous = this.controllers[type];
@@ -94,6 +100,9 @@ class SyncManager {
                 return; // Silently discard; the newer request will apply the data.
             }
             console.warn(`[SyncManager] Unhandled error during "${type}" sync:`, error);
+            if (error instanceof Error && onError) {
+                onError(error);
+            }
         } finally {
             // Only clean up if this controller is still the current one
             // (i.e. it wasn't already replaced by a newer request).

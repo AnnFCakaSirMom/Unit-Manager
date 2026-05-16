@@ -159,6 +159,18 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Instant Import Feedback:** Optimized the TW import flow to perform a local Redux dispatch immediately after the database write, ensuring the UI reflects imported data instantly without waiting for Realtime propagation.
 - [x] **Data Synchronization Hardening:** Investigated and resolved "Ghost Event" issues by ensuring clear event-ID mapping and improving the robustness of the record hydration logic.
 
+### 17. Stability, Security & Data Integrity Refinement (May 2026)
+- [x] **Comprehensive Functional Audit:** Conducted a 4-phase rigorous audit of Member Management (duplicate prevention), Group Operations (Drag-and-Drop consistency), RBAC Permissions (Gatekeeper vs Admin), and System Stability (Fail-safe JSON).
+- [x] **Interactive Drag-and-Drop:** Implemented a robust, native HTML5-based Drag-and-Drop system for the TW Attendance view, allowing seamless player assignment from attendance lists to groups and inter-group transfers.
+- [x] **Leadership Calculation Engine:** Developed a real-time leadership tracking system with visual overflow alerts (Red/Amber/Gray) and dynamic unit-cost mapping to ensure strategic compliance during group planning.
+- [x] **Two-Step Non-Destructive Upsert:** Refactored `playerService` to use a non-destructive two-step process (Fetch -> Diff -> Update) for profile units, eliminating the high-risk "Delete-then-Insert" pattern that caused temporary data disappearance during sync.
+- [x] **TW Attendance Persistence:** Fixed a bug where imported TW data wasn't syncing to Supabase by adding `isDirty: true` to all groups touched by the import in `reducerHelpers.ts`.
+- [x] **Real-time Group Safety:** Refactored `hydrateGroups` to preserve locally created groups (e.g., from TW import) that haven't been assigned a server-ID yet, preventing silent data wipes during hydration events.
+- [x] **JSON Backup Hardening:** Implemented a hard local role-check (`role === 'Owner'`) within `useFileHandler.ts` to prevent unauthorized save/load triggers via browser console or direct function calls, complementing the existing UI guard.
+- [x] **Modernized Member Notes:** Updated `GroupMemberCard.tsx` to read officer notes from the modern `player_info` structure, ensuring compatibility with the new database schema while maintaining legacy fallback for `player.info`.
+- [x] **Granular Admin Control:** Restricted "Unit Management" access in `AdminPanel.tsx` to Admin+ roles (`canEditSystemConfig`), removing it from the Gatekeeper view for better hierarchical control.
+- [x] **Proactive Sync Error Propagation:** Added a dedicated error callback to `SyncManager.ts` and `useDatabaseSync.ts`, allowing database read/sync failures to be reported instantly via the global `StatusToast` ('Error: Could not sync from server').
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -177,4 +189,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
 
-*Last updated: 2026-05-10 (TW Stats Reliability & Pagination Fix)*
+*Last updated: 2026-05-16 (Stability, Security & Integrity Refinements)*

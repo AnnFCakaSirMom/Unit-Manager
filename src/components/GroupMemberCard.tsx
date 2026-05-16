@@ -25,6 +25,8 @@ export const GroupMemberCard = memo(({ member, player, groupId, isLeader, unitCo
 
     const stats = useGroupMemberStats(member, player, unitCostMap);
 
+    const playerNotes = player.player_info?.[0]?.internal_notes || player.info;
+
     const handleAddManualUnit = useCallback((unitName: string) => {
         dispatch(toggleGroupMemberUnit({ groupId, playerId: player.id, unitName }));
     }, [dispatch, groupId, player.id]);
@@ -60,11 +62,11 @@ export const GroupMemberCard = memo(({ member, player, groupId, isLeader, unitCo
                     <CardTitle className={cn("text-lg flex items-center gap-1.5 font-bold tracking-tight", isLeader ? 'text-amber-100' : 'text-gray-100')}>
                         {player.name}
                         {isLeader && <Star size={14} className="fill-amber-500 text-amber-500" />}
-                        {player.info && (
+                        {playerNotes && (
                             <div className="relative group/info">
                                 <AlertTriangle size={16} className="text-cyan-400 cursor-pointer" aria-label="Player Warning/Info" />
                                 <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 text-white text-sm rounded-lg p-2 opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-[100] shadow-lg">
-                                    {player.info}
+                                    {playerNotes}
                                 </div>
                             </div>
                         )}

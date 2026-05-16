@@ -32,7 +32,8 @@ import { DELTA_SYNC_ENABLED } from '../config/features';
  */
 export const useDatabaseSync = (
     dispatch: AppDispatch,
-    isOfficerPlus: boolean
+    isOfficerPlus: boolean,
+    setStatusMessage: (msg: string) => void
 ): { isSyncing: boolean } => {
 
     const [isSyncing, setIsSyncing] = useState(false);
@@ -67,29 +68,29 @@ export const useDatabaseSync = (
             if (players.length > 0) {
                 dispatch(hydratePlayers(players));
             }
-        });
-    }, [dispatch]);
+        }, () => setStatusMessage('Error: Could not sync from server.'));
+    }, [dispatch, setStatusMessage]);
 
     const loadGroups = useCallback(() => {
         syncManager.triggerSync('groups', async (signal) => {
             const groups = await fetchGroupsFromSupabase(signal);
             dispatch(hydrateGroups(groups));
-        });
-    }, [dispatch]);
+        }, () => setStatusMessage('Error: Could not sync from server.'));
+    }, [dispatch, setStatusMessage]);
 
     const loadTWImport = useCallback(() => {
         syncManager.triggerSync('twImport', async (signal) => {
             const data = await fetchTWImport(signal);
             dispatch(hydrateTWAttendance(data));
-        });
-    }, [dispatch]);
+        }, () => setStatusMessage('Error: Could not sync from server.'));
+    }, [dispatch, setStatusMessage]);
 
     const loadTWData = useCallback(() => {
         syncManager.triggerSync('twData', async (signal) => {
             const data = await fetchTWAttendanceData(signal);
             dispatch(hydrateTWData(data));
-        });
-    }, [dispatch]);
+        }, () => setStatusMessage('Error: Could not sync from server.'));
+    }, [dispatch, setStatusMessage]);
 
     const loadSinglePlayer = useCallback((profileId: string) => {
         syncManager.triggerSync(`player-${profileId}`, async (signal) => {
@@ -97,8 +98,8 @@ export const useDatabaseSync = (
             if (player) {
                 dispatch(updateSinglePlayer(player));
             }
-        });
-    }, [dispatch]);
+        }, () => setStatusMessage('Error: Could not sync from server.'));
+    }, [dispatch, setStatusMessage]);
 
     const loadSingleTWEntry = useCallback((discordName: string) => {
         syncManager.triggerSync(`tw-entry-${discordName}`, async (signal) => {
@@ -106,8 +107,8 @@ export const useDatabaseSync = (
             if (entry) {
                 dispatch(updateSingleTWEntry(entry));
             }
-        });
-    }, [dispatch]);
+        }, () => setStatusMessage('Error: Could not sync from server.'));
+    }, [dispatch, setStatusMessage]);
 
     // ── Initial Hydration (players + TW import — available to all roles) ──────
     useEffect(() => {

@@ -51,7 +51,7 @@ const App: React.FC = () => {
 
     const handleOpenManual = useCallback(() => setIsManualOpen(true), []);
 
-    useDatabaseSync(reduxDispatch, isOfficerPlus);
+    useDatabaseSync(reduxDispatch, isOfficerPlus, setStatusMessage);
 
     useEffect(() => {
         // Fetch units from Supabase at startup

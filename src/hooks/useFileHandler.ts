@@ -16,6 +16,7 @@ export function useFileHandler({ handleSelectPlayer, setStatusMessage }: UseFile
     const [, setFileHandle] = useState<FileSystemFileHandle | null>(null);
 
     const dispatch = useAppDispatch();
+    const role = useAppSelector(state => state.auth.role);
     const players = useAppSelector(state => state.player.players);
     const unitConfig = useAppSelector(state => state.unit.unitConfig);
     const groups = useAppSelector(state => state.group.groups);
@@ -25,6 +26,13 @@ export function useFileHandler({ handleSelectPlayer, setStatusMessage }: UseFile
     const twRecords = useAppSelector(state => state.tw.twRecords);
 
     const processFile = useCallback((file: File, handle: FileSystemFileHandle | null) => {
+        // FIX-3: Hard local guard — only Owner may load a backup file.
+        // This is a defence-in-depth layer on top of the {isOwner && ...} UI guard.
+        // It blocks direct console calls where Redux state has NOT been manipulated.
+        if (role !== 'Owner') {
+            setStatusMessage('Error: Permission denied. Owner role required.');
+            return;
+        }
         if (!file || !file.type.match('application/json')) {
             setStatusMessage("Error: Invalid file type. Please select a .json file.");
             return;
@@ -63,9 +71,14 @@ export function useFileHandler({ handleSelectPlayer, setStatusMessage }: UseFile
             }
         };
         reader.readAsText(file);
-    }, [handleSelectPlayer, dispatch, setStatusMessage]);
+    }, [role, handleSelectPlayer, dispatch, setStatusMessage]);
 
     const handleSaveData = useCallback(async () => {
+        // FIX-3: Hard local guard — only Owner may download a backup.
+        if (role !== 'Owner') {
+            setStatusMessage('Error: Permission denied. Owner role required.');
+            return;
+        }
         const dataToSave = JSON.stringify({ players, unitConfig, groups, twAttendance, twSeasons, twEvents, twRecords }, null, 2);
 
         if (aktivFilHandle) {
@@ -97,7 +110,7 @@ export function useFileHandler({ handleSelectPlayer, setStatusMessage }: UseFile
                 setStatusMessage('Error: Could not save the file.');
             }
         }
-    }, [players, unitConfig, groups, twAttendance, twSeasons, twEvents, twRecords, aktivFilHandle, dispatch, setStatusMessage]);
+    }, [role, players, unitConfig, groups, twAttendance, twSeasons, twEvents, twRecords, aktivFilHandle, dispatch, setStatusMessage]);
 
     const handleLoadData = useCallback(() => {
         const input = document.createElement('input');

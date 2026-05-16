@@ -15,13 +15,25 @@ const groupSlice = createSlice({
   reducers: {
     hydrateGroups(state, action: PayloadAction<Group[]>) {
       const serverGroups = action.payload;
-      state.groups = serverGroups.map(serverGroup => {
+      const serverGroupIds = new Set(serverGroups.map(g => g.id));
+
+      // Map server groups, preserving any local dirty version of a known group.
+      const mappedGroups = serverGroups.map(serverGroup => {
         const localGroup = state.groups.find(g => g.id === serverGroup.id);
         if (localGroup?.isDirty) {
           return localGroup;
         }
         return serverGroup;
       });
+
+      // FIX-2: Re-attach local dirty groups that don't exist in the server response
+      // yet (e.g. newly created groups from a TW import that haven't been persisted).
+      // Without this, a Realtime hydration event would silently wipe them out.
+      const localOnlyDirtyGroups = state.groups.filter(
+        g => g.isDirty && !serverGroupIds.has(g.id)
+      );
+
+      state.groups = [...mappedGroups, ...localOnlyDirtyGroups];
     },
     setGroups(state, action: PayloadAction<Group[]>) {
       state.groups = action.payload;

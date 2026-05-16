@@ -21,35 +21,35 @@ Unit Manager uses a decoupled architecture to ensure the user interface always f
 Security in the application is built directly into the database using Supabase Row Level Security (RLS). We apply a hierarchical role model: `Owner > Admin > Gatekeeper > Officer > Member > Pending/Guest`.
 
 ### `get_my_role_weight()`
-This is the heart of our RLS design. It is a PostgreSQL function that retrieves the logged-in user's role from the `profiles` table and converts it to a numerical value (e.g., Owner = 100, Admin = 80, Officer = 50).
+This is the heart of our RLS design. It is a PostgreSQL function that retrieves the logged-in user's role from the JWT (via `profiles`) and converts it to a numerical value.
 
 **Why RLS and weights?**
-*   **Root-level Security**: Regardless of whether a bug is introduced in the frontend code or someone tries to manipulate API calls directly, the database will refuse to perform unauthorized operations.
-*   **Hierarchical Control**: By using numerical weights, RLS policies can use simple mathematics (e.g., `get_my_role_weight() > target_role_weight`). This makes it possible to dictate that an Officer can update a Member, but never an Admin.
+*   **Root-level Security**: Regardless of frontend bugs, the database refuses unauthorized operations.
+*   **Hierarchical Control**: RLS policies use numerical weights (e.g., `get_my_role_weight() > target_role_weight`), ensuring Officers can update Members but not Admins.
+*   **Defense-in-Depth**: While RLS is the primary guard, high-risk client operations (like JSON backups) include explicit **Role Guards** in hooks (`useFileHandler.ts`) to prevent execution via direct console manipulation.
 
 ## 3. Synchronization and Data Stability
 
-Managing synchronization in an environment where multiple users edit data simultaneously and where the UI is decoupled from the database requires robust mechanisms. We use a bidirectional system.
+### Reads: `SyncManager` & Error Propagation
+When the database changes, Supabase sends Realtime events.
+*   **Debouncing & AbortControllers**: `SyncManager` buffers events and uses `AbortControllers` to ensure only the *latest* request for a specific data type is processed.
+*   **Error Callback**: `SyncManager` supports an `onError` callback. If a background sync fails (e.g., transient network error), it propagates to the global `StatusToast` via `useDatabaseSync`, providing immediate visibility of data health.
+*   **Hydration Safety**: During real-time hydration, the system checks the `isDirty` flag in Redux. If a local object has unsaved changes, it is **preserved** rather than overwritten by server data, preventing data loss during active editing.
 
-### Reads: `SyncManager` and `useDatabaseSync`
-When changes occur in the database, Supabase sends Realtime events. If we were to fetch new data for every event, the application would quickly become overloaded.
-*   **SyncManager**: Acts as a buffer. It uses *debouncing* (delay) and *AbortControllers* to ensure only the latest request goes through if multiple events are received in rapid succession.
-*   **Why?** Prevents "race conditions" and unnecessary network calls, saving bandwidth and keeping the UI stable.
-
-### Writes: `useCloudSync` and Circuit Breaker
-When the user changes data in Redux, `useCloudSync` is responsible for sending this to Supabase.
-*   **Diffing**: The hook constantly compares the current Redux state with an internal reference (what was last saved) and only sends objects that have actually changed.
-*   **Circuit Breaker**: If an update fails (e.g., due to RLS errors or network issues), the system will retry. To prevent infinite loops that spam the database with faulty requests, the number of failures per object ID is tracked. After **5 failed attempts**, the circuit breaker trips for that specific object, logs a permanent error, and stops retrying.
-*   **Why?** This "Smart Retry" logic is critical for system health. It protects the backend from being overloaded by clients stuck in an error state, while giving temporary network errors a chance to resolve themselves.
+### Writes: `useCloudSync` & Atomic Patterns
+*   **isDirty Flagging**: Edits mark objects as `isDirty: true`. `useCloudSync` debounces these changes and persists them to Supabase.
+*   **Non-Destructive Upsert**: To prevent "zero-data" windows during sync, `playerService` uses a non-destructive two-step process: Fetch existing state -> Diff -> Update. This avoids the destructive "Delete-then-Insert" pattern.
+*   **Data Loss Prevention**: A browser-level `beforeunload` listener detects `isDirty` objects and warns the user if they try to close the tab while data is still syncing.
+*   **Circuit Breaker**: Updates per object are tracked; after **5 failed attempts**, the system logs a `PermanentError` and stops retrying to prevent DB flooding.
 
 ## 4. Environment Variables
 
-To run the project locally, the application must be able to communicate with a Supabase instance. The following environment variables must be configured (usually in a `.env.local` or `.env` file in the root of the project):
+To run the project locally, configure the following in `.env.local`:
 
 ```env
 VITE_SUPABASE_URL="https://your-project-id.supabase.co"
 VITE_SUPABASE_ANON_KEY="your-long-anon-key-here"
 ```
 
-*   **`VITE_SUPABASE_URL`**: The unique URL for your Supabase database.
-*   **`VITE_SUPABASE_ANON_KEY`**: The public key. It is safe to expose this in the client, as all actual data security and authorization are handled by the RLS rules in the database using JWT tokens from the login.
+*   **`VITE_SUPABASE_URL`**: Your unique Supabase project URL.
+*   **`VITE_SUPABASE_ANON_KEY`**: The public key. Security is handled by RLS rules via JWT tokens, making it safe for client exposure.

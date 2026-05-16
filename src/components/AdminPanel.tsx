@@ -16,7 +16,7 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose }) => {
-    const { isOwner } = usePermission();
+    const { isOwner, canEditSystemConfig } = usePermission();
     const [activeTab, setActiveTab] = useState<'tools' | 'logs'>('tools');
 
     const [isMgmtModalOpen, setIsMgmtModalOpen] = useState(false);
@@ -134,26 +134,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose 
                             </div>
                         )}
 
-                        <div className="bg-black/40 border border-amber-500/10 rounded-2xl p-6 flex flex-col gap-6 shadow-xl group hover:border-amber-500/20 transition-all">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-100 flex items-center gap-2">
-                                    <Settings size={20} className="text-amber-500/60 group-hover:text-amber-500 transition-colors" />
-                                    Unit Management
-                                </h3>
-                                <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-                                    Add, edit, or remove units from the global unit list. Changes affect all players immediately.
-                                </p>
+                        {canEditSystemConfig && (
+                            <div className="bg-black/40 border border-amber-500/10 rounded-2xl p-6 flex flex-col gap-6 shadow-xl group hover:border-amber-500/20 transition-all">
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-100 flex items-center gap-2">
+                                        <Settings size={20} className="text-amber-500/60 group-hover:text-amber-500 transition-colors" />
+                                        Unit Management
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                                        Add, edit, or remove units from the global unit list. Changes affect all players immediately.
+                                    </p>
+                                </div>
+                                <div className="mt-auto">
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => setIsMgmtModalOpen(true)}
+                                        className="w-full font-bold text-xs uppercase tracking-wider border-white/5"
+                                    >
+                                        <Settings size={16} /> Manage Units
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="mt-auto">
-                                <Button
-                                    variant="secondary"
-                                    onClick={() => setIsMgmtModalOpen(true)}
-                                    className="w-full font-bold text-xs uppercase tracking-wider border-white/5"
-                                >
-                                    <Settings size={16} /> Manage Units
-                                </Button>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 ) : (
                     <AuditLogPanel />
