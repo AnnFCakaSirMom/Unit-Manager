@@ -276,7 +276,7 @@ export const TWHistoryModal: React.FC<TWHistoryModalProps> = ({ isOpen, onClose,
                         </span>
                     )}
                     {!clipboard.type && (
-                        <span>A maximum of 5 snapshots are saved. The oldest is automatically deleted upon a new save.</span>
+                        <span>A maximum of 10 snapshots are saved. The oldest is automatically deleted upon a new save.</span>
                     )}
                 </div>
             </div>

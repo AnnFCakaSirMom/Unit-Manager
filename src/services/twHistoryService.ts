@@ -51,7 +51,7 @@ export async function saveHistorySnapshot(
 
     // 2. If we already have MAX slots, delete the oldest
     if (existing && existing.length >= MAX_HISTORY_SLOTS) {
-        const toDelete = existing.slice(MAX_HISTORY_SLOTS - 1); // Everything from slot 5 onwards
+        const toDelete = existing.slice(MAX_HISTORY_SLOTS - 1); // Everything from slot 10 onwards
         const idsToDelete = toDelete.map((r: any) => r.id);
         
         const { error: deleteError } = await supabase

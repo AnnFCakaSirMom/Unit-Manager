@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../state/store';
-import { upsertPlayer /*, deletePlayer */ } from '../services/playerService';
-import { upsertGroup /*, deleteGroup */ } from '../services/groupService';
+import { upsertPlayer } from '../services/playerService';
+import { upsertGroup } from '../services/groupService';
 import { upsertTWImport, deleteTWImportEntry } from '../services/twImportService';
 import { auditService } from '../services/auditService';
 import { clearPlayerDirtyFlag } from '../state/slices/playerSlice';
@@ -77,17 +77,9 @@ export function useCloudSync(
 
       // 1. Diffs for Players - ONLY sync dirty players
       const changedPlayers = currentPlayers.filter(p => p.isDirty);
-      /*
-      const currentPlayerIds = new Set(currentPlayers.map(p => p.id));
-      const deletedPlayers = prevPlayersRef.current.filter(p => !currentPlayerIds.has(p.id));
-      */
 
       // 2. Diffs for Groups - ONLY sync dirty groups
       const changedGroups = currentGroups.filter(g => g.isDirty);
-      /*
-      const currentGroupIds = new Set(currentGroups.map(g => g.id));
-      const deletedGroups = prevGroupsRef.current.filter(g => !currentGroupIds.has(g.id));
-      */
 
       let hasErrors = false;
       let hasPermanentErrors = false;
@@ -108,31 +100,6 @@ export function useCloudSync(
           return false;
         }
       };
-
-      /* 
-      // Execute Player Deletions
-      // DISABLING AUTOMATIC DELETIONS: This prevents mass deletions if the local state
-      // is temporarily filtered (e.g. during a role change). 
-      // Deletions should be handled explicitly by the UI calling the service.
-      for (const p of deletedPlayers) {
-        const success = await deletePlayer(p.id);
-        if (handleResult(p.id, success, 'playerService.delete')) {
-          prevPlayersMap.delete(p.id);
-          if (success) {
-            await auditService.logAction({
-              actor_id: actorId,
-              actor_nickname: actorNickname || 'Unknown',
-              action_type: 'MAJOR_CHANGE',
-              action_detail: `Deleted player ${p.name}`,
-              target_id: p.id,
-              target_name: p.name,
-              old_data: p,
-              is_suspicious: true
-            });
-          }
-        }
-      }
-      */
 
       // Execute Player Upserts
       for (const player of changedPlayers) {
@@ -180,17 +147,6 @@ export function useCloudSync(
           }
         }
       }
-
-      /* 
-      // Execute Group Deletions
-      // DISABLING AUTOMATIC DELETIONS: Prevents accidental group removal during sync glitches.
-      for (const g of deletedGroups) {
-        const success = await deleteGroup(g.id);
-        if (handleResult(g.id, success, 'groupService.delete')) {
-          prevGroupsMap.delete(g.id);
-        }
-      }
-      */
 
       // Execute Group Upserts (Handling order changes)
       const currentGroupsWithCorrectOrder = [...currentGroups];
