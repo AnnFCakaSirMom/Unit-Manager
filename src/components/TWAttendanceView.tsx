@@ -4,7 +4,7 @@ import { ImportRaidHelperModal } from './ImportRaidHelperModal';
 import { Button } from './Button';
 import { useAppSelector, useAppDispatch } from '../state/store';
 import { clearTWAttendance, importTWAttendance, addManualAttendee, updateAttendanceStatus } from '../state/slices/twSlice';
-import { addGroup } from '../state/slices/groupSlice';
+import { addGroup, setGroups } from '../state/slices/groupSlice';
 import { addPlayer } from '../state/slices/playerSlice';
 import { useGroupDragAndDrop } from '../hooks/useGroupDragAndDrop';
 import { AttendancePlayerList } from './AttendancePlayerList';
@@ -117,6 +117,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
 
                     // 5. Local clear
                     dispatch(clearTWAttendance());
+                    dispatch(setGroups([]));
                     setStatusMessage('TW data successfully cleared.');
                 } catch (err: any) {
                     console.error('Failed to wipe TW data:', err);

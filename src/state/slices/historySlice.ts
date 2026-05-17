@@ -6,7 +6,7 @@ import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import type { TWHistorySnapshot, TWHistoryClipboard, Group, GroupMember } from '../../types';
 import { RootState } from '../store';
 import { setGroups } from './groupSlice';
-import { setTWAttendance } from './twSlice';
+import { setTWAttendance, clearTWAttendance } from './twSlice';
 import {
     fetchHistorySnapshots,
     saveHistorySnapshot as serviceSaveSnapshot,
@@ -81,8 +81,20 @@ export const saveSnapshot = createAsyncThunk<void, void, { state: RootState }>(
 export const applyFullHistory = createAsyncThunk<void, { snapshot: TWHistorySnapshot }, { state: RootState }>(
     'history/applyFull',
     async ({ snapshot }, { dispatch }) => {
-        dispatch(setGroups(snapshot.snapshot.groups));
-        dispatch(setTWAttendance(snapshot.snapshot.twAttendance));
+        // Mark all restored items as dirty to ensure useCloudSync uploads them to Supabase
+        const dirtyGroups = snapshot.snapshot.groups.map(group => ({
+            ...group,
+            isDirty: true
+        }));
+        
+        const dirtyTWAttendance = snapshot.snapshot.twAttendance.map(entry => ({
+            ...entry,
+            isDirty: true
+        }));
+
+        dispatch(clearTWAttendance()); // Clear first to bypass merge logic in setTWAttendance
+        dispatch(setGroups(dirtyGroups));
+        dispatch(setTWAttendance(dirtyTWAttendance));
     }
 );
 
