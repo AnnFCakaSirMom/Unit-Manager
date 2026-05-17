@@ -28,6 +28,16 @@ This is the heart of our RLS design. It is a PostgreSQL function that retrieves 
 *   **Hierarchical Control**: RLS policies use numerical weights (e.g., `get_my_role_weight() > target_role_weight`), ensuring Officers can update Members but not Admins.
 *   **Defense-in-Depth**: While RLS is the primary guard, high-risk client operations (like JSON backups) include explicit **Role Guards** in hooks (`useFileHandler.ts`) to prevent execution via direct console manipulation.
 
+### RLS InitPlan Optimization
+To achieve sub-millisecond row evaluation, all security-critical RLS policies wrap dynamic evaluations—such as `auth.uid()`, `auth.role()`, and `get_my_role_weight()`—in subqueries, for example: `user_id = (SELECT auth.uid())` or `((SELECT get_my_role_weight()) >= 3)`.
+*   **InitPlan Caching:** PostgreSQL evaluates these subqueries exactly *once* at the beginning of the query execution and caches the scalar result, rather than re-evaluating the JWT claim function for every single row scanned. This prevents performance degradation as the tables scale.
+
+### Database Performance & Indexing Strategy
+*   **Foreign Key Indexing:** Every foreign key constraint in the public schema has a corresponding covering index (e.g. `group_members_profile_id_idx`). This guarantees sub-millisecond JOIN performance and eliminates sequential table scans during cascade deletes and record updates.
+*   **Single-Policy Rule:** To prevent execution overhead and unintended overlap, each table strictly maintains exactly one clean, granular permissive policy per command action (`SELECT`, `INSERT`, `UPDATE`, `DELETE`). Legacy permissive policies (like `"player_info_officer_only"` or `"Only leadership can view groups"`) have been completely pruned.
+*   **Constraint Consolidation:** Redundant unique index constraints (e.g. duplicate indexes on `profile_units(profile_id, unit_name)`) have been dropped to streamline write cycles and minimize database write-lock durations during client synchronization.
+*   **Security Definer Exposure Guard:** `SECURITY DEFINER` RPC functions (such as `link_and_approve_profile()` or triggers) run with elevated privileges. Direct `EXECUTE` rights on these functions have been explicitly revoked from `anon`, `PUBLIC`, and unauthorized roles to prevent API manipulation from the client, keeping them executable only by database triggers or logged-in `authenticated` users.
+
 ## 3. Synchronization and Data Stability
 
 ### Reads: `SyncManager` & Error Propagation

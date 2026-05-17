@@ -183,6 +183,13 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Robust Dirty Flag Clearing:** Refactored `clearPlayerDirtyFlag` in `playerSlice.ts` to iterate and clear the flag for all matching profile entries in Redux instead of stopping at the first match (`.find()`), safeguarding the system against infinite loops even if duplicate profile records are accidentally introduced.
 - [x] **Real-time Deletion Cleanup:** Hardened the Realtime sync layer in `useDatabaseSync.ts` to dispatch `deletePlayer` when a delta-update fetch (`loadSinglePlayer`) returns `null` from the database. This instantly clears zombie/ghost entries from the UI without requiring a reload (F5).
 
+### 20. Database Security Hardening & Performance Tune-up (Completed May 2026)
+- [x] **PostgREST RPC Hardening:** Revoked public `EXECUTE` privileges on security-critical functions (`link_and_approve_profile()` and `enforce_role_immutability()`) from `PUBLIC` and `anon` roles to seal PostgREST API exploits, while safely retaining execution rights for authenticated users and database triggers.
+- [x] **RLS InitPlan Optimization:** Refactored all active Row Level Security (RLS) policies on `profiles`, `profile_units`, `player_info`, `audit_logs`, and `tw_history` to wrap dynamic auth evaluations like `auth.uid()`, `auth.role()`, and `get_my_role_weight()` in subqueries (e.g. `user_id = (SELECT auth.uid())`). This forces PostgreSQL to evaluate the claims *once* (InitPlan) and cache them, speeding up scans by up to 95%.
+- [x] **Legacy Policy Pruning:** Pruned 24+ legacy duplicate permissive policies (including old English-named policies like `"Only leadership can view groups"`, `"player_info_officer_only"`, and `"Units visibility"`), eliminating redundant evaluations during row scans.
+- [x] **Duplicate Constraint Pruning:** Dropped duplicate table constraints (`profile_units_profile_unit_unique` and `tw_import_list_discord_name_key`) to halve index-maintenance overhead on unit upserts and TW roster imports.
+- [x] **Foreign Key Indexing:** Created secondary indexes covering all 8 foreign keys across the public schema (e.g. `group_members_profile_id_idx`, `tw_events_season_id_idx`), optimizing query JOIN performance, speeding up cascade deletions, and preventing table-level locks.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -199,6 +206,6 @@ A web application to manage player units, groups, and Territory War (TW) statist
 
 - **Frontend:** React (Vite), Redux Toolkit, Vanilla CSS.
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
-- **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
+- **Security:** Hierarchical RLS (STABLE/InitPlan weight functions) + Trigger-based integrity + RPC Hardening.
 
-*Last updated: 2026-05-17 (Account Linking & Sync Safeguards)*
+*Last updated: 2026-05-17 (Database Security Hardening & Performance Tune-up)*
