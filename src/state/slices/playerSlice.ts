@@ -81,7 +81,8 @@ const playerSlice = createSlice({
         totalLeadership: 0,
         joinedDate: new Date().toISOString().split('T')[0],
         player_info: [],
-        aliases: []
+        aliases: [],
+        role: 'Member'
       };
       newPlayer.isDirty = true;
       state.players.push(newPlayer);

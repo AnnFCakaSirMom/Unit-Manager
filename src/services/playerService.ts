@@ -218,10 +218,8 @@ export async function upsertPlayer(player: Player, prevPlayer?: Player): Promise
 
   } else {
     // No prevPlayer (new player) - Full payload.
-    // SEC: 'role' is intentionally excluded. Role assignment is the exclusive
-    // domain of the admin approval flow (ProfileMatcher). The DB DEFAULT 'Pending'
-    // will apply if this creates a new row (which it shouldn't in normal operation
-    // since all rows originate from the authenticated insert in AuthGuard).
+    // SEC: 'role' is included safely. The DB triggers enforce role change security,
+    // so we can pass it from the client for admin-initiated manual player inserts.
     profileUpdatePayload = {
       discord_nickname: player.name,
       display_name: player.name,
@@ -229,6 +227,7 @@ export async function upsertPlayer(player: Player, prevPlayer?: Player): Promise
       joined_date: player.joinedDate ?? null,
       inactive_date: player.inactiveDate ?? null,
       not_in_house: player.notInHouse,
+      role: player.role ?? 'Member',
       discord_aliases: player.aliases ?? [],
     };
     infoUpdatePayload = player.player_info?.[0]?.internal_notes ?? player.info ?? '';
@@ -259,7 +258,7 @@ export async function upsertPlayer(player: Player, prevPlayer?: Player): Promise
         joined_date: player.joinedDate ?? null,
         inactive_date: player.inactiveDate ?? null,
         not_in_house: player.notInHouse,
-        // SEC: 'role' excluded — see comment in the full-payload block above.
+        role: player.role ?? 'Member',
         discord_aliases: player.aliases ?? [],
       }),
       { service: 'playerService', op: `upsertProfile full ${player.id}` }
