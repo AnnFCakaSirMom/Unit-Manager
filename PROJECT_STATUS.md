@@ -178,6 +178,11 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **UI/UX Save Guardians:** Embedded `isSaving` button blockades and explicit unwrap try/catch boundaries within `SeasonManagementModal.tsx` and `EditTWAttendanceModal.tsx` to secure state transformation pipelines, while preserving snappy non-blocking click actions for rapid attendance grids.
 - [x] **Dead Code Pruning:** Deprecated and pruned legacy synchronous reducers (`createTWSeason`, `updateTWSeason`, `deleteTWSeason`) from `twSlice.ts`, keeping slice APIs streamlined.
 
+### 19. Account Linking & Sync Safeguards (Completed May 2026)
+- [x] **Account Linking Loop Fix:** Resolved the infinite sync loop during account linking by removing the `isDirty: true` flag from the `mergePlayerId` local state mapper.
+- [x] **Robust Dirty Flag Clearing:** Refactored `clearPlayerDirtyFlag` in `playerSlice.ts` to iterate and clear the flag for all matching profile entries in Redux instead of stopping at the first match (`.find()`), safeguarding the system against infinite loops even if duplicate profile records are accidentally introduced.
+- [x] **Real-time Deletion Cleanup:** Hardened the Realtime sync layer in `useDatabaseSync.ts` to dispatch `deletePlayer` when a delta-update fetch (`loadSinglePlayer`) returns `null` from the database. This instantly clears zombie/ghost entries from the UI without requiring a reload (F5).
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -196,4 +201,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
 
-*Last updated: 2026-05-17 (Hardened Realtime TW Sync Refinements)*
+*Last updated: 2026-05-17 (Account Linking & Sync Safeguards)*

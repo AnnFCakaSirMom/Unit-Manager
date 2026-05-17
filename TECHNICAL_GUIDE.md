@@ -36,6 +36,7 @@ When the database changes, Supabase sends Realtime events.
 *   **Error Callback**: `SyncManager` supports an `onError` callback. If a background sync fails (e.g., transient network error), it propagates to the global `StatusToast` via `useDatabaseSync`, providing immediate visibility of data health.
 *   **Hydration Safety**: During real-time hydration, the system checks the `isDirty` flag in Redux. If a local object has unsaved changes, it is **preserved** rather than overwritten by server data, preventing data loss during active editing.
 *   **Surgical TW Delta-Sync**: Realtime listeners selectively parse payload data for `tw_attendance_records` to perform localized Redux updates (`updateTWPlayerRecord`) using change data directly. Irregular mutations (e.g., deletions) or structural entities (`tw_seasons`, `tw_events`) safely fallback to full-tree synchronization.
+*   **Realtime Deletion Propagation**: When a profile is deleted or merged in the database, the delta sync fetch (`loadSinglePlayer`) returns `null`. Instead of ignoring this, `useDatabaseSync` dispatches a `deletePlayer` action to instantly clear the ghost/zombie profile from Redux without requiring a browser reload.
 
 ### Writes: `useCloudSync` & Atomic Patterns
 *   **isDirty Flagging**: Edits mark objects as `isDirty: true`. `useCloudSync` debounces these changes and persists them to Supabase.
@@ -43,6 +44,7 @@ When the database changes, Supabase sends Realtime events.
 *   **Data Loss Prevention**: A browser-level `beforeunload` listener detects `isDirty` objects and warns the user if they try to close the tab while data is still syncing.
 *   **Circuit Breaker**: Updates per object are tracked; after **5 failed attempts**, the system logs a `PermanentError` and stops retrying to prevent DB flooding.
 *   **AsyncThunks for Crucial Mutations**: High-risk actions like Unit configurations and TW Seasons are built as transactional `createAsyncThunk` chains with explicit `unwrap()` try-catch error checks and UI-level `isSaving` blockades to keep operations atomic and predictable.
+*   **Robust Dirty Flag Cleaning**: To prevent race-condition loops, `clearPlayerDirtyFlag` uses a `.forEach()` loop to clear the `isDirty` flag for all instances of a profile ID in Redux. This ensures that even if duplicate elements are temporarily present, they don't trap `useCloudSync` in an infinite API sync loop.
 
 ## 4. Environment Variables
 

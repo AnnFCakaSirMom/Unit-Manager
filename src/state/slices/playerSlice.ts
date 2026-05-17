@@ -250,14 +250,15 @@ const playerSlice = createSlice({
       const player = state.players.find(p => p.id === action.payload.oldId);
       if (player) {
         player.id = action.payload.newId;
-        player.isDirty = true;
+        // player.isDirty = true; <- Borttagen för att undvika oändlig sync-loop vid Realtime-merge
       }
     },
     clearPlayerDirtyFlag(state, action: PayloadAction<{ playerId: string }>) {
-      const player = state.players.find(p => p.id === action.payload.playerId);
-      if (player) {
-        player.isDirty = false;
-      }
+      state.players.forEach(p => {
+        if (p.id === action.payload.playerId) {
+          p.isDirty = false;
+        }
+      });
     }
   }
 });

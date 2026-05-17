@@ -6,7 +6,7 @@ import { fetchTWAttendanceData } from '../services/twAttendanceService';
 import { fetchTWImport, fetchSingleTWEntry } from '../services/twImportService';
 import { syncManager } from '../services/SyncManager';
 import { AppDispatch } from '../state/store';
-import { hydratePlayers, updateSinglePlayer } from '../state/slices/playerSlice';
+import { hydratePlayers, updateSinglePlayer, deletePlayer } from '../state/slices/playerSlice';
 import { hydrateGroups } from '../state/slices/groupSlice';
 import { hydrateTWAttendance, hydrateTWData, updateSingleTWEntry, updateTWPlayerRecord } from '../state/slices/twSlice';
 import { setSyncing } from '../state/slices/uiSlice';
@@ -98,6 +98,8 @@ export const useDatabaseSync = (
             const player = await fetchSinglePlayer(profileId, signal);
             if (player) {
                 dispatch(updateSinglePlayer(player));
+            } else {
+                dispatch(deletePlayer({ playerId: profileId }));
             }
         }, () => setStatusMessage('Error: Could not sync from server.'));
     }, [dispatch, setStatusMessage]);
