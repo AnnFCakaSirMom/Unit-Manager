@@ -8,9 +8,10 @@ import { syncManager } from '../services/SyncManager';
 import { AppDispatch } from '../state/store';
 import { hydratePlayers, updateSinglePlayer } from '../state/slices/playerSlice';
 import { hydrateGroups } from '../state/slices/groupSlice';
-import { hydrateTWAttendance, hydrateTWData, updateSingleTWEntry } from '../state/slices/twSlice';
+import { hydrateTWAttendance, hydrateTWData, updateSingleTWEntry, updateTWPlayerRecord } from '../state/slices/twSlice';
 import { setSyncing } from '../state/slices/uiSlice';
 import { setAuthSession } from '../state/slices/authSlice';
+import { fetchUnitsFromSupabase } from '../state/slices/unitSlice';
 import { useAppSelector } from '../state/store';
 import { DELTA_SYNC_ENABLED } from '../config/features';
 
@@ -220,11 +221,14 @@ export const useDatabaseSync = (
                 // BUG-5 FIX: Ignore tables that change as a side-effect of sync writes.
                 // audit_logs and player_info are written by the app itself — reacting to
                 // them would cause redundant fetches and risk infinite sync loops.
-                if (table === 'audit_logs' || table === 'player_info' || table === 'units') {
+                if (table === 'audit_logs' || table === 'player_info') {
                     return;
                 }
 
-                if (table === 'groups' || table === 'group_members') {
+                if (table === 'units') {
+                    if (import.meta.env.DEV) console.log('[Realtime] Syncing units...');
+                    dispatch(fetchUnitsFromSupabase());
+                } else if (table === 'groups' || table === 'group_members') {
                     if (import.meta.env.DEV) console.log('[Realtime] Syncing groups...');
                     loadGroups();
                 } else if (table === 'profiles' || table === 'profile_units') {
@@ -258,8 +262,26 @@ export const useDatabaseSync = (
                         if (import.meta.env.DEV) console.log('[Realtime] Syncing TW import list...');
                         loadTWImport();
                     }
-                } else if (table.startsWith('tw_')) {
-                    if (import.meta.env.DEV) console.log('[Realtime] Syncing TW metadata...');
+                } else if (table === 'tw_attendance_records') {
+                    if (DELTA_SYNC_ENABLED) {
+                        const newRecord = (payload as any).new;
+                        if (newRecord && newRecord.event_id && newRecord.profile_id && newRecord.status) {
+                            if (import.meta.env.DEV) console.log(`[Realtime] Delta sync TW record for ${newRecord.profile_id}`);
+                            dispatch(updateTWPlayerRecord({ 
+                                eventId: newRecord.event_id, 
+                                playerId: newRecord.profile_id, 
+                                status: newRecord.status 
+                            }));
+                        } else {
+                            if (import.meta.env.DEV) console.log('[Realtime] Delta sync TW record missing data, fallback to full sync...');
+                            loadTWData();
+                        }
+                    } else {
+                        if (import.meta.env.DEV) console.log('[Realtime] Syncing TW attendance...');
+                        loadTWData();
+                    }
+                } else if (table === 'tw_seasons' || table === 'tw_events') {
+                    if (import.meta.env.DEV) console.log('[Realtime] Syncing TW seasons/events...');
                     loadTWData();
                 }
             })

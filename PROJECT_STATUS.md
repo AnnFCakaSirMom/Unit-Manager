@@ -171,6 +171,13 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Granular Admin Control:** Restricted "Unit Management" access in `AdminPanel.tsx` to Admin+ roles (`canEditSystemConfig`), removing it from the Gatekeeper view for better hierarchical control.
 - [x] **Proactive Sync Error Propagation:** Added a dedicated error callback to `SyncManager.ts` and `useDatabaseSync.ts`, allowing database read/sync failures to be reported instantly via the global `StatusToast` ('Error: Could not sync from server').
 
+### 18. Hardened Realtime TW Sync (Completed May 2026)
+- [x] **AsyncThunks for TW State:** Migrated TW metadata management to standardized Redux AsyncThunks (`addTWSeasonToSupabase`, `deleteTWSeasonFromSupabase`, `saveTWAttendanceRecordsToSupabase`), centralizing error boundaries and loading states in extraReducers.
+- [x] **Surgical Delta-Sync for Attendance:** Replaced heavyweight catch-all refreshes with a high-performance O(1) Realtime Delta-Sync for `tw_attendance_records` that applies change payloads directly to Redux (`updateTWPlayerRecord`) to avoid massive structural tree queries.
+- [x] **Structural Integrity Guards:** Maintained full-tree synchronization only for low-frequency structural modifications (`tw_seasons`, `tw_events`) and designed a safe fallback to full hydration for irregular changes like record deletions.
+- [x] **UI/UX Save Guardians:** Embedded `isSaving` button blockades and explicit unwrap try/catch boundaries within `SeasonManagementModal.tsx` and `EditTWAttendanceModal.tsx` to secure state transformation pipelines, while preserving snappy non-blocking click actions for rapid attendance grids.
+- [x] **Dead Code Pruning:** Deprecated and pruned legacy synchronous reducers (`createTWSeason`, `updateTWSeason`, `deleteTWSeason`) from `twSlice.ts`, keeping slice APIs streamlined.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -189,4 +196,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE weight functions) + Trigger-based integrity.
 
-*Last updated: 2026-05-16 (Stability, Security & Integrity Refinements)*
+*Last updated: 2026-05-17 (Hardened Realtime TW Sync Refinements)*

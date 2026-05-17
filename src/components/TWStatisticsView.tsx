@@ -7,8 +7,7 @@ import { SeasonManagementModal } from './SeasonManagementModal';
 import { ImportTWStatsModal } from './ImportTWStatsModal';
 import { EditTWAttendanceModal } from './EditTWAttendanceModal';
 import { cn } from '../utils';
-import { saveTWAttendanceRecords } from '../services/twAttendanceService';
-import { setTWRecords } from '../state/slices/twSlice';
+import { saveTWAttendanceRecordsToSupabase } from '../state/slices/twSlice';
 import { auditService } from '../services/auditService';
 import { findMatchedPlayer } from '../utils/reducerHelpers';
 import { HelpIcon } from './HelpIcon';
@@ -74,17 +73,7 @@ export const TWStatisticsView: React.FC = () => {
             });
 
             if (newRecords.length > 0) {
-                await saveTWAttendanceRecords(newRecords);
-
-                // FIX: Immediately update Redux without waiting for Supabase Realtime.
-                // Filter out any existing records for this event (prevents duplicates),
-                // then concat the freshly imported records. Realtime will later confirm
-                // the same data — hydrateTWData is idempotent so that is harmless.
-                dispatch(setTWRecords(
-                    twRecords
-                        .filter(r => r.eventId !== eventId)
-                        .concat(newRecords)
-                ));
+                await dispatch(saveTWAttendanceRecordsToSupabase({ records: newRecords })).unwrap();
 
                 // Log the action
                 const event = activeEvents.find(e => e.id === eventId);

@@ -5,8 +5,7 @@ import { Input } from './Input';
 import { X, CheckIcon as Check } from './icons';
 import { useAppDispatch, useAppSelector } from '../state/store';
 import { cn } from '../utils';
-import { saveTWAttendanceRecords } from '../services/twAttendanceService';
-import { updateTWPlayerRecord } from '../state/slices/twSlice';
+import { saveTWAttendanceRecordsToSupabase } from '../state/slices/twSlice';
 
 interface EditTWAttendanceModalProps {
     isOpen: boolean;
@@ -84,12 +83,9 @@ export const EditTWAttendanceModal: React.FC<EditTWAttendanceModalProps> = ({ is
         if (!selectedEventId) return;
         
         try {
-            // Save to Supabase
-            // We use an array for bulk insert even though it's one record
-            await saveTWAttendanceRecords([{ eventId: selectedEventId, playerId, status }]);
-            
-            // Sync local state
-            dispatch(updateTWPlayerRecord({ eventId: selectedEventId, playerId, status }));
+            await dispatch(saveTWAttendanceRecordsToSupabase({ 
+                records: [{ eventId: selectedEventId, playerId, status }] 
+            })).unwrap();
         } catch (err) {
             console.error('Failed to update attendance record:', err);
             alert('Error updating attendance in database.');

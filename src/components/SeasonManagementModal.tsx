@@ -4,9 +4,9 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { X, Trash2, Plus, Database } from './icons';
 import { useAppDispatch, useAppSelector } from '../state/store';
-import { updateTWSeason, createTWSeason, clearTWEventRecords } from '../state/slices/twSlice';
+import { clearTWEventRecords, addTWSeasonToSupabase } from '../state/slices/twSlice';
 import { ConfirmationModal } from './ConfirmationModal';
-import { saveTWSeason, clearEventRecords } from '../services/twAttendanceService';
+import { clearEventRecords } from '../services/twAttendanceService';
 import { auditService } from '../services/auditService';
 
 interface SeasonManagementModalProps {
@@ -134,15 +134,12 @@ export const SeasonManagementModal: React.FC<SeasonManagementModalProps> = ({ is
 
             const finalEvents = localEvents.map(e => ({ ...e, seasonId }));
 
-            // Save to Supabase
-            await saveTWSeason(season, finalEvents);
+            await dispatch(addTWSeasonToSupabase({
+                season,
+                events: finalEvents,
+                isUpdate: !!existingSeason
+            })).unwrap();
 
-            // Update local state
-            if (existingSeason) {
-                dispatch(updateTWSeason({ season, events: finalEvents }));
-            } else {
-                dispatch(createTWSeason({ season, events: finalEvents }));
-            }
             onClose();
         } catch (err) {
             console.error('Failed to save season:', err);

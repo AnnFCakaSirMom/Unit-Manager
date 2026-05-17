@@ -35,12 +35,14 @@ When the database changes, Supabase sends Realtime events.
 *   **Debouncing & AbortControllers**: `SyncManager` buffers events and uses `AbortControllers` to ensure only the *latest* request for a specific data type is processed.
 *   **Error Callback**: `SyncManager` supports an `onError` callback. If a background sync fails (e.g., transient network error), it propagates to the global `StatusToast` via `useDatabaseSync`, providing immediate visibility of data health.
 *   **Hydration Safety**: During real-time hydration, the system checks the `isDirty` flag in Redux. If a local object has unsaved changes, it is **preserved** rather than overwritten by server data, preventing data loss during active editing.
+*   **Surgical TW Delta-Sync**: Realtime listeners selectively parse payload data for `tw_attendance_records` to perform localized Redux updates (`updateTWPlayerRecord`) using change data directly. Irregular mutations (e.g., deletions) or structural entities (`tw_seasons`, `tw_events`) safely fallback to full-tree synchronization.
 
 ### Writes: `useCloudSync` & Atomic Patterns
 *   **isDirty Flagging**: Edits mark objects as `isDirty: true`. `useCloudSync` debounces these changes and persists them to Supabase.
 *   **Non-Destructive Upsert**: To prevent "zero-data" windows during sync, `playerService` uses a non-destructive two-step process: Fetch existing state -> Diff -> Update. This avoids the destructive "Delete-then-Insert" pattern.
 *   **Data Loss Prevention**: A browser-level `beforeunload` listener detects `isDirty` objects and warns the user if they try to close the tab while data is still syncing.
 *   **Circuit Breaker**: Updates per object are tracked; after **5 failed attempts**, the system logs a `PermanentError` and stops retrying to prevent DB flooding.
+*   **AsyncThunks for Crucial Mutations**: High-risk actions like Unit configurations and TW Seasons are built as transactional `createAsyncThunk` chains with explicit `unwrap()` try-catch error checks and UI-level `isSaving` blockades to keep operations atomic and predictable.
 
 ## 4. Environment Variables
 

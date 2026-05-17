@@ -3,6 +3,7 @@ import type { TWAttendancePlayer, TWSeason, TWEvent, TWPlayerRecord, TWRecordSta
 import { handleTWAttendanceImport as helperHandleTWAttendanceImport } from '../../utils/reducerHelpers';
 import { RootState } from '../store';
 import { setGroups } from './groupSlice';
+import { saveTWSeason as saveTWSeasonService, deleteTWSeason as deleteTWSeasonService, saveTWAttendanceRecords as saveTWAttendanceRecordsService } from '../../services/twAttendanceService';
 
 export interface TWState {
   twAttendance: TWAttendancePlayer[];
@@ -37,6 +38,56 @@ export const importTWAttendance = createAsyncThunk<void, { jsonString: string },
   }
 );
 
+// 1. Skapa eller uppdatera en TW-säsong mot Supabase
+export const addTWSeasonToSupabase = createAsyncThunk<
+  { season: TWSeason; events: TWEvent[]; isUpdate: boolean },
+  { season: TWSeason; events: TWEvent[]; isUpdate: boolean },
+  { rejectValue: string }
+>(
+  'tw/addTWSeasonToSupabase',
+  async (payload, { rejectWithValue }) => {
+    try {
+      await saveTWSeasonService(payload.season, payload.events);
+      return payload;
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Failed to save TW Season');
+    }
+  }
+);
+
+// 2. Ta bort en TW-säsong från Supabase
+export const deleteTWSeasonFromSupabase = createAsyncThunk<
+  { seasonId: string },
+  { seasonId: string },
+  { rejectValue: string }
+>(
+  'tw/deleteTWSeasonFromSupabase',
+  async (payload, { rejectWithValue }) => {
+    try {
+      await deleteTWSeasonService(payload.seasonId);
+      return payload;
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Failed to delete TW Season');
+    }
+  }
+);
+
+// 3. Spara TW-närvaroposter mot Supabase
+export const saveTWAttendanceRecordsToSupabase = createAsyncThunk<
+  { records: TWPlayerRecord[] },
+  { records: TWPlayerRecord[] },
+  { rejectValue: string }
+>(
+  'tw/saveTWAttendanceRecordsToSupabase',
+  async (payload, { rejectWithValue }) => {
+    try {
+      await saveTWAttendanceRecordsService(payload.records);
+      return payload;
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Failed to save TW Attendance Records');
+    }
+  }
+);
 
 const twSlice = createSlice({
   name: 'tw',
@@ -105,10 +156,24 @@ const twSlice = createSlice({
         entry.isDirty = false;
       }
     },
-    // WARNING: Destructive bulk-import operation (e.g. Raid Helper JSON).
-    // Intentionally overwrites the entire array without respecting isDirty flags.
+    // Bulk-import operation (e.g. Raid Helper JSON).
+    // Nu uppdaterad för att respektera isDirty-flaggor och bevara lokala ändringar.
     setTWAttendance(state, action: PayloadAction<TWAttendancePlayer[]>) {
-      state.twAttendance = action.payload;
+      const incomingEntries = action.payload;
+      const currentDirtyEntries = new Map(state.twAttendance.filter(e => e.isDirty).map(e => [e.discordName, e]));
+      
+      const mergedEntries = incomingEntries.map(entry => {
+        if (currentDirtyEntries.has(entry.discordName)) {
+          return currentDirtyEntries.get(entry.discordName)!;
+        }
+        return entry;
+      });
+
+      // Bevara även dirty-poster som kanske saknas helt i den inkommande payloaden
+      const incomingNames = new Set(incomingEntries.map(e => e.discordName));
+      const localOnlyDirty = state.twAttendance.filter(e => e.isDirty && !incomingNames.has(e.discordName));
+      
+      state.twAttendance = [...mergedEntries, ...localOnlyDirty];
     },
     setTWRecords(state, action: PayloadAction<TWPlayerRecord[]>) {
       state.twRecords = action.payload;
@@ -116,35 +181,7 @@ const twSlice = createSlice({
     clearTWAttendance(state) {
       state.twAttendance = [];
     },
-    createTWSeason(state, action: PayloadAction<{ season: TWSeason, events: TWEvent[] }>) {
-      state.twSeasons.push(action.payload.season);
-      state.twEvents.push(...action.payload.events);
-    },
-    updateTWSeason(state, action: PayloadAction<{ season: TWSeason, events: TWEvent[] }>) {
-      const currentEventIds = action.payload.events.map(e => e.id);
-      const obsoleteEvents = state.twEvents.filter(e => e.seasonId === action.payload.season.id && !currentEventIds.includes(e.id));
-      const obsoleteEventIds = obsoleteEvents.map(e => e.id);
 
-      state.twEvents = state.twEvents.filter(e => e.seasonId !== action.payload.season.id).concat(action.payload.events);
-      
-      const seasonIndex = state.twSeasons.findIndex(s => s.id === action.payload.season.id);
-      if (seasonIndex !== -1) {
-        state.twSeasons[seasonIndex] = action.payload.season;
-      }
-      
-      state.twRecords = state.twRecords.filter(r => !obsoleteEventIds.includes(r.eventId));
-    },
-    deleteTWSeason(state, action: PayloadAction<{ seasonId: string }>) {
-      const seasonId = action.payload.seasonId;
-      // BUG-6 FIX: Capture event IDs BEFORE mutating twEvents, otherwise the
-      // twRecords filter reads an already-empty list and orphaned records remain.
-      const eventIdsToRemove = new Set(
-        state.twEvents.filter(e => e.seasonId === seasonId).map(e => e.id)
-      );
-      state.twSeasons = state.twSeasons.filter(s => s.id !== seasonId);
-      state.twEvents = state.twEvents.filter(e => e.seasonId !== seasonId);
-      state.twRecords = state.twRecords.filter(r => !eventIdsToRemove.has(r.eventId));
-    },
     addTWEvent(state, action: PayloadAction<{ event: TWEvent }>) {
       state.twEvents.push(action.payload.event);
     },
@@ -198,6 +235,52 @@ const twSlice = createSlice({
         entry.isDirty = true;
       }
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      // 1. Skapa eller uppdatera TW-säsong
+      .addCase(addTWSeasonToSupabase.fulfilled, (state, action) => {
+        if (action.payload.isUpdate) {
+          const currentEventIds = action.payload.events.map(e => e.id);
+          const obsoleteEvents = state.twEvents.filter(e => e.seasonId === action.payload.season.id && !currentEventIds.includes(e.id));
+          const obsoleteEventIds = obsoleteEvents.map(e => e.id);
+
+          state.twEvents = state.twEvents.filter(e => e.seasonId !== action.payload.season.id).concat(action.payload.events);
+          
+          const seasonIndex = state.twSeasons.findIndex(s => s.id === action.payload.season.id);
+          if (seasonIndex !== -1) {
+            state.twSeasons[seasonIndex] = action.payload.season;
+          }
+          
+          state.twRecords = state.twRecords.filter(r => !obsoleteEventIds.includes(r.eventId));
+        } else {
+          state.twSeasons.push(action.payload.season);
+          state.twEvents.push(...action.payload.events);
+        }
+      })
+      
+      // 2. Ta bort TW-säsong
+      .addCase(deleteTWSeasonFromSupabase.fulfilled, (state, action) => {
+        const seasonId = action.payload.seasonId;
+        const eventIdsToRemove = new Set(
+          state.twEvents.filter(e => e.seasonId === seasonId).map(e => e.id)
+        );
+        state.twSeasons = state.twSeasons.filter(s => s.id !== seasonId);
+        state.twEvents = state.twEvents.filter(e => e.seasonId !== seasonId);
+        state.twRecords = state.twRecords.filter(r => !eventIdsToRemove.has(r.eventId));
+      })
+
+      // 3. Spara närvaroposter
+      .addCase(saveTWAttendanceRecordsToSupabase.fulfilled, (state, action) => {
+        action.payload.records.forEach(newRecord => {
+          const existingRecordIndex = state.twRecords.findIndex(r => r.eventId === newRecord.eventId && r.playerId === newRecord.playerId);
+          if (existingRecordIndex >= 0) {
+            state.twRecords[existingRecordIndex].status = newRecord.status;
+          } else {
+            state.twRecords.push(newRecord);
+          }
+        });
+      });
   }
 });
 
@@ -209,9 +292,6 @@ export const {
   setTWAttendance,
   setTWRecords,
   clearTWAttendance,
-  createTWSeason,
-  updateTWSeason,
-  deleteTWSeason,
   addTWEvent,
   deleteTWEvent,
   clearTWEventRecords,
