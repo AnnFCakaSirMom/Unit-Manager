@@ -190,9 +190,14 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Duplicate Constraint Pruning:** Dropped duplicate table constraints (`profile_units_profile_unit_unique` and `tw_import_list_discord_name_key`) to halve index-maintenance overhead on unit upserts and TW roster imports.
 - [x] **Foreign Key Indexing:** Created secondary indexes covering all 8 foreign keys across the public schema (e.g. `group_members_profile_id_idx`, `tw_events_season_id_idx`), optimizing query JOIN performance, speeding up cascade deletions, and preventing table-level locks.
 
+### 21. TW Attendance Restore Safeguards (Completed May 2026)
+- [x] **Snapshot Restore Sync Integrity:** Resolved a critical bug where restoring a TW history snapshot populated Redux locally but failed to save it to Supabase (causing players to drop out of groups on F5). We now force `isDirty: true` on all restored groups and `twAttendance` entries, and dispatch a clean local slate before insertion to bypass merge-checks and trigger a full database write.
+- [x] **Clear List Cache Purge:** Refactored the "Clear list" action to immediately wipe groups in Redux (`setGroups([])`) at the same time the database deletion triggers. This prevents stale in-memory cached groups from confusing the sync scheduler or re-uploading before the database updates.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
+- [ ] **Prevent Duplicate Player Placements:** Implement strict boundaries to ensure a single player cannot be added to two or more different groups simultaneously.
 - [ ] **Stricter Name Matching:** Refine `findMatchedPlayer` logic to eliminate "short-name stealing" (where names like 'Immo' incorrectly match 'immoSoulX') by prioritizing exact matches and aliases.
 - [ ] **Full Type Safety:** Implement Supabase CLI type generation to synchronize database schema with TypeScript definitions, reducing runtime errors.
 - [ ] **Performance Roadmap:**
@@ -208,4 +213,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE/InitPlan weight functions) + Trigger-based integrity + RPC Hardening.
 
-*Last updated: 2026-05-17 (Database Security Hardening & Performance Tune-up)*
+*Last updated: 2026-05-17 (Database Security Hardening, TW History Restore & Performance Tune-up)*

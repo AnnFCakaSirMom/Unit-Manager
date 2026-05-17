@@ -55,6 +55,8 @@ When the database changes, Supabase sends Realtime events.
 *   **Circuit Breaker**: Updates per object are tracked; after **5 failed attempts**, the system logs a `PermanentError` and stops retrying to prevent DB flooding.
 *   **AsyncThunks for Crucial Mutations**: High-risk actions like Unit configurations and TW Seasons are built as transactional `createAsyncThunk` chains with explicit `unwrap()` try-catch error checks and UI-level `isSaving` blockades to keep operations atomic and predictable.
 *   **Robust Dirty Flag Cleaning**: To prevent race-condition loops, `clearPlayerDirtyFlag` uses a `.forEach()` loop to clear the `isDirty` flag for all instances of a profile ID in Redux. This ensures that even if duplicate elements are temporarily present, they don't trap `useCloudSync` in an infinite API sync loop.
+*   **Snapshot Restore Sync Integrity**: Full history restorations (`applyFullHistory`) map over incoming groups and attendance records to force `isDirty: true`. In addition, the local attendance state is explicitly cleared before setting the new state. This bypasses structural merging blocks and forces `useCloudSync` to push the entire restored snapshot to Supabase as the new single source of truth.
+*   **Immediate Local Cache Purges**: The "Clear list" action immediately clears groups (`setGroups([])`) as well as attendance locally. This aligns the client state with the active DB delete actions, preventing stale cached groups from being evaluated as active and incorrectly re-uploaded.
 
 ## 4. Environment Variables
 
