@@ -55,7 +55,7 @@ export const TWStatisticsView: React.FC = () => {
 
             data.signUps.forEach((signup: any) => {
                 const matchedPlayer = findMatchedPlayer(players, signup.name);
-                if (matchedPlayer) {
+                if (matchedPlayer && !processedPlayerIds.has(matchedPlayer.id)) {
                     let status: TWRecordStatus = 'AWOL';
                     if (signup.className === 'Accepted') status = 'Attended';
                     else if (signup.className === 'Declined') status = 'Declined';

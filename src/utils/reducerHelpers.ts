@@ -5,12 +5,9 @@ export const findMatchedPlayer = (players: Player[], discordName: string) => {
     const washedDiscordName = washName(discordName);
     return players.find(p => {
         const washedPName = washName(p.name);
-        if (washedPName === washedDiscordName || washedDiscordName.includes(washedPName) || washedPName.includes(washedDiscordName)) return true;
+        if (washedPName === washedDiscordName) return true;
         if (p.aliases) {
-            return p.aliases.some(alias => {
-                const washedAlias = washName(alias);
-                return washedAlias === washedDiscordName || washedDiscordName.includes(washedAlias) || washedAlias.includes(washedDiscordName);
-            });
+            return p.aliases.some(alias => washName(alias) === washedDiscordName);
         }
         return false;
     });
