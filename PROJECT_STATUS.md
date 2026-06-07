@@ -194,6 +194,11 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Snapshot Restore Sync Integrity:** Resolved a critical bug where restoring a TW history snapshot populated Redux locally but failed to save it to Supabase (causing players to drop out of groups on F5). We now force `isDirty: true` on all restored groups and `twAttendance` entries, and dispatch a clean local slate before insertion to bypass merge-checks and trigger a full database write.
 - [x] **Clear List Cache Purge:** Refactored the "Clear list" action to immediately wipe groups in Redux (`setGroups([])`) at the same time the database deletion triggers. This prevents stale in-memory cached groups from confusing the sync scheduler or re-uploading before the database updates.
 
+### 22. Production Rollout & Supabase Migration Merge (Completed June 2026)
+- [x] **Pre-Merge Security Audit:** Verified Row Level Security (RLS) policies on `tw_import_list`, `audit_logs`, and `player_info` via direct PG-catalog query audits.
+- [x] **Fast-Forward Merge:** Cleanly merged `feature/supabase-migration` into `main` with zero git conflicts.
+- [x] **Vercel Production Deployment:** Configured production environment variables and redirect URLs in Supabase for Discord OAuth on the main domain `unit-manager-five.vercel.app`.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -213,4 +218,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE/InitPlan weight functions) + Trigger-based integrity + RPC Hardening.
 
-*Last updated: 2026-05-17 (Database Security Hardening, TW History Restore & Performance Tune-up)*
+*Last updated: 2026-06-07 (Production Rollout & Supabase Migration Merge)*
