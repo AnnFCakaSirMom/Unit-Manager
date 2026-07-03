@@ -199,6 +199,12 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Fast-Forward Merge:** Cleanly merged `feature/supabase-migration` into `main` with zero git conflicts.
 - [x] **Vercel Production Deployment:** Configured production environment variables and redirect URLs in Supabase for Discord OAuth on the main domain `unit-manager-five.vercel.app`.
 
+### 23. Real-time Group Sync & Timeout Hardening (Completed July 2026)
+- [x] **Reconnection TIMED_OUT Handling:** Added `'TIMED_OUT'` to the real-time websocket connection error-reconnect path in `useDatabaseSync.ts`, ensuring that subscriptions automatically reconnect after a timeout instead of leaving the client stale until a page reload (F5).
+- [x] **Surgical Group Upsert (No Delete-then-Insert):** Refactored `upsertGroup` in `groupService.ts` to perform a diff-based comparison. The app now deletes only members that were actually removed and upserts the rest, eliminating the destructive "Delete-then-Insert" pattern and its zero-data window which caused other clients to see empty groups in real-time.
+- [x] **Automated Group Deletion Sync:** Added group deletion tracking to `useCloudSync.ts`. Removing groups locally (such as during a "Restore All" history snapshot apply or manual deletion) now automatically issues corresponding DELETE requests to Supabase, solving duplicate group merges upon restoration.
+- [x] **Clear List Race Condition Fix:** Reordered the "Clear all" logic in `TWAttendanceView.tsx` to empty local Redux states first. This ensures that the sync scheduler sees no active groups during the async DB wipe, preventing deleted groups from accidentally getting re-uploaded.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -218,4 +224,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE/InitPlan weight functions) + Trigger-based integrity + RPC Hardening.
 
-*Last updated: 2026-06-07 (Production Rollout & Supabase Migration Merge)*
+*Last updated: 2026-07-03 (Real-time Group Sync & Timeout Hardening)*

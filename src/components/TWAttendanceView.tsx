@@ -81,22 +81,26 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                             await dispatch(saveSnapshot()).unwrap();
                         } catch (saveErr) {
                             console.error('Auto-save failed before wipe:', saveErr);
-                            // We continue anyway, or should we stop? Let's continue but log it.
                         }
                     }
 
-                    // 2. Wipe group_members first
+                    // 2. Clear local state FIRST to prevent useCloudSync from re-uploading
+                    //    data during the async DB wipe (race condition fix).
+                    dispatch(clearTWAttendance());
+                    dispatch(setGroups([]));
+
+                    // 3. Wipe group_members first
                     const { error: membersError } = await supabase
                         .from('group_members')
                         .delete()
-                        .not('profile_id', 'is', null); // Alternative "delete all" filter
+                        .not('profile_id', 'is', null);
                     
                     if (membersError) {
                         console.error('Members wipe error:', membersError);
                         throw new Error(`Members wipe failed: ${membersError.message}`);
                     }
 
-                    // 3. Wipe groups
+                    // 4. Wipe groups
                     const { error: groupsError } = await supabase
                         .from('groups')
                         .delete()
@@ -107,7 +111,7 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                         throw new Error(`Groups wipe failed: ${groupsError.message}`);
                     }
 
-                    // 4. Wipe temporary import list
+                    // 5. Wipe temporary import list
                     try {
                         await clearTWImport();
                     } catch (importErr: any) {
@@ -115,9 +119,6 @@ export const TWAttendanceView: React.FC<TWAttendanceViewProps> = ({ onSelectPlay
                         // Non-critical, but good to know
                     }
 
-                    // 5. Local clear
-                    dispatch(clearTWAttendance());
-                    dispatch(setGroups([]));
                     setStatusMessage('TW data successfully cleared.');
                 } catch (err: any) {
                     console.error('Failed to wipe TW data:', err);

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../state/store';
 import { upsertPlayer } from '../services/playerService';
-import { upsertGroup } from '../services/groupService';
+import { upsertGroup, deleteGroup as deleteGroupService } from '../services/groupService';
 import { upsertTWImport, deleteTWImportEntry } from '../services/twImportService';
 import { auditService } from '../services/auditService';
 import { clearPlayerDirtyFlag } from '../state/slices/playerSlice';
@@ -145,6 +145,17 @@ export function useCloudSync(
             // Clear the dirty flag after successful save and audit log
             dispatch(clearPlayerDirtyFlag({ playerId: player.id }));
           }
+        }
+      }
+
+      // Execute Group Deletions — groups removed from local state should be deleted from DB
+      const currentGroupIds = new Set(currentGroups.map(g => g.id));
+      const deletedGroupIds = [...prevGroupsMap.keys()].filter(id => !currentGroupIds.has(id));
+
+      for (const groupId of deletedGroupIds) {
+        const success = await deleteGroupService(groupId);
+        if (handleResult(groupId, success, 'groupService.delete')) {
+          prevGroupsMap.delete(groupId);
         }
       }
 
