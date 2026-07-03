@@ -292,7 +292,7 @@ export const useDatabaseSync = (
                     // RT-5: Successful connection — reset the backoff counter
                     reconnectAttempts = 0;
                     if (import.meta.env.DEV) console.log('[Realtime] Connected and listening for database changes.');
-                } else if ((status === 'CHANNEL_ERROR' || status === 'CLOSED') && !isCleaningUp) {
+                } else if ((status === 'CHANNEL_ERROR' || status === 'CLOSED' || status === 'TIMED_OUT') && !isCleaningUp) {
                     // RT-5: Exponential backoff — 1s → 2s → 4s → … capped at 30s
                     const delayMs = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
                     reconnectAttempts++;

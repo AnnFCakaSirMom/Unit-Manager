@@ -72,11 +72,15 @@ export async function fetchGroupsFromSupabase(signal?: AbortSignal): Promise<Gro
 
 /**
  * Upserts a group and its members into Supabase.
+ * Uses a surgical diff approach to avoid the destructive "Delete-then-Insert"
+ * pattern: fetches current members, deletes only removed ones, and upserts
+ * the rest. This eliminates zero-data windows that previously caused other
+ * clients to temporarily see empty groups via Realtime events.
  */
 export async function upsertGroup(group: Group, orderIndex: number): Promise<boolean> {
   console.log(`[groupService] Upserting group ${group.id} to Supabase...`);
 
-  // 1. Upsert Group
+  // 1. Upsert Group row
   const success = await handleMutation(
     supabase.from('groups').upsert({
       id: group.id,
@@ -89,32 +93,58 @@ export async function upsertGroup(group: Group, orderIndex: number): Promise<boo
 
   if (!success) return false;
 
-  // 2. Clear old members to handle removals correctly
-  const deleteSuccess = await handleMutation(
-    supabase.from('group_members').delete().eq('group_id', group.id),
-    { service: 'groupService', op: `clearMembers ${group.id}` }
-  );
+  // 2. Fetch current members from DB to compute a diff.
+  //    This lets us delete only members that were actually removed,
+  //    rather than wiping and re-inserting the entire list.
+  const { data: currentRows, error: fetchError } = await supabase
+    .from('group_members')
+    .select('profile_id')
+    .eq('group_id', group.id);
 
-  if (!deleteSuccess) return false;
+  if (fetchError) {
+    console.error(`[groupService] Failed to fetch current members for group ${group.id}:`, fetchError.message);
+    return false;
+  }
 
-  // 3. Insert new members
-  const membersToInsert = group.members.map((m, index) => ({
-    group_id: group.id,
-    profile_id: m.playerId,
-    selected_units: m.selectedUnits,
-    is_locked: m.isLocked,
-    order_index: index,
-  }));
+  const currentIds = new Set((currentRows || []).map(r => r.profile_id as string));
+  const newIds = new Set(group.members.map(m => m.playerId));
 
-  if (membersToInsert.length > 0) {
+  // 3. Delete only members that are no longer in the group
+  const idsToDelete = [...currentIds].filter(id => !newIds.has(id));
+  if (idsToDelete.length > 0) {
+    const deleteSuccess = await handleMutation(
+      supabase
+        .from('group_members')
+        .delete()
+        .eq('group_id', group.id)
+        .in('profile_id', idsToDelete),
+      { service: 'groupService', op: `deleteRemovedMembers ${group.id}` }
+    );
+    if (!deleteSuccess) return false;
+  }
+
+  // 4. Upsert all current members (handles new additions and order/unit changes).
+  //    Uses onConflict on (group_id, profile_id) to update existing rows in-place.
+  if (group.members.length > 0) {
+    const membersToUpsert = group.members.map((m, index) => ({
+      group_id: group.id,
+      profile_id: m.playerId,
+      selected_units: m.selectedUnits,
+      is_locked: m.isLocked,
+      order_index: index,
+    }));
+
     return handleMutation(
-      supabase.from('group_members').insert(membersToInsert),
-      { service: 'groupService', op: `insertMembers ${group.id}` }
+      supabase
+        .from('group_members')
+        .upsert(membersToUpsert, { onConflict: 'group_id,profile_id' }),
+      { service: 'groupService', op: `upsertMembers ${group.id}` }
     );
   }
 
   return true;
 }
+
 
 /**
  * Deletes a group from Supabase.
