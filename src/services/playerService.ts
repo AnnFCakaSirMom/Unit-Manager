@@ -301,14 +301,36 @@ export async function upsertPlayer(player: Player, prevPlayer?: Player): Promise
       );
       if (!upsertSuccess) return false;
 
-      // Step b: Prune unit rows that no longer exist in the player's set
-      const unitNames = Array.from(allUnits);
-      await handleMutation(
-        supabase.from('profile_units').delete()
-          .eq('profile_id', player.id)
-          .not('unit_name', 'in', `(${unitNames.map(n => `"${n}"`).join(',')})`),
-        { service: 'playerService', op: `pruneUnits ${player.id}` }
-      );
+      // Step b: Prune unit rows that no longer exist in the player's set.
+      // M1 FIX: Fetch the profile's existing unit rows and delete the obsolete ones
+      // via .in(), instead of hand-building a raw PostgREST `not in (...)` filter
+      // string. Unit names are admin-editable and may contain characters (" , ))
+      // that are syntactically meaningful in that filter — a hand-built string
+      // would break, causing the prune to error or delete the wrong rows (leaving
+      // "ghost" units that reappear on the next fetch). supabase-js's .in() escapes
+      // arbitrary values safely. Mirrors the diff approach in groupService.upsertGroup.
+      const { data: existingRows, error: fetchError } = await supabase
+        .from('profile_units')
+        .select('unit_name')
+        .eq('profile_id', player.id);
+
+      if (fetchError) {
+        console.error(`[playerService] Failed to fetch existing units for ${player.id}:`, fetchError.message);
+        return false;
+      }
+
+      const unitsToDelete = (existingRows || [])
+        .map(r => r.unit_name as string)
+        .filter(name => !allUnits.has(name));
+
+      if (unitsToDelete.length > 0) {
+        await handleMutation(
+          supabase.from('profile_units').delete()
+            .eq('profile_id', player.id)
+            .in('unit_name', unitsToDelete),
+          { service: 'playerService', op: `pruneUnits ${player.id}` }
+        );
+      }
     } else {
       // Player has no units — safe to wipe all rows for this profile
       await handleMutation(

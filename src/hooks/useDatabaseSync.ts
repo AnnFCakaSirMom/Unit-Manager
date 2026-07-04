@@ -66,6 +66,14 @@ export const useDatabaseSync = (
     const loadPlayers = useCallback(() => {
         syncManager.triggerSync('players', async (signal) => {
             const players = await fetchPlayersFromSupabase(signal);
+            // L1: Intentionally skip hydration on an empty response. A transient
+            // RLS/JWT timing gap (e.g. right after a role change, before the
+            // refreshed JWT propagates) can make this query briefly return zero
+            // rows even though players exist. Dispatching hydratePlayers([]) in
+            // that window would wipe the entire local roster for every connected
+            // client. The tradeoff: a legitimately-emptied roster (last player
+            // deleted) won't visually clear until the next full reload — judged
+            // safer than risking a spurious wipe of everyone's data.
             if (players.length > 0) {
                 dispatch(hydratePlayers(players));
             }

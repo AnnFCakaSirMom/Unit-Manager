@@ -69,17 +69,19 @@ export const ProfileMatcher: React.FC = () => {
     useEffect(() => {
         fetchProfiles();
 
-        // Subscribe to Realtime changes — server-side filtered to Pending profiles only.
-        // This component only cares about the pending list (new requests arriving,
-        // or approvals that change role away from 'Pending'). Filtering at the server
-        // means we don't receive noise from Officer edits of Member profiles.
+        // L5 FIX: Removed the server-side `role=eq.Pending` filter. Supabase Realtime
+        // evaluates postgres_changes filters against the NEW row on UPDATE, so an
+        // approval/deny (role: Pending -> Member) never matched the filter and the
+        // event was never delivered to *other* officers' clients — their pending
+        // list went stale until a manual reload, risking a second officer trying to
+        // process an already-resolved request. Listening broadly and re-fetching on
+        // any `profiles` change costs one extra query per edit, which is negligible.
         const channel = supabase
             .channel('profile-matcher-changes')
-            .on('postgres_changes', { 
-                event: '*', 
-                schema: 'public', 
-                table: 'profiles',
-                filter: 'role=eq.Pending'
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'profiles'
             }, () => {
                 fetchProfiles();
             })
@@ -100,28 +102,38 @@ export const ProfileMatcher: React.FC = () => {
         const washedClaimed = pending.claimed_name ? washName(pending.claimed_name) : null;
         
         if (!washedDiscord && !washedClaimed) return '';
-        
+
         // 1. Try to match claimed name first (highest priority)
         if (washedClaimed) {
             const match = unlinkedLocalPlayers.find(p => {
                 const washedPlayerName = washName(p.name);
-                return washedPlayerName === washedClaimed || 
-                       washedPlayerName.includes(washedClaimed) || 
+                // M3 FIX: never match on an empty washed player name — otherwise
+                // `washedClaimed.includes('')` is always true and would auto-match
+                // (and pre-select for an irreversible link) an arbitrary player.
+                if (!washedPlayerName) return false;
+                return washedPlayerName === washedClaimed ||
+                       washedPlayerName.includes(washedClaimed) ||
                        washedClaimed.includes(washedPlayerName) ||
                        p.aliases?.some(alias => washName(alias) === washedClaimed);
             });
             if (match) return match.id;
         }
 
-        // 2. Fallback to Discord nickname matching
-        const match = unlinkedLocalPlayers.find(p => {
-            const washedPlayerName = washName(p.name);
-            return washedPlayerName.includes(washedDiscord) || 
-                   washedDiscord.includes(washedPlayerName) ||
-                   p.aliases?.some(alias => washName(alias) === washedDiscord);
-        });
-        
-        return match ? match.id : '';
+        // 2. Fallback to Discord nickname matching.
+        // M3 FIX: guard against an empty washed Discord name (`''.includes` /
+        // `includes('')` both return true and would false-match every player).
+        if (washedDiscord) {
+            const match = unlinkedLocalPlayers.find(p => {
+                const washedPlayerName = washName(p.name);
+                if (!washedPlayerName) return false;
+                return washedPlayerName.includes(washedDiscord) ||
+                       washedDiscord.includes(washedPlayerName) ||
+                       p.aliases?.some(alias => washName(alias) === washedDiscord);
+            });
+            if (match) return match.id;
+        }
+
+        return '';
     };
 
     useEffect(() => {

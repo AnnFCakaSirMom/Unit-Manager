@@ -55,6 +55,12 @@ class SyncManager {
 
         // Schedule the actual execution after the debounce window.
         this.timers[type] = setTimeout(() => {
+            // L6 FIX: delete the fired timer's entry. Without this, `timers` never
+            // shrinks — harmless for the 4 static SyncTypes, but `player-${id}` and
+            // `tw-entry-${name}` are dynamic per-ID, so a long-running tab that
+            // delta-syncs many distinct players/entries over time would otherwise
+            // accumulate one stale key per ID for the lifetime of the singleton.
+            delete this.timers[type];
             void this.executeLatest(type, action, onError);
         }, DEBOUNCE_MS);
     }

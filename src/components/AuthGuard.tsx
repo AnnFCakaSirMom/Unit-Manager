@@ -12,7 +12,7 @@ interface AuthGuardProps {
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     const dispatch = useDispatch<AppDispatch>();
-    const { userId, role, isInitialized, discordNickname } = useSelector((state: RootState) => state.auth);
+    const { userId, role, isInitialized, discordNickname, avatarUrl } = useSelector((state: RootState) => state.auth);
     const [isRequesting, setIsRequesting] = useState(false);
     const [claimedName, setClaimedName] = useState('');
     const [requestError, setRequestError] = useState<string | null>(null);
@@ -48,10 +48,14 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
                     console.error('[AuthGuard] Unexpected role after insert:', newProfile.role);
                     throw new Error('Unexpected profile state. Please contact an admin.');
                 }
+                // L3 FIX: carry the existing avatarUrl through — otherwise setAuthSession
+                // would reset it to null, causing a brief avatar flicker while waiting
+                // for the next onAuthStateChange event (e.g. TOKEN_REFRESHED) to restore it.
                 dispatch(setAuthSession({
                     userId: newProfile.id,
                     role: newProfile.role as any,
-                    discordNickname: newProfile.discord_nickname || discordNickname || ''
+                    discordNickname: newProfile.discord_nickname || discordNickname || '',
+                    avatarUrl
                 }));
             }
         } catch (err: any) {

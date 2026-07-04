@@ -3,6 +3,10 @@ import { washName } from '../utils';
 
 export const findMatchedPlayer = (players: Player[], discordName: string) => {
     const washedDiscordName = washName(discordName);
+    // M3 FIX: A name consisting only of stripped tokens (e.g. "[Clan]", emoji)
+    // washes to an empty string. Without this guard, any player whose name also
+    // washes to "" would falsely match — return no match instead.
+    if (!washedDiscordName) return undefined;
     return players.find(p => {
         const washedPName = washName(p.name);
         if (washedPName === washedDiscordName) return true;

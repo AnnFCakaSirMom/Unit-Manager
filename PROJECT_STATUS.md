@@ -209,6 +209,18 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Silent Overwrite Prevention (Dirty Flag Race):** Fixed a race condition in `useCloudSync.ts` where an edit made *while* a previous upsert for the same player/group/TW entry was still in-flight could be silently discarded. `clearPlayerDirtyFlag`, `clearGroupDirtyFlag`, and `clearTWEntryDirtyFlag` now accept an optional `syncedRef` snapshot and only clear `isDirty` if the object's Immer reference still matches that snapshot — a mismatch means a newer edit landed mid-sync, so the flag stays dirty for the next cycle instead of losing the change.
 - [x] **Group Deletion Tombstones:** Fixed a race condition where a locally deleted group could be resurrected if a Realtime `hydrateGroups` event arrived before the deletion was persisted to Supabase, causing the deletion to silently never reach the database. Added a self-cleaning `deletedGroupIds` tombstone set in `groupSlice.ts`, populated by `deleteGroup` and `setGroups` (covering manual deletion, "Clear List", and history restores), and consulted by `hydrateGroups` to suppress resurrection until the server confirms the row is gone.
 
+### 25. Unit Pruning, Tier Persistence & Profile-Matching Safety Fixes (Completed July 2026)
+- [x] **Safe Unit Pruning:** Replaced a hand-built raw PostgREST `not in (...)` filter string in `playerService.ts` with a fetch-diff-delete approach (mirroring `groupService.upsertGroup`). Admin-editable unit names containing `"`, `,`, or `)` previously could corrupt the filter, silently failing to prune stale `profile_units` rows and causing unchecked units to reappear after a reload.
+- [x] **Unit Tier Persistence:** Fixed `updateUnitInSupabase` in `unitSlice.ts` to actually write the `tier` column to Supabase (it was accepted as a parameter but never included in the update payload) and reworked the `fulfilled` reducer to relocate the unit between tier arrays instead of only mapping within its original tier — a latent bug that would have silently broken any future tier-reassignment UI.
+- [x] **Profile-Matching False-Positive Guard:** Hardened `findMatchedPlayer` (`reducerHelpers.ts`) and `ProfileMatcher.getSuggestedMatchId` against names that wash down to an empty string (e.g. a Discord nickname consisting only of emoji or bracketed tags). Previously, `''.includes()` semantics meant such a name could auto-suggest and pre-select an arbitrary, unrelated player for an irreversible account-link merge.
+
+### 26. Realtime Filter, Avatar Continuity & Sync Cleanup Polish (Completed July 2026)
+- [x] **Multi-Officer Approval Sync:** Removed the server-side `role=eq.Pending` filter on `ProfileMatcher`'s Realtime subscription. Supabase evaluates `postgres_changes` filters against the *new* row on UPDATE, so an approval/deny (role: `Pending` → `Member`) never matched the filter and other officers' clients never received the event — leaving their pending list stale and risking a second officer processing an already-resolved request.
+- [x] **Avatar Continuity on Request Access:** Fixed `AuthGuard.handleRequestAccess` to carry the existing `avatarUrl` through its `setAuthSession` dispatch, preventing a brief avatar flicker to blank while a new access request is pending.
+- [x] **Debounce Timer Cleanup:** `SyncManager` now deletes a debounce timer's entry once it fires. Static sync types were unaffected, but dynamic per-ID types (`player-${id}`, `tw-entry-${name}`) used by delta-sync previously accumulated one stale key per unique ID for the lifetime of the singleton during long-running sessions.
+- [x] **Documented Empty-Hydration Guard:** Added an explanatory comment to `loadPlayers` in `useDatabaseSync.ts` clarifying that skipping hydration on an empty player list is an intentional tradeoff — it protects against a transient RLS/JWT timing gap wiping every client's roster, at the cost of a legitimately-emptied roster not visually clearing until the next reload.
+- [x] **Verified Non-Issues:** Confirmed `tw_import_list.discord_name` is a `PRIMARY KEY` (`create_tw_import_table.sql`), which means `upsertTWImport`'s implicit `onConflict` and `fetchSingleTWEntry`'s `.maybeSingle()` were already safe — no code changes needed for either.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -228,4 +240,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE/InitPlan weight functions) + Trigger-based integrity + RPC Hardening.
 
-*Last updated: 2026-07-04 (Concurrent Edit & Deletion Race Condition Hardening)*
+*Last updated: 2026-07-04 (Realtime Filter, Avatar Continuity & Sync Cleanup Polish)*

@@ -92,13 +92,20 @@ export const updateUnitInSupabase = createAsyncThunk(
   'unit/updateUnit',
   async (params: { oldName: string; newName: string; newCost: number | undefined; tier: string }, { rejectWithValue }) => {
     try {
-      const updatePayload: any = { leadership_cost: params.newCost !== undefined ? params.newCost : null };
       const trimmedNewName = params.newName.trim();
-      
+      const updatePayload: any = {
+        leadership_cost: params.newCost !== undefined ? params.newCost : null,
+        // M2 FIX: persist the unit's tier. Previously `tier` was accepted as a
+        // param but never written to the DB, so a tier change (once the edit UI
+        // exposes a tier picker) would be silently dropped. Writing the current
+        // tier is idempotent when unchanged.
+        tier: params.tier,
+      };
+
       if (trimmedNewName && trimmedNewName !== params.oldName) {
         updatePayload.name = trimmedNewName;
       }
-      
+
       const { error } = await supabase
         .from('units')
         .update(updatePayload)
@@ -167,15 +174,19 @@ const unitSlice = createSlice({
       // Update
       .addCase(updateUnitInSupabase.fulfilled, (state, action) => {
         const { oldName, newName, newCost, tier } = action.payload;
-        if (state.unitConfig.tiers[tier]) {
-          state.unitConfig.tiers[tier] = state.unitConfig.tiers[tier].map(u => {
-            if (u.name === oldName) {
-              return { ...u, name: newName || oldName, leadershipCost: newCost };
-            }
-            return u;
-          });
-          state.unitConfig.tiers[tier].sort((a, b) => a.name.localeCompare(b.name));
-        }
+        const updatedUnit: Unit = { name: newName || oldName, leadershipCost: newCost };
+
+        // M2 FIX: Remove the unit from whichever tier currently holds it, then
+        // insert it into the target tier. The old code only searched tiers[tier]
+        // and mapped in place, so a tier change would leave the unit stranded in
+        // its original tier (and duplicated/missing in the UI until reload).
+        Object.keys(state.unitConfig.tiers).forEach(t => {
+          state.unitConfig.tiers[t] = state.unitConfig.tiers[t].filter(u => u.name !== oldName);
+        });
+
+        if (!state.unitConfig.tiers[tier]) state.unitConfig.tiers[tier] = [];
+        state.unitConfig.tiers[tier].push(updatedUnit);
+        state.unitConfig.tiers[tier].sort((a, b) => a.name.localeCompare(b.name));
       })
 
       // Delete
