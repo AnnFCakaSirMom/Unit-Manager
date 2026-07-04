@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk, original } from '@reduxjs/toolkit';
 import type { TWAttendancePlayer, TWSeason, TWEvent, TWPlayerRecord, TWRecordStatus } from '../../types';
 import { handleTWAttendanceImport as helperHandleTWAttendanceImport } from '../../utils/reducerHelpers';
 import { RootState } from '../store';
@@ -150,9 +150,15 @@ const twSlice = createSlice({
       // Immer-compatible mutation
       state.twAttendance[index] = incoming;
     },
-    clearTWEntryDirtyFlag(state, action: PayloadAction<{ discordName: string }>) {
-      const entry = state.twAttendance.find(a => a.discordName === action.payload.discordName);
+    clearTWEntryDirtyFlag(state, action: PayloadAction<{ discordName: string; syncedRef?: TWAttendancePlayer }>) {
+      const { discordName, syncedRef } = action.payload;
+      const entry = state.twAttendance.find(a => a.discordName === discordName);
       if (entry) {
+        // H1: Only clear the dirty flag if this entry hasn't been re-edited since
+        // the synced snapshot. Identity mismatch (Immer swaps the reference on
+        // mutation) means a concurrent edit happened during the async upsert —
+        // keep it dirty so the newer content is re-synced next cycle.
+        if (syncedRef && (original(entry) ?? entry) !== syncedRef) return;
         entry.isDirty = false;
       }
     },

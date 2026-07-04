@@ -205,6 +205,10 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Automated Group Deletion Sync:** Added group deletion tracking to `useCloudSync.ts`. Removing groups locally (such as during a "Restore All" history snapshot apply or manual deletion) now automatically issues corresponding DELETE requests to Supabase, solving duplicate group merges upon restoration.
 - [x] **Clear List Race Condition Fix:** Reordered the "Clear all" logic in `TWAttendanceView.tsx` to empty local Redux states first. This ensures that the sync scheduler sees no active groups during the async DB wipe, preventing deleted groups from accidentally getting re-uploaded.
 
+### 24. Concurrent Edit & Deletion Race Condition Hardening (Completed July 2026)
+- [x] **Silent Overwrite Prevention (Dirty Flag Race):** Fixed a race condition in `useCloudSync.ts` where an edit made *while* a previous upsert for the same player/group/TW entry was still in-flight could be silently discarded. `clearPlayerDirtyFlag`, `clearGroupDirtyFlag`, and `clearTWEntryDirtyFlag` now accept an optional `syncedRef` snapshot and only clear `isDirty` if the object's Immer reference still matches that snapshot — a mismatch means a newer edit landed mid-sync, so the flag stays dirty for the next cycle instead of losing the change.
+- [x] **Group Deletion Tombstones:** Fixed a race condition where a locally deleted group could be resurrected if a Realtime `hydrateGroups` event arrived before the deletion was persisted to Supabase, causing the deletion to silently never reach the database. Added a self-cleaning `deletedGroupIds` tombstone set in `groupSlice.ts`, populated by `deleteGroup` and `setGroups` (covering manual deletion, "Clear List", and history restores), and consulted by `hydrateGroups` to suppress resurrection until the server confirms the row is gone.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -224,4 +228,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE/InitPlan weight functions) + Trigger-based integrity + RPC Hardening.
 
-*Last updated: 2026-07-03 (Real-time Group Sync & Timeout Hardening)*
+*Last updated: 2026-07-04 (Concurrent Edit & Deletion Race Condition Hardening)*

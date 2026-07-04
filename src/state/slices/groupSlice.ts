@@ -1,12 +1,17 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, original } from '@reduxjs/toolkit';
 import type { Group, GroupMember } from '../../types';
 
 interface GroupState {
   groups: Group[];
+  // H2: Tombstones for locally-removed groups. Prevents a concurrent Realtime
+  // hydration from resurrecting a group that was deleted locally but not yet
+  // persisted to the DB. Self-cleaning — see hydrateGroups.
+  deletedGroupIds: string[];
 }
 
 const initialState: GroupState = {
   groups: [],
+  deletedGroupIds: [],
 };
 
 const groupSlice = createSlice({
@@ -14,8 +19,17 @@ const groupSlice = createSlice({
   initialState,
   reducers: {
     hydrateGroups(state, action: PayloadAction<Group[]>) {
-      const serverGroups = action.payload;
-      const serverGroupIds = new Set(serverGroups.map(g => g.id));
+      const rawServerGroups = action.payload;
+      // serverGroupIds reflects what the server *actually* has (unfiltered) —
+      // used both for the local-only-dirty check and for self-cleaning tombstones.
+      const serverGroupIds = new Set(rawServerGroups.map(g => g.id));
+
+      // H2: Suppress resurrection of groups that were deleted locally but whose
+      // deletion hasn't propagated to the DB yet. Without this, a Realtime
+      // hydration would re-add the just-deleted group and the deletion would be
+      // lost (never detected by useCloudSync's diff).
+      const tombstoned = new Set(state.deletedGroupIds);
+      const serverGroups = rawServerGroups.filter(g => !tombstoned.has(g.id));
 
       // Map server groups, preserving any local dirty version of a known group.
       const mappedGroups = serverGroups.map(serverGroup => {
@@ -34,8 +48,29 @@ const groupSlice = createSlice({
       );
 
       state.groups = [...mappedGroups, ...localOnlyDirtyGroups];
+
+      // H2: Self-clean tombstones the server has confirmed gone. If a tombstoned
+      // id is no longer present on the server, the deletion has propagated and the
+      // tombstone can be dropped. Ids still present on the server are kept
+      // suppressed until their deletion lands.
+      state.deletedGroupIds = state.deletedGroupIds.filter(id => serverGroupIds.has(id));
     },
     setGroups(state, action: PayloadAction<Group[]>) {
+      const newIds = new Set(action.payload.map(g => g.id));
+
+      // H2: Any currently-known group that is absent from the new payload is a
+      // local removal (e.g. Clear List `setGroups([])`, or a restore with fewer
+      // groups) — tombstone it so a concurrent hydration can't resurrect it.
+      state.groups.forEach(g => {
+        if (!newIds.has(g.id) && !state.deletedGroupIds.includes(g.id)) {
+          state.deletedGroupIds.push(g.id);
+        }
+      });
+
+      // A group explicitly present in the new payload is intentionally alive
+      // again (e.g. restore of a previously-deleted group) — drop its tombstone.
+      state.deletedGroupIds = state.deletedGroupIds.filter(id => !newIds.has(id));
+
       state.groups = action.payload;
     },
     addGroup(state, action: PayloadAction<{ isMaybe?: boolean } | undefined>) {
@@ -65,7 +100,13 @@ const groupSlice = createSlice({
       }
     },
     deleteGroup(state, action: PayloadAction<{ groupId: string }>) {
-      state.groups = state.groups.filter(g => g.id !== action.payload.groupId);
+      const { groupId } = action.payload;
+      state.groups = state.groups.filter(g => g.id !== groupId);
+      // H2: Record a tombstone so a concurrent Realtime hydration (which still
+      // sees the group on the server) can't re-add it before the DB deletion lands.
+      if (!state.deletedGroupIds.includes(groupId)) {
+        state.deletedGroupIds.push(groupId);
+      }
     },
     updateGroupName(state, action: PayloadAction<{ groupId: string; name: string }>) {
       const group = state.groups.find(g => g.id === action.payload.groupId);
@@ -230,9 +271,15 @@ const groupSlice = createSlice({
         });
       });
     },
-    clearGroupDirtyFlag(state, action: PayloadAction<{ groupId: string }>) {
-      const group = state.groups.find(g => g.id === action.payload.groupId);
+    clearGroupDirtyFlag(state, action: PayloadAction<{ groupId: string; syncedRef?: Group }>) {
+      const { groupId, syncedRef } = action.payload;
+      const group = state.groups.find(g => g.id === groupId);
       if (group) {
+        // H1: Only clear the dirty flag if the group hasn't been re-edited since
+        // the synced snapshot. Immer swaps the object reference on every mutation,
+        // so an identity mismatch means a concurrent edit happened during the async
+        // upsert — keep it dirty so the newer content is re-synced next cycle.
+        if (syncedRef && (original(group) ?? group) !== syncedRef) return;
         group.isDirty = false;
       }
     }

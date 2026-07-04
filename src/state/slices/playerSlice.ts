@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, original } from '@reduxjs/toolkit';
 import type { Player, UserRole } from '../../types';
 
 interface PlayerState {
@@ -254,9 +254,16 @@ const playerSlice = createSlice({
         // player.isDirty = true; <- Borttagen för att undvika oändlig sync-loop vid Realtime-merge
       }
     },
-    clearPlayerDirtyFlag(state, action: PayloadAction<{ playerId: string }>) {
+    clearPlayerDirtyFlag(state, action: PayloadAction<{ playerId: string; syncedRef?: Player }>) {
+      const { playerId, syncedRef } = action.payload;
       state.players.forEach(p => {
-        if (p.id === action.payload.playerId) {
+        if (p.id === playerId) {
+          // H1: Only clear the dirty flag if this player hasn't been re-edited
+          // since the synced snapshot. Immer swaps the object reference on every
+          // mutation, so an identity mismatch means a concurrent edit happened
+          // during the async upsert — keep it dirty so the newer content is
+          // re-synced on the next cycle instead of being silently lost.
+          if (syncedRef && (original(p) ?? p) !== syncedRef) return;
           p.isDirty = false;
         }
       });

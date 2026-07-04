@@ -142,8 +142,10 @@ export function useCloudSync(
                 is_suspicious: isSuspicious
             });
             
-            // Clear the dirty flag after successful save and audit log
-            dispatch(clearPlayerDirtyFlag({ playerId: player.id }));
+            // Clear the dirty flag after successful save and audit log.
+            // H1: pass the synced snapshot reference so the flag is only cleared
+            // if the player wasn't re-edited during the async upsert above.
+            dispatch(clearPlayerDirtyFlag({ playerId: player.id, syncedRef: player }));
           }
         }
       }
@@ -170,7 +172,8 @@ export function useCloudSync(
           if (handleResult(group.id, success, 'groupService.upsert')) {
             prevGroupsMap.set(group.id, group);
             if (success) {
-              dispatch(clearGroupDirtyFlag({ groupId: group.id }));
+              // H1: pass the synced snapshot reference (see clearGroupDirtyFlag).
+              dispatch(clearGroupDirtyFlag({ groupId: group.id, syncedRef: group }));
             }
           }
         }
@@ -192,7 +195,8 @@ export function useCloudSync(
         if (handleResult(entry.discordName, success, 'twService.upsert')) {
           prevTWMap.set(entry.discordName, entry);
           if (success) {
-            dispatch(clearTWEntryDirtyFlag({ discordName: entry.discordName }));
+            // H1: pass the synced snapshot reference (see clearTWEntryDirtyFlag).
+            dispatch(clearTWEntryDirtyFlag({ discordName: entry.discordName, syncedRef: entry }));
           }
         }
       }
