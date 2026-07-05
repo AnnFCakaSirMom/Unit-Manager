@@ -221,6 +221,15 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Documented Empty-Hydration Guard:** Added an explanatory comment to `loadPlayers` in `useDatabaseSync.ts` clarifying that skipping hydration on an empty player list is an intentional tradeoff — it protects against a transient RLS/JWT timing gap wiping every client's roster, at the cost of a legitimately-emptied roster not visually clearing until the next reload.
 - [x] **Verified Non-Issues:** Confirmed `tw_import_list.discord_name` is a `PRIMARY KEY` (`create_tw_import_table.sql`), which means `upsertTWImport`'s implicit `onConflict` and `fetchSingleTWEntry`'s `.maybeSingle()` were already safe — no code changes needed for either.
 
+### 27. TW Import Realtime Deletion Fix (Completed July 2026)
+- [x] **TW Roster Realtime Deletion Cleanup:** Fixed a bug where re-running a Raid Helper import that dropped previously Accepted/Maybe names left those stale names visible in every *other* officer's client until a manual reload (F5). The write-side delete (`useCloudSync` → `deleteTWImportEntry`) and the Realtime event delivery were already correct; `loadSingleTWEntry` in `useDatabaseSync.ts` simply discarded the resulting `null` fetch instead of removing the entry. Added a `deleteTWEntry` reducer to `twSlice.ts` (mirroring the existing `deletePlayer` pattern from #19) with the same dirty-flag protection used elsewhere in the slice, and wired it into the `null`-fetch branch.
+- [x] **TW Import Status-Change Timestamp Guard:** Identified that `tw_import_list` has no `updated_at` column, so the timestamp guard in `updateSingleTWEntry` (`twSlice.ts`) fell back to comparing `created_at` — which an upsert never changes — silently skipping a status change (Accepted ↔ Maybe) on an already-present name for other connected officers. Added `_archive/add_updated_at_tw_import_list.sql` (same trigger pattern as `add_updated_at_profiles.sql`) to add the column and keep it current on every update.
+
+### 28. Database Linter RPC Attack-Surface Cleanup (Completed July 2026)
+- [x] **Trigger-Only Function EXECUTE Revocation:** Resolved three Supabase Database Linter `SECURITY DEFINER` warnings by revoking unnecessary `EXECUTE` privileges from `anon`/`authenticated`/`PUBLIC` on `enforce_role_on_insert()`, `update_profile_updated_at_from_units()`, and `update_tw_import_list_updated_at()` — all three are pure trigger functions (`RETURNS trigger`) never meant to be called directly via `/rest/v1/rpc/<name>`, since PostgreSQL fires triggers regardless of the invoking role's `EXECUTE` grant. Added `_archive/fix_security_definer_search_path_warnings.sql`.
+- [x] **Search Path Pinning:** Pinned `SET search_path = public` on `update_tw_import_list_updated_at()`, the one remaining `SECURITY DEFINER` function missing it, closing the `function_search_path_mutable` linter warning.
+- [x] **Verified Non-Issues:** Confirmed the two remaining `authenticated_security_definer_function_executable` warnings (`get_my_role_weight()`, `link_and_approve_profile()`) are intentional — both are legitimately called by signed-in clients (RLS policy evaluation and the ProfileMatcher "Link & Upgrade" RPC respectively) and must keep `authenticated` `EXECUTE` rights; `anon` was already revoked for both in #20.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -240,4 +249,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE/InitPlan weight functions) + Trigger-based integrity + RPC Hardening.
 
-*Last updated: 2026-07-04 (Realtime Filter, Avatar Continuity & Sync Cleanup Polish)*
+*Last updated: 2026-07-05 (Database Linter RPC Attack-Surface Cleanup)*
