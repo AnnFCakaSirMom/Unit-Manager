@@ -150,6 +150,17 @@ const twSlice = createSlice({
       // Immer-compatible mutation
       state.twAttendance[index] = incoming;
     },
+    deleteTWEntry(state, action: PayloadAction<{ discordName: string }>) {
+      const entry = state.twAttendance.find(e => e.discordName === action.payload.discordName);
+
+      // Protect dirty entries — don't drop unsaved local changes
+      if (entry?.isDirty) {
+        if (import.meta.env.DEV) console.log(`[Delta-TW] Skipping delete for dirty entry ${action.payload.discordName}`);
+        return;
+      }
+
+      state.twAttendance = state.twAttendance.filter(e => e.discordName !== action.payload.discordName);
+    },
     clearTWEntryDirtyFlag(state, action: PayloadAction<{ discordName: string; syncedRef?: TWAttendancePlayer }>) {
       const { discordName, syncedRef } = action.payload;
       const entry = state.twAttendance.find(a => a.discordName === discordName);
@@ -294,6 +305,7 @@ export const {
   hydrateTWData,
   hydrateTWAttendance,
   updateSingleTWEntry,
+  deleteTWEntry,
   clearTWEntryDirtyFlag,
   setTWAttendance,
   setTWRecords,

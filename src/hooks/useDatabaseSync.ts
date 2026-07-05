@@ -8,7 +8,7 @@ import { syncManager } from '../services/SyncManager';
 import { AppDispatch } from '../state/store';
 import { hydratePlayers, updateSinglePlayer, deletePlayer } from '../state/slices/playerSlice';
 import { hydrateGroups } from '../state/slices/groupSlice';
-import { hydrateTWAttendance, hydrateTWData, updateSingleTWEntry, updateTWPlayerRecord } from '../state/slices/twSlice';
+import { hydrateTWAttendance, hydrateTWData, updateSingleTWEntry, deleteTWEntry, updateTWPlayerRecord } from '../state/slices/twSlice';
 import { setSyncing } from '../state/slices/uiSlice';
 import { setAuthSession } from '../state/slices/authSlice';
 import { fetchUnitsFromSupabase } from '../state/slices/unitSlice';
@@ -117,6 +117,8 @@ export const useDatabaseSync = (
             const entry = await fetchSingleTWEntry(discordName, signal);
             if (entry) {
                 dispatch(updateSingleTWEntry(entry));
+            } else {
+                dispatch(deleteTWEntry({ discordName }));
             }
         }, () => setStatusMessage('Error: Could not sync from server.'));
     }, [dispatch, setStatusMessage]);
