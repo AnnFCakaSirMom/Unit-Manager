@@ -14,5 +14,6 @@ export const washName = (name: string) => (name || "")
     .normalize("NFKC")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\p{Extended_Pictographic}\u200d\ufe0f\ufe0e]/gu, "")
     .replace(/\[.*?\]|\(.*?\)|\<.*?\>|['\s]/g, '')
     .toLowerCase();

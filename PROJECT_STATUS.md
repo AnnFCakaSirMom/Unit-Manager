@@ -230,6 +230,9 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - [x] **Search Path Pinning:** Pinned `SET search_path = public` on `update_tw_import_list_updated_at()`, the one remaining `SECURITY DEFINER` function missing it, closing the `function_search_path_mutable` linter warning.
 - [x] **Verified Non-Issues:** Confirmed the two remaining `authenticated_security_definer_function_executable` warnings (`get_my_role_weight()`, `link_and_approve_profile()`) are intentional — both are legitimately called by signed-in clients (RLS policy evaluation and the ProfileMatcher "Link & Upgrade" RPC respectively) and must keep `authenticated` `EXECUTE` rights; `anon` was already revoked for both in #20.
 
+### 29. Icon-Aware Name Matching (Completed July 2026)
+- [x] **Emoji/Icon Stripping in `washName`:** Extended the shared name-normalization utility (`src/utils.ts`) to strip decorative emoji/pictographic symbols (e.g. 👑, ⚔️, ⭐) via the `\p{Extended_Pictographic}` Unicode property, alongside the existing `[ViP]`-style tag and stylized-font handling. Ensures Raid Helper import matching, player search, and profile matching all ignore cosmetic icons in Discord nicknames instead of treating them as literal characters.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
@@ -249,4 +252,4 @@ A web application to manage player units, groups, and Territory War (TW) statist
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE/InitPlan weight functions) + Trigger-based integrity + RPC Hardening.
 
-*Last updated: 2026-07-05 (Database Linter RPC Attack-Surface Cleanup)*
+*Last updated: 2026-07-07 (Icon-Aware Name Matching)*
