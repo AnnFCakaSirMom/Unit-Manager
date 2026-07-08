@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import type { ConfirmModalInfo } from '../types';
 import { Save, Shield, Clipboard, Plus, X, Pencil, Trash2 } from './icons';
 import { Button } from './Button';
@@ -24,6 +24,19 @@ export const GroupsList = React.memo(({
     const dispatch = useAppDispatch();
 
     const [editingGroup, setEditingGroup] = useState<{ id: string | null; name: string }>({ id: null, name: '' });
+
+    // PERF: Memoize the display sort (MAYBE groups last, others keep their order)
+    // so it isn't recomputed inline in JSX on every render. Array.sort is stable,
+    // so non-MAYBE groups retain their original relative order.
+    const sortedGroups = useMemo(() => {
+        return [...groups].sort((a, b) => {
+            const aMaybe = a.name.toUpperCase().includes('MAYBE');
+            const bMaybe = b.name.toUpperCase().includes('MAYBE');
+            if (aMaybe && !bMaybe) return 1;
+            if (!aMaybe && bMaybe) return -1;
+            return 0;
+        });
+    }, [groups]);
 
     const handleSaveGroupName = useCallback(() => {
         if (!editingGroup.id || !editingGroup.name.trim()) return;
@@ -150,13 +163,7 @@ export const GroupsList = React.memo(({
             <div className="overflow-y-auto max-h-80 pr-2 -mr-2">
                 {groups.length > 0 ? (
                     <ul className="space-y-1">
-                        {[...groups].sort((a, b) => {
-                            const aMaybe = a.name.toUpperCase().includes('MAYBE');
-                            const bMaybe = b.name.toUpperCase().includes('MAYBE');
-                            if (aMaybe && !bMaybe) return 1;
-                            if (!aMaybe && bMaybe) return -1;
-                            return 0;
-                        }).map((group) => (
+                        {sortedGroups.map((group) => (
                             <li key={group.id} className={`p-2 rounded-md transition-all duration-200 flex justify-between items-center group border ${selectedGroupId === group.id ? 'bg-amber-500/20 border-amber-500/40 text-amber-100' : 'bg-black/30 border-white/5 hover:bg-black/50 hover:border-white/10'}`}>
                                 {editingGroup.id === group.id ? (
                                     <div className="flex-grow flex items-center gap-2">

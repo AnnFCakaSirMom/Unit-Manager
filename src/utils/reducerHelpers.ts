@@ -79,9 +79,24 @@ export const handleTWAttendanceImport = (
                 newLeaderId = newMembers.length > 0 ? newMembers[0].playerId : null;
             }
 
-            // FIX-1: Mark every group touched by the import as dirty so
-            // useCloudSync persists the updated membership to Supabase.
-            return { ...group, members: newMembers, leaderId: newLeaderId, isDirty: true };
+            // PERF: Only flag a group dirty when its membership or leadership
+            // actually changed, so useCloudSync upserts just the touched groups
+            // instead of every group on every import (which previously turned one
+            // import into O(groups) full upsert-diff cycles). The filter above can
+            // only REMOVE members, so a length difference reliably means someone
+            // was removed. An existing pending dirty flag is preserved so an
+            // unsynced prior edit is never dropped. A fresh members array (from
+            // .filter) is always returned, keeping the parking step's push safe.
+            const membersChanged = newMembers.length !== group.members.length;
+            const leaderChanged = newLeaderId !== group.leaderId;
+            const changed = membersChanged || leaderChanged;
+
+            return {
+                ...group,
+                members: newMembers,
+                leaderId: newLeaderId,
+                isDirty: changed ? true : group.isDirty,
+            };
         });
 
         // 2. Handle parking for collected members

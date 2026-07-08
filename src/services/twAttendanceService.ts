@@ -176,13 +176,29 @@ export async function clearEventRecords(eventId: string) {
 export async function deleteTWAttendanceRecords(records: TWPlayerRecord[]) {
   if (records.length === 0) return;
 
+  // PERF: Batch deletes by event instead of one round-trip per record (N+1).
+  // Records from an import typically share a single event, so this collapses
+  // N sequential DELETEs into one DELETE per distinct event. Deleting
+  // (event_id = X AND profile_id IN [...]) targets exactly the same
+  // (event, profile) pairs as the previous per-record loop, and .in()
+  // escapes the id values safely.
+  const profileIdsByEvent = new Map<string, string[]>();
   for (const record of records) {
+    const ids = profileIdsByEvent.get(record.eventId);
+    if (ids) {
+      ids.push(record.playerId);
+    } else {
+      profileIdsByEvent.set(record.eventId, [record.playerId]);
+    }
+  }
+
+  for (const [eventId, profileIds] of profileIdsByEvent) {
     const { error } = await supabase
       .from('tw_attendance_records')
       .delete()
-      .eq('event_id', record.eventId)
-      .eq('profile_id', record.playerId);
-    
+      .eq('event_id', eventId)
+      .in('profile_id', profileIds);
+
     if (error) throw error;
   }
 }

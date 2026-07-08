@@ -10,6 +10,45 @@ import { clearTWEntryDirtyFlag } from '../state/slices/twSlice';
 
 export type SyncStatus = 'Syncing' | 'Synced' | 'Error' | 'PermanentError';
 
+// PERF: Run async work over a list with a bounded number of concurrent
+// operations. Replaces the previous fully-sequential (await-in-for-loop)
+// sync, which cost one round-trip per item in series. A cap (rather than a
+// naive Promise.all over everything) avoids overwhelming Supabase's
+// connection pool on large bulk operations (e.g. a TW import touching many
+// groups). The worker receives the original index so order-sensitive work
+// (group order_index) stays correct.
+const SYNC_CONCURRENCY = 8;
+
+// SAFETY: If a locally-tracked list that previously held a meaningful amount
+// of data (>= this many items) suddenly appears completely empty, treat it as
+// a suspected sync glitch rather than "the user deleted everything," and skip
+// propagating it as a mass-delete to Supabase. This is a last line of defense
+// against transient hydration bugs (e.g. an empty fetch response wiping local
+// state — see the loadGroups/loadTWImport guards in useDatabaseSync.ts, added
+// after exactly this failure mode caused real data loss). Deliberately only
+// triggers on a full wipe of a non-trivial list, not on small diffs, so
+// genuinely deleting one or two items via the normal UI still syncs normally.
+// The app's dedicated "Clear TW Attendance & Groups" action already performs
+// its own explicit Supabase deletes independently of this diff, so it is
+// unaffected by this guard.
+const SUSPICIOUS_WIPE_THRESHOLD = 3;
+
+async function mapWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<void>
+): Promise<void> {
+  let cursor = 0;
+  const runnerCount = Math.min(limit, items.length);
+  const runners = Array.from({ length: runnerCount }, async () => {
+    while (cursor < items.length) {
+      const index = cursor++;
+      await worker(items[index], index);
+    }
+  });
+  await Promise.all(runners);
+}
+
 export function useCloudSync(
   setStatusMessage: (msg: string) => void
 ) {
@@ -64,12 +103,28 @@ export function useCloudSync(
           prevGroupsRef.current = currentGroups;
           prevTWAttendanceRef.current = currentTWAttendance;
           isInitialized.current = true;
-          console.log('[useCloudSync] System initialized. Skipping initial sync logs.');
+          if (import.meta.env.DEV) console.log('[useCloudSync] System initialized. Skipping initial sync logs.');
           return;
       }
 
       setStatus('Syncing');
       setStatusMessage("Saving to cloud...");
+
+      // SAFETY: see SUSPICIOUS_WIPE_THRESHOLD above.
+      const groupsWipeSuspected =
+        prevGroupsRef.current.length >= SUSPICIOUS_WIPE_THRESHOLD && currentGroups.length === 0;
+      const twWipeSuspected =
+        prevTWAttendanceRef.current.length >= SUSPICIOUS_WIPE_THRESHOLD && currentTWAttendance.length === 0;
+
+      if (groupsWipeSuspected || twWipeSuspected) {
+        console.warn(
+          '[useCloudSync] Suspicious mass-deletion blocked — a local list emptied out unexpectedly. ' +
+          'Skipping delete-sync for the affected list(s) this cycle so nothing is removed from Supabase. ' +
+          'If this list should genuinely be empty, use the dedicated clear action instead.',
+          { groupsWipeSuspected, twWipeSuspected }
+        );
+        setStatusMessage('Warning: sync blocked an unexpected data wipe — please verify your data.');
+      }
 
       const prevPlayersMap = new Map(prevPlayersRef.current.map(p => [p.id, p]));
       const prevGroupsMap = new Map(prevGroupsRef.current.map(g => [g.id, g]));
@@ -101,11 +156,15 @@ export function useCloudSync(
         }
       };
 
-      // Execute Player Upserts
-      for (const player of changedPlayers) {
+      // Execute Player Upserts (bounded-parallel).
+      // Each player is independent: distinct DB rows, distinct audit target_id
+      // (so the audit 5-minute dedup never races between different players), and
+      // the optimistic-lock snapshot (syncedRef) is checked per-player in the
+      // reducer — so running these concurrently is safe.
+      await mapWithConcurrency(changedPlayers, SYNC_CONCURRENCY, async (player) => {
         const prev = prevPlayersMap.get(player.id);
         const success = await upsertPlayer(player, prev);
-        
+
         if (handleResult(player.id, success, 'playerService.upsert')) {
           prevPlayersMap.set(player.id, player);
           if (success) {
@@ -141,32 +200,35 @@ export function useCloudSync(
                 new_data: player,
                 is_suspicious: isSuspicious
             });
-            
+
             // Clear the dirty flag after successful save and audit log.
             // H1: pass the synced snapshot reference so the flag is only cleared
             // if the player wasn't re-edited during the async upsert above.
             dispatch(clearPlayerDirtyFlag({ playerId: player.id, syncedRef: player }));
           }
         }
-      }
+      });
 
       // Execute Group Deletions — groups removed from local state should be deleted from DB
       const currentGroupIds = new Set(currentGroups.map(g => g.id));
-      const deletedGroupIds = [...prevGroupsMap.keys()].filter(id => !currentGroupIds.has(id));
+      const deletedGroupIds = groupsWipeSuspected
+        ? []
+        : [...prevGroupsMap.keys()].filter(id => !currentGroupIds.has(id));
 
-      for (const groupId of deletedGroupIds) {
+      await mapWithConcurrency(deletedGroupIds, SYNC_CONCURRENCY, async (groupId) => {
         const success = await deleteGroupService(groupId);
         if (handleResult(groupId, success, 'groupService.delete')) {
           prevGroupsMap.delete(groupId);
         }
-      }
+      });
 
-      // Execute Group Upserts (Handling order changes)
+      // Execute Group Upserts (Handling order changes). order_index is the
+      // item's position, passed explicitly per group, so bounded-parallel
+      // execution keeps ordering correct while removing the sequential cost.
       const currentGroupsWithCorrectOrder = [...currentGroups];
-      for (let i = 0; i < currentGroupsWithCorrectOrder.length; i++) {
-        const group = currentGroupsWithCorrectOrder[i];
+      await mapWithConcurrency(currentGroupsWithCorrectOrder, SYNC_CONCURRENCY, async (group, i) => {
         const prevIndex = prevGroupsRef.current.findIndex(g => g.id === group.id);
-        
+
         if (changedGroups.includes(group) || prevIndex !== i) {
           const success = await upsertGroup(group, i);
           if (handleResult(group.id, success, 'groupService.upsert')) {
@@ -177,20 +239,22 @@ export function useCloudSync(
             }
           }
         }
-      }
+      });
 
       // TW Attendance Sync - ONLY sync dirty entries
       const changedTW = currentTWAttendance.filter(p => p.isDirty);
       const currentTWNames = new Set(currentTWAttendance.map(p => p.discordName));
-      const deletedTWNames = prevTWAttendanceRef.current.filter(p => !currentTWNames.has(p.discordName)).map(p => p.discordName);
+      const deletedTWNames = twWipeSuspected
+        ? []
+        : prevTWAttendanceRef.current.filter(p => !currentTWNames.has(p.discordName)).map(p => p.discordName);
 
-      for (const name of deletedTWNames) {
+      await mapWithConcurrency(deletedTWNames, SYNC_CONCURRENCY, async (name) => {
         const success = await deleteTWImportEntry(name);
         if (handleResult(name, success, 'twService.delete')) {
           prevTWMap.delete(name);
         }
-      }
-      for (const entry of changedTW) {
+      });
+      await mapWithConcurrency(changedTW, SYNC_CONCURRENCY, async (entry) => {
         const success = await upsertTWImport(entry);
         if (handleResult(entry.discordName, success, 'twService.upsert')) {
           prevTWMap.set(entry.discordName, entry);
@@ -199,7 +263,7 @@ export function useCloudSync(
             dispatch(clearTWEntryDirtyFlag({ discordName: entry.discordName, syncedRef: entry }));
           }
         }
-      }
+      });
 
       // Update refs with what was successfully synced (or permanently failed).
       // BUG-AUDITLOG FIX: Use the full currentPlayers list, not filtered by prevPlayersMap.
@@ -208,9 +272,18 @@ export function useCloudSync(
       // edit those players would be missing from prevPlayersMap, causing the audit log
       // to incorrectly classify them as new ("Added new player").
       prevPlayersRef.current = currentPlayers;
-      // For groups, we need to maintain order as much as possible
-      prevGroupsRef.current = currentGroups.filter(g => prevGroupsMap.has(g.id));
-      prevTWAttendanceRef.current = currentTWAttendance.filter(p => prevTWMap.has(p.discordName));
+      // For groups, we need to maintain order as much as possible.
+      // SAFETY: when a wipe was suspected, deliberately leave the prev ref
+      // pointing at the last known-good (non-empty) data instead of collapsing
+      // it to the empty currentGroups/currentTWAttendance — so if the next
+      // fetch recovers the real data, the diff correctly sees "nothing was
+      // actually removed" instead of having already forgotten what existed.
+      prevGroupsRef.current = groupsWipeSuspected
+        ? prevGroupsRef.current
+        : currentGroups.filter(g => prevGroupsMap.has(g.id));
+      prevTWAttendanceRef.current = twWipeSuspected
+        ? prevTWAttendanceRef.current
+        : currentTWAttendance.filter(p => prevTWMap.has(p.discordName));
 
       if (hasPermanentErrors) {
         setStatus('PermanentError');

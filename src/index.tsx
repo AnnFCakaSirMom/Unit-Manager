@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import App from './App';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { store } from './state/store';
+import './index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

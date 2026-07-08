@@ -47,6 +47,16 @@ export const useDatabaseSync = (
     const avatarUrlRef = useRef<string | null>(null);
     avatarUrlRef.current = currentAvatarUrl;
 
+    // Same "latest ref" approach for the current TW data sizes, read by
+    // loadTWData's empty-response guard below without becoming a callback
+    // dependency (which would otherwise tear down and rebuild the officer-only
+    // Realtime channel on every TW data change).
+    const twSeasonsCount = useAppSelector(state => state.tw.twSeasons.length);
+    const twEventsCount = useAppSelector(state => state.tw.twEvents.length);
+    const twRecordsCount = useAppSelector(state => state.tw.twRecords.length);
+    const twDataCountsRef = useRef({ seasons: 0, events: 0, records: 0 });
+    twDataCountsRef.current = { seasons: twSeasonsCount, events: twEventsCount, records: twRecordsCount };
+
     // ── Subscribe to SyncManager's global loading state ──────────────────────
     useEffect(() => {
         syncManager.setLoadingCallback((isLoading) => {
@@ -83,20 +93,61 @@ export const useDatabaseSync = (
     const loadGroups = useCallback(() => {
         syncManager.triggerSync('groups', async (signal) => {
             const groups = await fetchGroupsFromSupabase(signal);
-            dispatch(hydrateGroups(groups));
+            // L1 (same guard as loadPlayers): skip hydration on an empty response.
+            // fetchGroupsFromSupabase's error handler also resolves to [] on a
+            // failed/aborted query (see handleQuery's default-value fallback), so an
+            // empty result here does not reliably mean "there really are zero
+            // groups" — it can equally mean a transient network/RLS blip. Without
+            // this guard, dispatching hydrateGroups([]) in that window empties local
+            // state, and useCloudSync's diff-based deletion (which treats anything
+            // missing from the current list as "removed by the user") would then
+            // issue real DELETE calls for every group in the database. A legitimate
+            // fully-cleared group list already goes through its own explicit
+            // dispatch(setGroups([])) path (see TWAttendanceView's clear-attendance
+            // flow), not through this hydration call, so skipping empty hydrations
+            // here does not block real clears.
+            if (groups.length > 0) {
+                dispatch(hydrateGroups(groups));
+            }
         }, () => setStatusMessage('Error: Could not sync from server.'));
     }, [dispatch, setStatusMessage]);
 
     const loadTWImport = useCallback(() => {
         syncManager.triggerSync('twImport', async (signal) => {
             const data = await fetchTWImport(signal);
-            dispatch(hydrateTWAttendance(data));
+            // L1 (same guard as loadPlayers/loadGroups): skip hydration on an empty
+            // response. fetchTWImport falls back to [] on error too (handleQuery's
+            // default), so an empty result here can mean a transient failure rather
+            // than a genuinely empty list. Confirmed root cause of a real data-loss
+            // incident: an empty hydration here wiped local twAttendance, which
+            // useCloudSync's diff-based deletion then propagated as real DELETEs
+            // against tw_import_list in Supabase. A legitimate full clear already
+            // goes through its own explicit dispatch(clearTWAttendance()) path, not
+            // through this hydration call.
+            if (data.length > 0) {
+                dispatch(hydrateTWAttendance(data));
+            }
         }, () => setStatusMessage('Error: Could not sync from server.'));
     }, [dispatch, setStatusMessage]);
 
     const loadTWData = useCallback(() => {
         syncManager.triggerSync('twData', async (signal) => {
             const data = await fetchTWAttendanceData(signal);
+            // L1 (same guard as loadPlayers/loadGroups/loadTWImport): skip hydration
+            // when the response is completely empty across seasons/events/records
+            // while local state already holds real data. fetchTWAttendanceData
+            // throws on hard query errors (so those never reach here), but a
+            // transient RLS/JWT timing gap can still make the query legitimately
+            // return zero rows without erroring. hydrateTWData does a blind
+            // overwrite with no dirty-preservation, so an empty response here would
+            // otherwise wipe local seasons/events/records until the next fetch.
+            const { seasons, events, records } = twDataCountsRef.current;
+            const hadData = seasons > 0 || events > 0 || records > 0;
+            const isNowEmpty = data.seasons.length === 0 && data.events.length === 0 && data.records.length === 0;
+            if (hadData && isNowEmpty) {
+                console.warn('[useDatabaseSync] Skipped hydrateTWData — response was suspiciously empty compared to existing local TW data.');
+                return;
+            }
             dispatch(hydrateTWData(data));
         }, () => setStatusMessage('Error: Could not sync from server.'));
     }, [dispatch, setStatusMessage]);

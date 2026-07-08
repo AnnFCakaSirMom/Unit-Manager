@@ -44,6 +44,24 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
     const dispatch = useAppDispatch();
     const inputRef = useRef<HTMLInputElement>(null);
 
+    // PERF: O(1) lookups for the results render loop instead of a groups.find()
+    // and a twAttendance.some() scan per displayed player.
+    const playerGroupMap = useMemo(() => {
+        const map = new Map<string, typeof groups[number]>();
+        for (const g of groups) {
+            for (const m of g.members) map.set(m.playerId, g);
+        }
+        return map;
+    }, [groups]);
+
+    const acceptedPlayerIds = useMemo(() => {
+        const set = new Set<string>();
+        for (const a of twAttendance) {
+            if (a.status === 'Accepted' && a.matchedPlayerId) set.add(a.matchedPlayerId);
+        }
+        return set;
+    }, [twAttendance]);
+
     // Keep legacy searchTerm prop in sync so parent components that rely on it still work
     useEffect(() => {
         setSearchTerm(selectedTags.join('; '));
@@ -279,8 +297,8 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({ players, onSelectPlayer,
                         {displayedPlayers.length > 0 ? (
                             <div className="space-y-1.5">
                                 {displayedPlayers.map(({ player, matchCount, unitStatuses }) => {
-                                    const assignedGroup = groups.find(g => g.members.some(m => m.playerId === player.id));
-                                    const isAttending = twAttendance.some(a => a.matchedPlayerId === player.id && a.status === 'Accepted');
+                                    const assignedGroup = playerGroupMap.get(player.id);
+                                    const isAttending = acceptedPlayerIds.has(player.id);
                                     const totalSearched = selectedTags.length;
                                     const hasAll = matchCount === totalSearched;
 

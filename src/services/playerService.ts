@@ -7,6 +7,19 @@ import { supabase } from './supabase';
 import { handleQuery, handleMutation } from './supabaseUtils';
 import type { Player, UserRole } from '../types';
 
+// SAFETY: If a player's existing profile_units row count in Supabase is at or
+// above this threshold but their local unit lists are now all empty, treat
+// the "wipe all rows" branch below as suspicious rather than executing it.
+// A joined profiles+profile_units fetch can legitimately return an empty
+// nested profile_units array for one specific row (e.g. an RLS/JWT timing
+// gap applied per-row) without the overall query erroring — this would make
+// that one player locally appear unit-less. If they're then edited (even for
+// an unrelated field) they get marked dirty and synced, and without this
+// guard the "no local units" branch would permanently delete all of that
+// player's real unit data. Small counts still wipe normally (a real player
+// with only 1-2 units, or a brand-new player with none yet, is plausible).
+const SUSPICIOUS_UNIT_WIPE_THRESHOLD = 3;
+
 type ProfileUnitRow = {
   unit_name: string;
   is_owned: boolean;
@@ -61,7 +74,7 @@ function transformProfileToPlayer(row: ProfileRow): Player {
  * Fetches all profiles with their associated units in a single round trip.
  */
 export async function fetchPlayersFromSupabase(signal?: AbortSignal): Promise<Player[]> {
-  console.log('[playerService] Fetching players from Supabase...');
+  if (import.meta.env.DEV) console.log('[playerService] Fetching players from Supabase...');
 
   // BUG-2 FIX: Use conditional abortSignal — signal is optional and passing
   // undefined directly to .abortSignal() can throw at runtime.
@@ -108,7 +121,7 @@ export async function fetchPlayersFromSupabase(signal?: AbortSignal): Promise<Pl
  * Used for delta sync to avoid O(N) fetching.
  */
 export async function fetchSinglePlayer(profileId: string, signal?: AbortSignal): Promise<Player | null> {
-  console.log(`[playerService] Fetching single player ${profileId} from Supabase...`);
+  if (import.meta.env.DEV) console.log(`[playerService] Fetching single player ${profileId} from Supabase...`);
 
   let profileBuilder = supabase.from('profiles').select(`
     *,
@@ -151,7 +164,7 @@ export async function fetchSinglePlayer(profileId: string, signal?: AbortSignal)
  * @param prevPlayer Optional baseline. If provided, performs a partial update of only changed fields.
  */
 export async function upsertPlayer(player: Player, prevPlayer?: Player): Promise<boolean> {
-  console.log(`[playerService] Upserting player ${player.id} to Supabase...`);
+  if (import.meta.env.DEV) console.log(`[playerService] Upserting player ${player.id} to Supabase...`);
 
   let profileUpdatePayload: any = {};
   let infoUpdatePayload: string | undefined = undefined;
@@ -332,7 +345,30 @@ export async function upsertPlayer(player: Player, prevPlayer?: Player): Promise
         );
       }
     } else {
-      // Player has no units — safe to wipe all rows for this profile
+      // Player now has zero local units. Before wiping ALL of their existing
+      // profile_units rows, check whether that would be a large, suspicious
+      // full-wipe of real existing data (see SUSPICIOUS_UNIT_WIPE_THRESHOLD).
+      const { data: existingRows, error: fetchError } = await supabase
+        .from('profile_units')
+        .select('unit_name')
+        .eq('profile_id', player.id);
+
+      if (fetchError) {
+        console.error(`[playerService] Failed to fetch existing units for ${player.id} before clear:`, fetchError.message);
+        return false;
+      }
+
+      const existingCount = existingRows?.length ?? 0;
+      if (existingCount >= SUSPICIOUS_UNIT_WIPE_THRESHOLD) {
+        console.warn(
+          `[playerService] Blocked a suspicious full unit-wipe for player ${player.id}: ` +
+          `local state has zero units but ${existingCount} rows exist in Supabase. ` +
+          `Skipping delete — if this player should genuinely have no units, edit their units again to confirm.`
+        );
+        return false;
+      }
+
+      // Small/no existing data — safe to wipe.
       await handleMutation(
         supabase.from('profile_units').delete().eq('profile_id', player.id),
         { service: 'playerService', op: `clearUnits ${player.id}` }

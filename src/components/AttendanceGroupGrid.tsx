@@ -10,6 +10,70 @@ const GripIcon = ({ className = "", size = 16 }) => (
     </svg>
 );
 
+interface AttendanceGroupMemberRowProps {
+    player: Player;
+    groupId: string;
+    isDragOver: boolean;
+    onDragStart: (e: React.DragEvent, playerId: string, sourceGroupId?: string | null) => void;
+    onDragEnd: () => void;
+    onDragOver: (e: React.DragEvent) => void;
+    setDragOverPlayer: (id: string | null) => void;
+    onDropOnMember: (e: React.DragEvent, targetGroupId: string, targetPlayerId: string) => void;
+    onRemove: (playerId: string, targetGroupId: string) => void;
+}
+
+// PERF: Memoized member row so a drag interaction (which flips dragOverPlayer on
+// every dragover event) only re-renders the two rows whose highlight actually
+// changes, instead of every member row in every group. Relies on all callback
+// props being stable (they come from useGroupDragAndDrop's useCallback handlers
+// and useState setters) and on the player object reference being stable across
+// renders (provided by the parent's memoized playerMap).
+const AttendanceGroupMemberRow = React.memo(function AttendanceGroupMemberRow({
+    player,
+    groupId,
+    isDragOver,
+    onDragStart,
+    onDragEnd,
+    onDragOver,
+    setDragOverPlayer,
+    onDropOnMember,
+    onRemove,
+}: AttendanceGroupMemberRowProps) {
+    return (
+        <div
+            draggable
+            onDragStart={(e) => onDragStart(e, player.id, groupId)}
+            onDragEnd={onDragEnd}
+            onDragOver={(e) => {
+                onDragOver(e);
+                setDragOverPlayer(player.id);
+            }}
+            onDragLeave={() => setDragOverPlayer(null)}
+            onDrop={(e) => onDropOnMember(e, groupId, player.id)}
+            className={cn(
+                "p-1 rounded flex justify-between items-center cursor-grab active:cursor-grabbing border transition-colors",
+                isDragOver
+                    ? 'border-blue-500 bg-blue-500/20'
+                    : 'border-transparent bg-gray-700/50 hover:border-gray-500 hover:bg-gray-600'
+            )}
+        >
+            <div className="flex items-center gap-2 truncate">
+                <GripIcon size={14} className="text-gray-500" />
+                <span className="text-sm text-gray-200 truncate">{player.name}</span>
+            </div>
+            <Button
+                onClick={() => onRemove(player.id, "REMOVE")}
+                variant="ghost"
+                size="icon"
+                className="text-gray-400 hover:text-red-400 h-6 w-6 p-0.5 rounded"
+                title="Remove from group"
+            >
+                <Trash2 size={14} />
+            </Button>
+        </div>
+    );
+});
+
 export interface AttendanceGroupGridProps {
     groups: Group[];
     players: Player[];
@@ -126,38 +190,18 @@ export const AttendanceGroupGrid: React.FC<AttendanceGroupGridProps> = ({
                                 if (!player) return null;
 
                                 return (
-                                    <div
+                                    <AttendanceGroupMemberRow
                                         key={member.playerId}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, member.playerId, group.id)}
+                                        player={player}
+                                        groupId={group.id}
+                                        isDragOver={dragOverPlayer === member.playerId}
+                                        onDragStart={handleDragStart}
                                         onDragEnd={handleDragEnd}
-                                        onDragOver={(e) => {
-                                            handleDragOver(e);
-                                            setDragOverPlayer(member.playerId);
-                                        }}
-                                        onDragLeave={() => setDragOverPlayer(null)}
-                                        onDrop={(e) => handleDropOnMember(e, group.id, member.playerId)}
-                                        className={cn(
-                                            "p-1 rounded flex justify-between items-center cursor-grab active:cursor-grabbing border transition-colors",
-                                            dragOverPlayer === member.playerId
-                                                ? 'border-blue-500 bg-blue-500/20'
-                                                : 'border-transparent bg-gray-700/50 hover:border-gray-500 hover:bg-gray-600'
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-2 truncate">
-                                            <GripIcon size={14} className="text-gray-500" />
-                                            <span className="text-sm text-gray-200 truncate">{player.name}</span>
-                                        </div>
-                                        <Button
-                                            onClick={() => handleAssignGroup(player.id, "REMOVE")}
-                                            variant="ghost"
-                                            size="icon"
-                                            className="text-gray-400 hover:text-red-400 h-6 w-6 p-0.5 rounded"
-                                            title="Remove from group"
-                                        >
-                                            <Trash2 size={14} />
-                                        </Button>
-                                    </div>
+                                        onDragOver={handleDragOver}
+                                        setDragOverPlayer={setDragOverPlayer}
+                                        onDropOnMember={handleDropOnMember}
+                                        onRemove={handleAssignGroup}
+                                    />
                                 );
                             })}
                             {group.members.length === 0 && (
