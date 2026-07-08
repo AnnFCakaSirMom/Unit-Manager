@@ -102,7 +102,7 @@ class SyncManager {
             await action(controller.signal);
         } catch (error) {
             if (error instanceof Error && error.name === 'AbortError') {
-                console.log(`[SyncManager] "${type}" sync superseded by a newer request — result discarded.`);
+                if (import.meta.env.DEV) console.log(`[SyncManager] "${type}" sync superseded by a newer request — result discarded.`);
                 return; // Silently discard; the newer request will apply the data.
             }
             console.warn(`[SyncManager] Unhandled error during "${type}" sync:`, error);

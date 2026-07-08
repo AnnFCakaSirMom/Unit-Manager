@@ -8,6 +8,11 @@ export default defineConfig(({ mode }) => {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
       },
+      // Strip console.* and debugger from production builds only.
+      // Dev keeps them so development logging still works.
+      esbuild: mode === 'production'
+        ? { drop: ['console', 'debugger'] }
+        : {},
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import type { ConfirmModalInfo } from './types';
 
 import { useFileHandler } from './hooks/useFileHandler';
@@ -6,14 +6,7 @@ import { useCloudSync } from './hooks/useCloudSync';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { MemberProfileRail } from './components/MemberProfileRail';
-import { PlayerUnitView } from './components/PlayerUnitView';
-import { GroupView } from './components/GroupView';
-import { TWAttendanceView } from './components/TWAttendanceView';
-import { TWStatisticsView } from './components/TWStatisticsView';
-import { ProfileMatcher } from './components/ProfileMatcher';
-import { AdminPanel } from './components/AdminPanel';
 import { ConfirmationModal } from './components/ConfirmationModal';
-import { HelpManualModal } from './components/HelpManualModal';
 
 import { useAppSelector, useAppDispatch } from './state/store';
 import { supabase } from './services/supabase';
@@ -23,6 +16,24 @@ import { useAuth } from './hooks/useAuth';
 import { useNavigationState } from './hooks/useNavigationState';
 import { useDatabaseSync } from './hooks/useDatabaseSync';
 import { StatusToast } from './components/StatusToast';
+
+// PERF: Code-split the mutually-exclusive main views and the on-demand help
+// modal so they're not in the initial bundle. Each loads on first use behind a
+// Suspense boundary. Named exports are adapted to the default export lazy() expects.
+const PlayerUnitView = lazy(() => import('./components/PlayerUnitView').then(m => ({ default: m.PlayerUnitView })));
+const GroupView = lazy(() => import('./components/GroupView').then(m => ({ default: m.GroupView })));
+const TWAttendanceView = lazy(() => import('./components/TWAttendanceView').then(m => ({ default: m.TWAttendanceView })));
+const TWStatisticsView = lazy(() => import('./components/TWStatisticsView').then(m => ({ default: m.TWStatisticsView })));
+const ProfileMatcher = lazy(() => import('./components/ProfileMatcher').then(m => ({ default: m.ProfileMatcher })));
+const AdminPanel = lazy(() => import('./components/AdminPanel').then(m => ({ default: m.AdminPanel })));
+const HelpManualModal = lazy(() => import('./components/HelpManualModal').then(m => ({ default: m.HelpManualModal })));
+
+const ViewLoadingFallback: React.FC = () => (
+    <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-500">
+        <div className="w-8 h-8 rounded-full border-2 border-amber-500/30 border-t-amber-500/80 animate-spin" />
+        <p className="text-sm font-medium tracking-wide">Loading…</p>
+    </div>
+);
 
 declare global {
     interface Window {
@@ -50,6 +61,13 @@ const App: React.FC = () => {
     } = useNavigationState(role, userId);
 
     const handleOpenManual = useCallback(() => setIsManualOpen(true), []);
+
+    // Stable callback so the memoized GroupView isn't re-rendered by a fresh
+    // inline onCopy identity on every App render.
+    const handleCopyGroup = useCallback((text: string) => {
+        navigator.clipboard.writeText(text);
+        setStatusMessage('Group copied to clipboard!');
+    }, []);
 
     useDatabaseSync(reduxDispatch, isOfficerPlus, setStatusMessage);
 
@@ -156,6 +174,7 @@ const App: React.FC = () => {
                             )}
 
                             <main className="p-4 md:p-6 flex-1 overflow-hidden flex flex-col min-w-0">
+                                <Suspense fallback={<ViewLoadingFallback />}>
                                 {showAdminPanel ? (
                                     <div className="flex-1 overflow-auto p-4 min-w-[300px]">
                                         <AdminPanel
@@ -182,10 +201,7 @@ const App: React.FC = () => {
                                     <GroupView
                                         key={selectedGroupId}
                                         group={selectedGroup!}
-                                        onCopy={(text) => {
-                                            navigator.clipboard.writeText(text);
-                                            setStatusMessage('Group copied to clipboard!');
-                                        }}
+                                        onCopy={handleCopyGroup}
                                     />
                                 ) : selectedPlayer ? (
                                     <PlayerUnitView
@@ -207,12 +223,17 @@ const App: React.FC = () => {
                                         </div>
                                     )
                                 )}
+                                </Suspense>
                             </main>
                         </div>
 
 
 
-                        <HelpManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
+                        {isManualOpen && (
+                            <Suspense fallback={null}>
+                                <HelpManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
+                            </Suspense>
+                        )}
                         {confirmModal.isOpen && (
                             <ConfirmationModal 
                                 isOpen={confirmModal.isOpen} 

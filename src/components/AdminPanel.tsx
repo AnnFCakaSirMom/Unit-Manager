@@ -28,16 +28,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose 
         setSuspiciousCount(count);
     }, []);
 
+    // Re-check the suspicious count when the panel mounts or the tab changes.
     useEffect(() => {
         checkSuspicious();
-        
-        // Subscribe to new audit logs to update suspicious badge live
+    }, [activeTab, checkSuspicious]);
+
+    // Subscribe to new audit logs to update the suspicious badge live.
+    // PERF: This is a separate effect keyed only on the (stable) checkSuspicious
+    // callback, so it subscribes once for the component's lifetime. Previously
+    // the [activeTab] dependency tore down and re-established the realtime
+    // channel on every tab switch.
+    useEffect(() => {
         const channel = supabase
             .channel('admin-panel-suspicious-sync')
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'audit_logs' 
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'audit_logs'
             }, () => {
                 checkSuspicious();
             })
@@ -46,7 +53,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onSave, onLoad, onClose 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [activeTab, checkSuspicious]);
+    }, [checkSuspicious]);
 
 
     return (

@@ -9,6 +9,25 @@ const initialState: PlayerState = {
   players: [],
 };
 
+// PERF: Find the index at which a player should be inserted to keep `players`
+// sorted by name (localeCompare). Lets addPlayer / updateSinglePlayer insert a
+// single new player in O(log n) comparisons + splice instead of pushing and
+// then re-sorting the entire array (O(n log n) localeCompare calls) on every
+// add. Assumes the array is already sorted, an invariant the slice maintains.
+function sortedInsertIndex(players: Player[], name: string): number {
+  let lo = 0;
+  let hi = players.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (players[mid].name.localeCompare(name) < 0) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
+  }
+  return lo;
+}
+
 const playerSlice = createSlice({
   name: 'player',
   initialState,
@@ -41,9 +60,8 @@ const playerSlice = createSlice({
       const index = state.players.findIndex(p => p.id === incoming.id);
 
       if (index === -1) {
-        // Ny spelare — lägg till och sortera
-        state.players.push(incoming);
-        state.players.sort((a, b) => a.name.localeCompare(b.name));
+        // Ny spelare — infoga på rätt sorterad position (undviker full omsortering)
+        state.players.splice(sortedInsertIndex(state.players, incoming.name), 0, incoming);
         return;
       }
 
@@ -51,7 +69,7 @@ const playerSlice = createSlice({
 
       // 🔑 Skydda dirty-spelare — kasta inte bort osparade lokala ändringar
       if (existing.isDirty) {
-        console.log(`[Delta] Skippar uppdatering av dirty player ${incoming.id}`);
+        if (import.meta.env.DEV) console.log(`[Delta] Skippar uppdatering av dirty player ${incoming.id}`);
         return;
       }
 
@@ -60,7 +78,7 @@ const playerSlice = createSlice({
         const existingTs = new Date(existing.updatedAt).getTime();
         const incomingTs = new Date(incoming.updatedAt).getTime();
         if (incomingTs <= existingTs) {
-          console.log(`[Delta] Skippar stale payload för ${incoming.id}`);
+          if (import.meta.env.DEV) console.log(`[Delta] Skippar stale payload för ${incoming.id}`);
           return;
         }
       }
@@ -85,8 +103,8 @@ const playerSlice = createSlice({
         role: 'Member'
       };
       newPlayer.isDirty = true;
-      state.players.push(newPlayer);
-      state.players.sort((a, b) => a.name.localeCompare(b.name));
+      // Infoga på rätt sorterad position i stället för push + full omsortering.
+      state.players.splice(sortedInsertIndex(state.players, newPlayer.name), 0, newPlayer);
     },
     deletePlayer(state, action: PayloadAction<{ playerId: string }>) {
       state.players = state.players.filter(p => p.id !== action.payload.playerId);

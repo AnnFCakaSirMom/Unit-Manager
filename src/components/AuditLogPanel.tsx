@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { auditService, AuditLog } from '../services/auditService';
 import { restoreService } from '../services/restoreService';
@@ -57,26 +57,39 @@ export const AuditLogPanel: React.FC = () => {
         setCurrentPage(1);
     }, [nameFilter, typeFilter, startDate, endDate]);
 
+    // Keep a ref to the latest loadLogs so the realtime subscription can call
+    // the current filter/pagination-aware version without being a dependency.
+    const loadLogsRef = useRef(loadLogs);
+    useEffect(() => {
+        loadLogsRef.current = loadLogs;
+    }, [loadLogs]);
+
+    // Data loading: re-run whenever filters or the current page change.
     useEffect(() => {
         loadLogs();
+    }, [loadLogs]);
 
-        // Subscribe to new audit logs in realtime
+    // Realtime subscription: stable for the component's lifetime.
+    // PERF: Previously keyed on [loadLogs], which tore down and recreated the
+    // channel on every filter/pagination change. Using loadLogsRef keeps the
+    // channel alive while still re-fetching with the latest filters on INSERT.
+    useEffect(() => {
         const channel = supabase
             .channel('audit-logs-live')
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'audit_logs' 
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'audit_logs'
             }, () => {
-                // Re-fetch the first page to show the new log
-                loadLogs();
+                // Re-fetch to show the new log using the current filters.
+                loadLogsRef.current();
             })
             .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [loadLogs]);
+    }, []);
 
     const handleExport = () => {
         auditService.exportToCSV(logs);

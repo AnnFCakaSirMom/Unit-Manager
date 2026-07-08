@@ -78,7 +78,7 @@ export async function fetchGroupsFromSupabase(signal?: AbortSignal): Promise<Gro
  * clients to temporarily see empty groups via Realtime events.
  */
 export async function upsertGroup(group: Group, orderIndex: number): Promise<boolean> {
-  console.log(`[groupService] Upserting group ${group.id} to Supabase...`);
+  if (import.meta.env.DEV) console.log(`[groupService] Upserting group ${group.id} to Supabase...`);
 
   // 1. Upsert Group row
   const success = await handleMutation(

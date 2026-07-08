@@ -13,11 +13,17 @@ interface GroupViewProps {
 
 import { useAppSelector, useAppDispatch } from '../state/store';
 import { addPlayerToGroup } from '../state/slices/groupSlice';
+import { selectPlayersById } from '../state/selectors';
 
-export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
+const GroupViewComponent: React.FC<GroupViewProps> = ({ group, onCopy }) => {
     const players = useAppSelector(state => state.player.players);
     const unitConfig = useAppSelector(state => state.unit.unitConfig);
     const dispatch = useAppDispatch();
+
+    // PERF: O(1) player lookup instead of players.find() per member in the render
+    // loop and copy handler (previously O(members * players) per render). Shared,
+    // memoized selector so the map is built once per players change.
+    const playersById = useAppSelector(selectPlayersById);
 
     const [playerSearch, setPlayerSearch] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -64,7 +70,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
     const handleCopyGroup = useCallback(() => {
         let groupHeaderText = `--- ${group.name} ---\n`;
         const memberContent = sortedMembers.map(member => {
-            const player = players.find(p => p.id === member.playerId);
+            const player = playersById.get(member.playerId);
             if (!player) return '';
             let playerLine = player.name + (player.id === group.leaderId ? " (Lead)" : "");
 
@@ -76,7 +82,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
             return unitsText ? `${playerLine}\n${unitsText}` : playerLine;
         }).join('\n\n');
         onCopy(`${groupHeaderText}\`\`\`md\n${memberContent}\n\`\`\``);
-    }, [group, sortedMembers, players, onCopy, unitCostMap]);
+    }, [group, sortedMembers, playersById, onCopy, unitCostMap]);
 
     return (
         <div className="h-full flex flex-col">
@@ -101,7 +107,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
 
             <div className="flex-grow overflow-y-auto space-y-2">
                 {sortedMembers.map(member => {
-                    const player = players.find(p => p.id === member.playerId);
+                    const player = playersById.get(member.playerId);
                     if (!player) return null;
                     return <GroupMemberCard key={member.playerId} member={member} player={player} groupId={group.id} isLeader={group.leaderId === member.playerId} unitCostMap={unitCostMap} />;
                 })}
@@ -109,3 +115,7 @@ export const GroupView: React.FC<GroupViewProps> = ({ group, onCopy }) => {
         </div>
     );
 };
+
+// PERF: Memoize so GroupView only re-renders when its own props (group, onCopy)
+// change, not on every unrelated Redux update elsewhere in the app.
+export const GroupView = React.memo(GroupViewComponent);
