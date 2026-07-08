@@ -233,23 +233,36 @@ A web application to manage player units, groups, and Territory War (TW) statist
 ### 29. Icon-Aware Name Matching (Completed July 2026)
 - [x] **Emoji/Icon Stripping in `washName`:** Extended the shared name-normalization utility (`src/utils.ts`) to strip decorative emoji/pictographic symbols (e.g. 👑, ⚔️, ⭐) via the `\p{Extended_Pictographic}` Unicode property, alongside the existing `[ViP]`-style tag and stylized-font handling. Ensures Raid Helper import matching, player search, and profile matching all ignore cosmetic icons in Discord nicknames instead of treating them as literal characters.
 
+### 30. Performance Optimization Pass & Sync Safety Hardening (Completed July 2026)
+- [x] **Build-Time Tailwind Pipeline:** Replaced the Tailwind CDN JIT `<script>` (which shipped the entire compiler to the browser and generated CSS at runtime on every load) with a proper build-time PostCSS pipeline (`tailwind.config.js`, `postcss.config.js`, `src/index.css`), producing a single purged, static CSS file instead.
+- [x] **Route-Level Code Splitting:** Converted the mutually-exclusive main views (`AdminPanel`, `ProfileMatcher`, `TWStatisticsView`, `TWAttendanceView`, `GroupView`, `PlayerUnitView`) and `HelpManualModal` to `React.lazy` + `Suspense`, cutting the initial JS bundle by roughly a third (gzipped) since most users only ever load a subset of these per session.
+- [x] **Bounded-Parallel Cloud Sync:** Replaced `useCloudSync`'s fully-sequential (`await`-in-`for`-loop) upserts/deletes for players, groups, and TW attendance with a bounded-concurrency runner (max 8 in flight), removing the N-round-trips-in-series cost on any multi-item edit while still capping load on Supabase's connection pool.
+- [x] **TW Import Group-Dirty Precision:** Fixed `handleTWAttendanceImport` (`reducerHelpers.ts`) marking *every* group as `isDirty` on every Raid Helper import regardless of whether membership actually changed, which previously turned a single import into an O(groups) full upsert-diff cycle. Now only groups whose membership or leadership actually changed are flagged.
+- [x] **Batched TW Record Deletion:** Replaced a per-record `DELETE` loop in `deleteTWAttendanceRecords` (used by import-undo) with a single batched `.delete().in(...)` call per event.
+- [x] **Restored Drag-and-Drop Memoization:** `useGroupDragAndDrop`'s handlers were being recreated on every render (never memoized), silently defeating `React.memo` on the attendance list/grid rows. Rewrote the hook with `useCallback` and a "latest ref" pattern (stable handler identity that always reads current `groups` via a ref instead of as a dependency), so drag interactions and group edits only re-render the rows actually affected instead of every row in every group.
+- [x] **Render Isolation Sweep:** Memoized `GroupView` (previously unmemoized and doing an O(members × players) `.find()` per render), `UnitSearch`'s per-result group/attendance lookups, `GroupsList`'s display sort, and extracted `AttendanceGroupGrid`'s member rows into a memoized child component.
+- [x] **🔴 Data-Loss Incident & Fix — Empty-Hydration Guards:** Discovered (via live runtime verification, not a report) that `loadTWImport` and `loadGroups` in `useDatabaseSync.ts` had no protection against a transient RLS/JWT-timing-gap or swallowed network error returning an empty-but-successful fetch result — unlike the existing guard on `loadPlayers` (see #26). An empty result was hydrated as-is, and `useCloudSync`'s diff-based deletion then interpreted "everything missing from the new list" as "the user deleted everything," issuing real `DELETE` calls against Supabase. This is the confirmed root cause of a live `tw_import_list` wipe during this session's testing (recovered via Raid Helper re-import). Added the same empty-response guard already used by `loadPlayers` to both `loadGroups` and `loadTWImport`, plus `loadTWData` (seasons/events/records) for consistency.
+- [x] **Defense-in-Depth Wipe Guard:** Added a second, independent safety layer directly in `useCloudSync`: if a previously-populated list (≥3 items) appears completely empty in a single sync tick, the diff-based deletion is skipped and a warning is surfaced, rather than propagating it as a mass-delete. Protects against *future*, still-unknown bugs of the same shape, not just the two found here. Small/normal deletions (e.g. removing one group) are unaffected.
+- [x] **Player Unit-Wipe Guard:** Hardened `upsertPlayer`'s "player has zero local units → wipe all `profile_units` rows" branch in `playerService.ts` with the same threshold check: if Supabase still has ≥3 real unit rows for that profile despite local state showing none, the delete is blocked and logged instead of executed, guarding against a joined fetch silently returning an empty nested `profile_units` array for one row (a per-row RLS timing gap, not a whole-query failure) later being persisted as a real deletion once that player is edited.
+
 ## 🛠 In Progress / Planned
 
 ### Features & DX
 - [ ] **Prevent Duplicate Player Placements:** Implement strict boundaries to ensure a single player cannot be added to two or more different groups simultaneously.
 - [ ] **Stricter Name Matching:** Refine `findMatchedPlayer` logic to eliminate "short-name stealing" (where names like 'Immo' incorrectly match 'immoSoulX') by prioritizing exact matches and aliases.
 - [ ] **Full Type Safety:** Implement Supabase CLI type generation to synchronize database schema with TypeScript definitions, reducing runtime errors.
+- [ ] **Single-Player Delta-Sync Error Ambiguity:** `loadSinglePlayer`'s delta-sync fetch can't currently distinguish "profile genuinely deleted" from "query failed transiently" (both resolve to `null`), so a network blip can make one player cosmetically vanish from the local roster until the next full sync self-heals it. Not a database-write risk (no diff-delete reads from this path), but worth closing for consistency.
+- [ ] **Audit Log Round-Trip Reduction:** `auditService.logAction`'s 5-minute dedup window costs a `SELECT` + conditional `UPDATE`/`INSERT` per logged action. Reducing this to one round-trip requires a Postgres-side function/RPC change (out of scope for a client-only pass).
 - [ ] **Performance Roadmap:**
   - [ ] **Virtualization:** Implement virtualized lists (e.g., `react-window`) for Player List and Attendance to handle 500+ items.
-  - [ ] **Code Splitting:** Defer loading of heavy modules like Audit Logs and TW Statistics using `React.lazy`.
   - [ ] **Synergy Tools:** Group view improvements to visualize unit synergies (Shields + Heals).
 
 ---
 
 ## 🏗 Technical Stack
 
-- **Frontend:** React (Vite), Redux Toolkit, Vanilla CSS.
+- **Frontend:** React (Vite), Redux Toolkit, Tailwind CSS (build-time PostCSS pipeline).
 - **Backend:** Supabase (Auth, PostgreSQL, Realtime).
 - **Security:** Hierarchical RLS (STABLE/InitPlan weight functions) + Trigger-based integrity + RPC Hardening.
 
-*Last updated: 2026-07-07 (Icon-Aware Name Matching)*
+*Last updated: 2026-07-08 (Performance Optimization Pass & Sync Safety Hardening)*
